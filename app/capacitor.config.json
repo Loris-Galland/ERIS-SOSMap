@@ -1,0 +1,10 @@
+{
+  "appId": "com.dniit.erissosmap",
+  "appName": "ERIS-SOSMap-App",
+  "webDir": "dist",
+  "plugins": {
+    "SplashScreen": {
+      "launchAutoHide": false
+    }
+  }
+}
