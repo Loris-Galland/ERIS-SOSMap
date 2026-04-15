@@ -1,86 +1,130 @@
 import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { Geolocation } from '@capacitor/geolocation'; 
 
-function App() {
+export default function App() {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<L.Map | null>(null);
+  const userMarker = useRef<L.Marker | null>(null);
   
-  // État pour la télémétrie
-  const [position, setPosition] = useState({ lat: 16.074, lng: 108.223 }); // Coordonnées par défaut (Da Nang)
-  const [isSosActive, setIsSosActive] = useState(false);
+  const [position, setPosition] = useState({ lat: 16.074, lng: 108.223 });
+  const [isTracking, setIsTracking] = useState(false);
+
+  // Fonction pour obtenir la position réelle
+  const updateCurrentLocation = async () => {
+    try {
+      const coordinates = await Geolocation.getCurrentPosition();
+      const { latitude, longitude } = coordinates.coords;
+      
+      setPosition({ lat: latitude, lng: longitude });
+
+      if (mapInstance.current) {
+        // Centrer la carte sur l'utilisateur
+        mapInstance.current.setView([latitude, longitude], 16);
+        
+        // Ajouter ou déplacer le marqueur "Tactical"
+        if (userMarker.current) {
+          userMarker.current.setLatLng([latitude, longitude]);
+        } else {
+          userMarker.current = L.marker([latitude, longitude]).addTo(mapInstance.current)
+            .bindPopup("VOTRE POSITION ACTIVÉE")
+            .openPopup();
+        }
+      }
+      setIsTracking(true);
+    } catch (error) {
+      console.error("Erreur de géolocalisation:", error);
+      alert("Impossible d'accéder au GPS. Vérifiez les permissions.");
+    }
+  };
 
   useEffect(() => {
-    // Si la carte est déjà initialisée ou si la div n'est pas prête, on arrête
     if (!mapRef.current || mapInstance.current) return;
 
-    // 1. Initialisation de la carte Leaflet
     mapInstance.current = L.map(mapRef.current, {
-      zoomControl: false, // Design épuré
+      zoomControl: false,
       attributionControl: false
-    }).setView([position.lat, position.lng], 13);
+    }).setView([position.lat, position.lng], 14);
 
-    // 2. Ajout des tuiles (Préparation pour la Phase 2 : Cartes hors-ligne)
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapInstance.current);
+    // 1. Lien corrigé 
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+    }).addTo(mapInstance.current);
 
-    // 3. Écouteur de mouvement pour mettre à jour la télémétrie
+    // 2. LE FIX : On force Leaflet à vérifier sa taille après 250ms
+    setTimeout(() => {
+      mapInstance.current?.invalidateSize();
+    }, 250);
+
+    // Mise à jour de la télémétrie lors du déplacement
     mapInstance.current.on('move', () => {
       const center = mapInstance.current!.getCenter();
-      setPosition({ lat: center.lat, lng: center.lng });
+      setPosition(prev => ({ ...prev, lat: center.lat, lng: center.lng }));
     });
 
-    // Nettoyage lors du démontage du composant
+    // On lance la géolocalisation au démarrage
+    updateCurrentLocation();
+
     return () => {
       mapInstance.current?.remove();
       mapInstance.current = null;
     };
   }, []);
 
-  const handleSosClick = () => {
-    setIsSosActive(true);
-    // Plus tard : Appel au plugin Capacitor pour l'envoi au backend
-    alert("ALERTE SOS : Envoi des coordonnées...");
-  };
-
   return (
-    <div className="relative h-screen w-full bg-[#121212] text-white overflow-hidden font-sans">
-      
-      {/* Conteneur de la Carte */}
-      <div ref={mapRef} className="absolute inset-0 z-0" />
-
-      {/* Overlay Télémétrie (Haut) */}
-      <div className="absolute top-0 left-0 w-full z-10 p-4 pointer-events-none">
-        <div 
-          className={`bg-[#1E1E1E]/95 border-l-4 ${isSosActive ? 'border-[#D32F2F]' : 'border-[#F3DF2E]'} p-4 flex justify-between items-center transition-colors duration-300`} 
-          style={{ borderRadius: '0px' }}
+    <div className="flex flex-col h-screen w-full bg-[#121212] text-white font-['Inter']">
+      {/* HEADER */}
+      <header className="flex justify-between items-center px-4 py-3 bg-[#201F1F] border-b-2 border-[#353534] z-[1000] relative">
+        <div className="flex flex-col">
+          <h1 className="font-['Space_Grotesk'] text-[#FFFFFF] text-lg font-bold tracking-widest leading-tight">
+            ERIS<span className="text-[#F3DF2E]">SOS</span>
+          </h1>
+          <span className="font-['Space_Grotesk'] text-[#F3DF2E] text-[10px] tracking-widest uppercase">
+            Tactical Node
+          </span>
+        </div>
+        <button 
+          onClick={updateCurrentLocation}
+          className={`p-2 border-0 flex items-center justify-center transition-all ${isTracking ? 'text-[#F3DF2E]' : 'text-white'}`}
         >
-          <div>
-            <p className={`text-[10px] font-bold uppercase tracking-widest ${isSosActive ? 'text-[#D32F2F]' : 'text-[#F3DF2E]'}`}>
-              Position Actuelle
-            </p>
-            <div className="flex gap-4 mt-1">
-              <div><span className="text-gray-400 text-xs">LAT:</span> <span className="font-mono text-sm ml-1">{position.lat.toFixed(5)}</span></div>
-              <div><span className="text-gray-400 text-xs">LON:</span> <span className="font-mono text-sm ml-1">{position.lng.toFixed(5)}</span></div>
+          <span className="material-symbols-outlined">{isTracking ? 'my_location' : 'location_searching'}</span>
+        </button>
+      </header>
+
+      {/* ZONE CARTE */}
+      <main className="flex-1 relative bg-[#121212] z-0">
+        <div ref={mapRef} className="flex-1 w-full h-full z-0" style={{ minHeight: '400px' }} />
+        
+        {/* OVERLAY TÉLÉMÉTRIE DYNAMIQUE */}
+        <div className="absolute top-4 left-4 z-[1000] pointer-events-none">
+          <div className="bg-[#201F1F]/90 p-3 border-l-4 border-[#F3DF2E]" style={{ borderRadius: '0px' }}>
+            <div className="text-[#FFFFFF] opacity-50 text-[10px] font-['Space_Grotesk'] uppercase tracking-widest mb-1">
+              Position Tactique
+            </div>
+            <div className="font-mono text-xs text-[#FFFFFF]">
+              <div className="mb-1">LAT: <span className="text-[#F3DF2E] ml-1">{position.lat.toFixed(6)}</span></div>
+              <div>LON: <span className="text-[#F3DF2E] ml-1">{position.lng.toFixed(6)}</span></div>
             </div>
           </div>
-          <div className="text-right">
-            <p className="text-[10px] text-gray-400 uppercase tracking-wider">Signal GPS</p>
-            <p className={`${isSosActive ? 'text-[#D32F2F]' : 'text-[#F3DF2E]'} font-bold`}>FORT</p>
-          </div>
         </div>
-      </div>
 
-      {/* Bouton d'Action SOS (Bas) */}
-      <button 
-        onClick={handleSosClick}
-        className={`absolute bottom-8 left-1/2 -translate-x-1/2 z-20 ${isSosActive ? 'bg-red-700 animate-pulse' : 'bg-[#D32F2F] hover:bg-red-700'} text-white px-12 py-5 font-bold text-2xl tracking-tighter uppercase active:scale-95 transition-all shadow-2xl`} 
-        style={{ borderRadius: '0px' }}
-      >
-        {isSosActive ? 'SOS ACTIF' : 'LANCER SOS'}
-      </button>
+        {/* BOUTON SOS */}
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[1000] w-11/12 max-w-sm">
+          <button className="w-full bg-[#D32F2F] text-white py-4 font-['Space_Grotesk'] text-xl font-bold uppercase tracking-widest" style={{ borderRadius: '0px' }}>
+            Lancer SOS
+          </button>
+        </div>
+      </main>
 
+      {/* NAVIGATION BASSE */}
+      <nav className="flex justify-around items-center h-20 bg-[#201F1F] z-[1000]">
+        <button className="flex-1 h-full flex flex-col items-center justify-center text-[#F3DF2E] border-b-4 border-[#F3DF2E] bg-[#353534]">
+          <span className="material-symbols-outlined text-2xl">map</span>
+          <span className="text-[10px] font-bold mt-1">MAP</span>
+        </button>
+        {/* ... autres boutons ... */}
+      </nav>
     </div>
   );
 }
-
-export default App;
