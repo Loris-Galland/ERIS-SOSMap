@@ -3,6 +3,8 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Geolocation } from '@capacitor/geolocation';
 import OfflineScreen from './components/OfflineScreen';
+import ProfileScreen from './components/ProfileScreen';
+import SettingsScreen from './components/SettingsScreen';
 
 export default function App() {
   const mapRef = useRef<HTMLDivElement>(null);
@@ -11,8 +13,8 @@ export default function App() {
 
   // State for REAL GPS position
   const [userPosition, setUserPosition] = useState({ lat: 0, lng: 0, alt: 0 });
-  const [gpsStatus, setGpsStatus] = useState('SEARCHING...');
-  const [activeTab, setActiveTab] = useState<'MAP' | 'ALERTS' | 'OFFLINE' | 'USER'>('MAP');
+  const [gpsStatus, setGpsStatus] = useState('Locating...');
+  const [activeTab, setActiveTab] = useState<'MAP' | 'ALERTS' | 'OFFLINE' | 'USER' | 'SETTINGS'>('MAP');
   const [offlineMode, setOfflineMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showHazardAlert, setShowHazardAlert] = useState(true);
@@ -20,14 +22,14 @@ export default function App() {
   useEffect(() => {
     if (!mapRef.current || mapInstance.current) return;
 
-    // Initialize Leaflet map
+    // Initialize Leaflet map with standard controls hidden
     mapInstance.current = L.map(mapRef.current, {
       zoomControl: false,
       attributionControl: false,
     }).setView([48.8584, 2.2945], 13);
 
-    // Dark tactical tile layer
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png').addTo(
+    // Modern dark map base layer (Voyager dark)
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png').addTo(
       mapInstance.current
     );
 
@@ -46,25 +48,25 @@ export default function App() {
 
               // 1. Update telemetry state
               setUserPosition({ lat: latitude, lng: longitude, alt: altitude || 0 });
-              setGpsStatus('SIGNAL FIX');
+              setGpsStatus('Connected');
 
               // 2. Update visual marker on map
               if (mapInstance.current) {
                 if (userMarker.current) {
                   userMarker.current.setLatLng([latitude, longitude]);
                 } else {
-                  // Blue glowing dot for user position (matches mockup)
+                  // Modern pulsing blue dot for citizen position
                   const icon = L.divIcon({
                     className: '',
                     html: `<div style="
-                      width:14px; height:14px;
-                      background:#4A9EFF;
-                      border:2px solid #fff;
+                      width:18px; height:18px;
+                      background:#3b82f6;
+                      border:3px solid #ffffff;
                       border-radius:50%;
-                      box-shadow: 0 0 10px #4A9EFF, 0 0 20px rgba(74,158,255,0.4);
+                      box-shadow: 0 0 15px rgba(59, 130, 246, 0.6);
                     "></div>`,
-                    iconSize: [14, 14],
-                    iconAnchor: [7, 7],
+                    iconSize: [18, 18],
+                    iconAnchor: [9, 9],
                   });
                   userMarker.current = L.marker([latitude, longitude], { icon }).addTo(
                     mapInstance.current
@@ -77,7 +79,7 @@ export default function App() {
           }
         );
       } catch {
-        setGpsStatus('GPS ERROR');
+        setGpsStatus('GPS Unavailable');
       }
     };
 
@@ -90,213 +92,181 @@ export default function App() {
   }, []);
 
   return (
-    <div
-      style={{ fontFamily: "'Rajdhani', 'Space Grotesk', sans-serif" }}
-      className="flex flex-col h-screen w-full bg-[#0A0A0A] text-white overflow-hidden"
-    >
-      {/* ─── HEADER ─────────────────────────────────────────────────── */}
-      <header className="flex justify-between items-center px-4 py-2 bg-[#111111] border-b border-[#2A2A2A] z-[1000] relative">
-        {/* Hamburger menu */}
-        <button className="text-white opacity-70 hover:opacity-100 transition-opacity mr-3">
-          <span className="material-symbols-outlined text-xl">menu</span>
+    <div className="flex flex-col h-screen w-full bg-[#0f141e] text-white overflow-hidden font-sans">
+      
+      {/* ─── HEADER ─── */}
+      <header className="flex justify-between items-center px-5 py-3 bg-[#0f141e]/95 backdrop-blur-md border-b border-gray-800/50 z-[1000] relative">
+        {/* Menu icon */}
+        <button className="text-gray-400 hover:text-white transition-colors">
+          <span className="material-symbols-outlined text-2xl">menu</span>
         </button>
 
         {/* Title */}
-        <h1
-          className="flex-1 text-[#CC0000] text-base font-black uppercase tracking-[0.2em]"
-          style={{ letterSpacing: '0.18em' }}
-        >
-          COMMAND CENTER
+        <h1 className="flex-1 text-center text-white text-lg font-bold tracking-wide">
+          ERIS Safety
         </h1>
 
-        {/* SOS button - top right, red pill */}
-        <button className="bg-[#CC0000] text-white text-xs font-black uppercase tracking-widest px-4 py-1.5 rounded-sm hover:bg-red-700 active:bg-red-900 transition-colors shadow-[0_0_12px_rgba(204,0,0,0.5)]">
+        {/* Top small SOS pill */}
+        <button className="bg-red-500 hover:bg-red-600 text-white text-xs font-bold uppercase tracking-wider px-4 py-1.5 rounded-full transition-colors shadow-lg shadow-red-900/20 active:scale-95">
           SOS
         </button>
       </header>
 
-      {/* ─── SEARCH BAR ─────────────────────────────────────────────── */}
-      <div className="flex items-center px-3 py-2 bg-[#111111] border-b border-[#2A2A2A] z-[999] gap-2">
-        {/* Search input */}
-        <div className="flex items-center flex-1 bg-[#1A1A1A] border border-[#333] px-3 py-2 gap-2">
-          <span className="material-symbols-outlined text-[#888] text-base">search</span>
+      {/* ─── SEARCH & OFFLINE BAR ─── */}
+      <div className="flex items-center px-4 py-3 bg-[#0f141e]/80 backdrop-blur-md z-[999] gap-3 relative">
+        {/* Search input (Soft rounded shape) */}
+        <div className="flex items-center flex-1 bg-gray-800/60 border border-gray-700/50 rounded-full px-4 py-2.5 gap-2 shadow-inner">
+          <span className="material-symbols-outlined text-gray-400 text-lg">search</span>
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="SEARCH COORDINATES OR LOCATION..."
-            className="bg-transparent text-[#888] text-[10px] font-semibold uppercase tracking-widest w-full outline-none placeholder-[#555]"
+            placeholder="Search location or coordinates..."
+            className="bg-transparent text-sm text-white w-full outline-none placeholder-gray-500"
           />
         </div>
 
-        {/* Offline mode toggle */}
+        {/* Offline Mode Toggle Button */}
         <button
           onClick={() => setOfflineMode((v) => !v)}
-          className={`flex flex-col items-center justify-center border px-3 py-1.5 text-[9px] font-black uppercase tracking-widest transition-colors min-w-[58px] ${
+          className={`flex items-center justify-center w-11 h-11 rounded-full transition-colors shadow-lg ${
             offlineMode
-              ? 'border-[#CC0000] bg-[#CC0000]/10 text-[#CC0000]'
-              : 'border-[#333] bg-[#1A1A1A] text-[#666]'
+              ? 'bg-blue-500 text-white shadow-blue-900/30'
+              : 'bg-gray-800 border border-gray-700 text-gray-400'
           }`}
         >
-          <span className="material-symbols-outlined text-sm mb-0.5">wifi_off</span>
-          OFFLINE
-          <span className="text-[8px] leading-none">MODE</span>
+          <span className="material-symbols-outlined text-xl">
+            {offlineMode ? 'cloud_off' : 'cloud_download'}
+          </span>
         </button>
       </div>
 
-      {/* ─── MAIN CONTENT ───────────────────────────────────────────── */}
+      {/* ─── MAIN CONTENT ─── */}
       <main className="flex-1 relative overflow-hidden">
-
+        
         {/* MAP layer */}
         <div ref={mapRef} className="absolute inset-0 z-0" />
 
-        {/* ── LEFT TELEMETRY PANEL ──────────────────────────────────── */}
-        <div className="absolute top-3 left-3 z-[1000] pointer-events-none flex flex-col gap-1.5 w-[180px]">
-
-          {/* LATITUDE */}
-          <div className="bg-[#0D0D0D]/90 border-l-4 border-[#CC0000] px-3 py-2">
-            <div className="text-[#888] text-[8px] font-bold uppercase tracking-[0.15em] mb-0.5">
-              LATITUDE
+        {/* ── LOCATION CARD (Top Left, replaced military telemetry) ── */}
+        <div className="absolute top-4 left-4 z-[1000] pointer-events-none flex flex-col gap-2">
+          <div className="bg-gray-900/80 backdrop-blur-md border border-gray-700/50 rounded-2xl p-4 shadow-xl">
+            <div className="flex items-center gap-2 mb-2">
+              <span className={`w-2 h-2 rounded-full ${gpsStatus === 'Connected' ? 'bg-green-500' : 'bg-yellow-500 animate-pulse'}`}></span>
+              <span className="text-gray-300 text-xs font-semibold">{gpsStatus}</span>
             </div>
-            <div className="text-[#F0C040] text-[15px] font-black tracking-wide leading-tight">
-              {userPosition.lat !== 0 ? `${userPosition.lat.toFixed(4)} N` : '48.8584° N'}
-            </div>
-          </div>
-
-          {/* LONGITUDE */}
-          <div className="bg-[#0D0D0D]/90 border-l-4 border-[#CC0000] px-3 py-2">
-            <div className="text-[#888] text-[8px] font-bold uppercase tracking-[0.15em] mb-0.5">
-              LONGITUDE
-            </div>
-            <div className="text-[#F0C040] text-[15px] font-black tracking-wide leading-tight">
-              {userPosition.lng !== 0 ? `${userPosition.lng.toFixed(4)} E` : '2.2945° E'}
-            </div>
-          </div>
-
-          {/* ALTITUDE */}
-          <div className="bg-[#0D0D0D]/90 border-l-4 border-[#CC0000] px-3 py-2">
-            <div className="text-[#888] text-[8px] font-bold uppercase tracking-[0.15em] mb-0.5">
-              ALTITUDE
-            </div>
-            <div className="text-[#F0C040] text-[15px] font-black tracking-wide leading-tight">
-              {userPosition.alt !== 0
-                ? `${userPosition.alt.toFixed(0)} M`
-                : '1,244 M'}
-            </div>
+            {userPosition.lat !== 0 ? (
+              <>
+                <div className="text-white text-sm font-mono font-medium">
+                  {userPosition.lat.toFixed(4)}° N, {userPosition.lng.toFixed(4)}° E
+                </div>
+                <div className="text-gray-500 text-[11px] mt-1">Altitude: {userPosition.alt.toFixed(0)}m</div>
+              </>
+            ) : (
+              <div className="text-gray-400 text-sm">Acquiring position...</div>
+            )}
           </div>
         </div>
 
-        {/* ── RIGHT MAP CONTROLS ────────────────────────────────────── */}
-        <div className="absolute top-3 right-3 z-[1000] flex flex-col gap-2">
-          {/* Layers */}
+        {/* ── RIGHT MAP CONTROLS ── */}
+        <div className="absolute top-4 right-4 z-[1000] flex flex-col gap-3">
           <button
             onClick={() => mapInstance.current?.setZoom((mapInstance.current?.getZoom() ?? 13))}
-            className="w-10 h-10 bg-[#0D0D0D]/90 border border-[#333] flex items-center justify-center hover:border-[#CC0000] transition-colors"
+            className="w-12 h-12 bg-gray-900/90 border border-gray-700/50 rounded-full flex items-center justify-center text-gray-300 hover:bg-gray-800 transition-colors shadow-lg active:scale-95"
           >
-            <span className="material-symbols-outlined text-[#888] text-lg">layers</span>
+            <span className="material-symbols-outlined text-xl">layers</span>
           </button>
-
-          {/* Re-center on user */}
           <button
             onClick={() => {
               if (mapInstance.current && userPosition.lat !== 0) {
                 mapInstance.current.setView([userPosition.lat, userPosition.lng], 15);
               }
             }}
-            className="w-10 h-10 bg-[#0D0D0D]/90 border border-[#333] flex items-center justify-center hover:border-[#CC0000] transition-colors"
+            className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white hover:bg-blue-500 transition-colors shadow-lg shadow-blue-900/30 active:scale-95"
           >
-            <span className="material-symbols-outlined text-[#888] text-lg">my_location</span>
-          </button>
-
-          {/* Compass / rotation */}
-          <button className="w-10 h-10 bg-[#0D0D0D]/90 border border-[#333] flex items-center justify-center hover:border-[#CC0000] transition-colors">
-            <span className="material-symbols-outlined text-[#888] text-lg">explore</span>
+            <span className="material-symbols-outlined text-xl">my_location</span>
           </button>
         </div>
 
-        {/* GPS status badge */}
-        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000]">
-          <div
-            className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-1 border ${
-              gpsStatus === 'SIGNAL FIX'
-                ? 'border-green-600 text-green-400 bg-green-900/20'
-                : 'border-[#555] text-[#888] bg-[#0D0D0D]/80'
-            }`}
-          >
-            {gpsStatus}
-          </div>
-        </div>
-
-        {/* ── HAZARD ALERT BANNER ───────────────────────────────────── */}
+        {/* ── HAZARD ALERT NOTIFICATION (Bottom, above SOS) ── */}
         {showHazardAlert && (
-          <div className="absolute bottom-3 left-3 right-[80px] z-[1000]">
-            <div className="bg-[#CC0000] px-3 py-2.5 flex items-start gap-2 shadow-[0_0_20px_rgba(204,0,0,0.4)]">
-              {/* Warning icon */}
-              <span className="material-symbols-outlined text-white text-base mt-0.5 flex-shrink-0">
-                warning
-              </span>
-              <div className="flex-1 min-w-0">
-                <div className="text-white text-[9px] font-black uppercase tracking-[0.15em] mb-0.5">
-                  ▲ HAZARD ALERT
-                </div>
-                <div className="text-white/90 text-[9px] font-semibold uppercase tracking-wide leading-snug">
-                  EXTREME TERRAIN ALERT.{'\n'}AVALANCHE RISK IN SECTOR 7G.{'\n'}EMERGENCY PROTOCOLS ACTIVE.
-                </div>
+          <div className="absolute bottom-24 left-4 right-20 z-[1000] animate-fade-in">
+            <div className="bg-red-500/90 backdrop-blur-md rounded-2xl p-4 flex items-start gap-3 shadow-[0_8px_30px_rgba(239,68,68,0.3)] border border-red-400/30">
+              <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-white text-lg">warning</span>
               </div>
-              {/* Dismiss button */}
+              <div className="flex-1">
+                <h4 className="text-white text-sm font-bold mb-0.5">Area Warning</h4>
+                <p className="text-red-100 text-xs leading-relaxed">
+                  High avalanche risk reported in your current sector. Avoid steep terrains.
+                </p>
+              </div>
               <button
                 onClick={() => setShowHazardAlert(false)}
-                className="text-white/60 hover:text-white text-base flex-shrink-0 leading-none"
+                className="text-red-200 hover:text-white transition-colors"
               >
-                ×
+                <span className="material-symbols-outlined text-xl">close</span>
               </button>
             </div>
           </div>
         )}
 
-        {/* ── SOS FLOATING BUTTON ──────────────────────────────────── */}
-        <div className="absolute bottom-3 right-3 z-[1000]">
-          <button className="w-16 h-16 rounded-full bg-[#CC0000] border-4 border-[#FF2020] flex flex-col items-center justify-center shadow-[0_0_20px_rgba(204,0,0,0.7)] active:scale-95 transition-transform">
-            <span className="material-symbols-outlined text-white text-2xl">wifi_tethering</span>
-            <span className="text-white text-[9px] font-black uppercase tracking-widest mt-0.5">
-              SOS
-            </span>
+        {/* ── MAIN SOS BUTTON (Bottom Right) ── */}
+        <div className="absolute bottom-6 right-4 z-[1000]">
+          <button className="w-16 h-16 rounded-full bg-red-500 border-4 border-red-400/50 flex flex-col items-center justify-center shadow-[0_0_20px_rgba(239,68,68,0.4)] active:scale-95 transition-all">
+            <span className="material-symbols-outlined text-white text-3xl">sensors</span>
           </button>
         </div>
 
-        {/* ── OFFLINE SCREEN OVERLAY ── */}
+        {/* ── OVERLAYS ── */}
         {activeTab === 'OFFLINE' && (
-          <div className="absolute inset-0 z-[2000] bg-[#0A0A0A]">
+          <div className="absolute inset-0 z-[2000] bg-[#0f141e]">
             <OfflineScreen onBack={() => setActiveTab('MAP')} />
           </div>
         )}
-        
+
+        {activeTab === 'USER' && (
+          <div className="absolute inset-0 z-[2000] bg-[#0f141e]">
+            <ProfileScreen onOpenSettings={() => setActiveTab('SETTINGS')} />
+          </div>
+        )}
+
+        {activeTab === 'SETTINGS' && (
+          <div className="absolute inset-0 z-[3000] bg-[#0f141e]">
+            <SettingsScreen onBack={() => setActiveTab('USER')} />
+          </div>
+        )}
       </main>
 
-      {/* ─── BOTTOM NAVIGATION ──────────────────────────────────────── */}
-      <nav className="flex items-stretch h-16 bg-[#111111] border-t border-[#2A2A2A] z-[1000]">
+      {/* ─── BOTTOM NAVIGATION ─── */}
+      <nav className="flex items-center justify-around h-20 bg-[#0f141e]/95 backdrop-blur-md border-t border-gray-800/50 pb-safe z-[1000]">
         {(
           [
-            { id: 'MAP', icon: 'map', label: 'MAP' },
-            { id: 'ALERTS', icon: 'notifications_active', label: 'ALERTS' },
-            { id: 'OFFLINE', icon: 'download', label: 'OFFLINE' },
-            { id: 'USER', icon: 'person', label: 'USER' },
+            { id: 'MAP', icon: 'map', label: 'Map' },
+            { id: 'ALERTS', icon: 'notifications', label: 'Alerts' },
+            { id: 'OFFLINE', icon: 'cloud_download', label: 'Offline' },
+            { id: 'USER', icon: 'person', label: 'Profile' },
           ] as const
-        ).map(({ id, icon, label }) => (
-          <button
-            key={id}
-            onClick={() => setActiveTab(id)}
-            className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors ${
-              activeTab === id
-                ? 'bg-[#1A0000] border-t-2 border-[#CC0000] text-[#F0C040]'
-                : 'text-[#555] hover:text-[#888]'
-            }`}
-          >
-            <span className="material-symbols-outlined text-xl">{icon}</span>
-            <span className="text-[9px] font-black uppercase tracking-widest">{label}</span>
-          </button>
-        ))}
+        ).map(({ id, icon, label }) => {
+          const isActive = activeTab === id;
+          return (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id)}
+              className={`flex flex-col items-center justify-center w-16 gap-1 transition-all ${
+                isActive ? 'text-blue-500' : 'text-gray-500 hover:text-gray-400'
+              }`}
+            >
+              <div className={`px-4 py-1 rounded-full transition-all ${isActive ? 'bg-blue-500/10' : 'bg-transparent'}`}>
+                <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0" }}>
+                  {icon}
+                </span>
+              </div>
+              <span className="text-[10px] font-semibold tracking-wide">{label}</span>
+            </button>
+          );
+        })}
       </nav>
+      
     </div>
   );
 }
