@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Geolocation } from '@capacitor/geolocation';
+import OfflineScreen from './components/OfflineScreen';
 
 export default function App() {
   const mapRef = useRef<HTMLDivElement>(null);
@@ -262,6 +263,14 @@ export default function App() {
             </span>
           </button>
         </div>
+
+        {/* ── OFFLINE SCREEN OVERLAY ── */}
+        {activeTab === 'OFFLINE' && (
+          <div className="absolute inset-0 z-[2000] bg-[#0A0A0A]">
+            <OfflineScreen onBack={() => setActiveTab('MAP')} />
+          </div>
+        )}
+        
       </main>
 
       {/* ─── BOTTOM NAVIGATION ──────────────────────────────────────── */}
