@@ -5,8 +5,10 @@ interface SettingsScreenProps {
 }
 
 export default function SettingsScreen({ onBack }: SettingsScreenProps) {
-  // Toggle states
+  // Toggle and selection states
   const [settings, setSettings] = useState({
+    language: 'English (US)',
+    theme: 'Dark Safety (Default)',
     pushNotifications: true,
     criticalAlertsOnly: false,
     shareLocation: true,
@@ -14,6 +16,7 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
     autoRetrySos: true,
   });
 
+  // Type-safe toggle function for boolean settings
   const toggle = (key: keyof typeof settings) => {
     setSettings(prev => ({ ...prev, [key]: !prev[key] }));
   };
@@ -44,8 +47,34 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
         </h2>
       </header>
 
-      <div className="px-4 flex flex-col gap-6">
+      <div className="px-4 flex flex-col gap-6 mt-2">
         
+        {/* ─── DISPLAY & LANGUAGE ─── */}
+        <section>
+          <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3 px-2">Display & Language</h3>
+          <div className="bg-gray-800/40 border border-gray-700/50 rounded-3xl overflow-hidden">
+            
+            {/* Language Selector */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-700/30 cursor-pointer hover:bg-white/5 transition-colors">
+              <div>
+                <p className="text-white text-sm font-medium">Application Language</p>
+                <p className="text-blue-400 text-[11px] font-bold mt-0.5">{settings.language}</p>
+              </div>
+              <span className="material-symbols-outlined text-gray-500">translate</span>
+            </div>
+            
+            {/* Theme Selector */}
+            <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-white/5 transition-colors">
+              <div>
+                <p className="text-white text-sm font-medium">Visual Theme</p>
+                <p className="text-blue-400 text-[11px] font-bold mt-0.5">{settings.theme}</p>
+              </div>
+              <span className="material-symbols-outlined text-gray-500">dark_mode</span>
+            </div>
+            
+          </div>
+        </section>
+
         {/* ─── NOTIFICATIONS ─── */}
         <section>
           <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3 px-2">Notifications</h3>
@@ -104,7 +133,7 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
                 <p className="text-white text-sm font-medium">Offline Map Cache</p>
                 <p className="text-gray-500 text-[11px]">Currently using 124 MB</p>
               </div>
-              <button className="text-blue-400 text-xs font-bold bg-blue-500/10 px-4 py-2 rounded-full hover:bg-blue-500/20">
+              <button className="text-blue-400 text-xs font-bold bg-blue-500/10 px-4 py-2 rounded-full hover:bg-blue-500/20 active:scale-95 transition-all">
                 Clear Cache
               </button>
             </div>
@@ -125,7 +154,7 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
               <span className="text-gray-300 text-sm">Mesh Network</span>
               <span className="text-blue-400 text-xs font-bold bg-blue-500/10 px-3 py-1 rounded-full">Searching...</span>
             </div>
-            <button className="mt-2 w-full py-3 bg-gray-700/50 text-white text-xs font-bold rounded-2xl border border-gray-600/50 hover:bg-gray-700 transition-colors">
+            <button className="mt-2 w-full py-3 bg-gray-700/50 text-white text-xs font-bold rounded-2xl border border-gray-600/50 hover:bg-gray-700 transition-colors active:scale-95">
               Run Network Test
             </button>
           </div>

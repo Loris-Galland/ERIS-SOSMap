@@ -2,9 +2,10 @@ import { useState } from 'react';
 
 interface OfflineScreenProps {
   onBack: () => void;
+  onNavigateDownload: () => void; // New prop for navigation
 }
 
-export default function OfflineScreen({ onBack }: OfflineScreenProps) {
+export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScreenProps) {
   // Mock data for regional maps
   const [sectors] = useState([
     {
@@ -26,7 +27,7 @@ export default function OfflineScreen({ onBack }: OfflineScreenProps) {
   ]);
 
   return (
-    <div className="flex flex-col h-full bg-[#0f141e] w-full overflow-y-auto font-sans relative pb-20">
+    <div className="flex flex-col h-full bg-[#0f141e] w-full overflow-y-auto font-sans relative pb-24">
       
       {/* ─── HEADER ─── */}
       <header className="flex items-center px-6 py-4 bg-[#0f141e]/90 backdrop-blur-md sticky top-0 z-50">
@@ -59,7 +60,6 @@ export default function OfflineScreen({ onBack }: OfflineScreenProps) {
             </span>
           </div>
           
-          {/* Progress bar */}
           <div className="w-full h-3 bg-gray-900 rounded-full overflow-hidden border border-gray-700/50">
             <div 
               className="h-full bg-blue-500 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.6)]" 
@@ -71,7 +71,7 @@ export default function OfflineScreen({ onBack }: OfflineScreenProps) {
         {/* ─── REGIONAL MAPS LIST ─── */}
         <section>
           <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3 px-2">
-            Available Regions
+            My Regions
           </h3>
 
           <div className="flex flex-col gap-3">
@@ -81,7 +81,6 @@ export default function OfflineScreen({ onBack }: OfflineScreenProps) {
                 className="bg-gray-800/40 border border-gray-700/50 rounded-3xl p-4 flex flex-col gap-4 shadow-sm"
               >
                 <div className="flex items-center gap-4">
-                  {/* Icon */}
                   <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
                     sector.isDownloaded ? 'bg-green-500/10 text-green-400' : 'bg-gray-700/50 text-gray-400'
                   }`}>
@@ -90,7 +89,6 @@ export default function OfflineScreen({ onBack }: OfflineScreenProps) {
                     </span>
                   </div>
                   
-                  {/* Info */}
                   <div className="flex-1">
                     <h4 className="text-white text-sm font-bold mb-0.5">
                       {sector.name}
@@ -101,7 +99,6 @@ export default function OfflineScreen({ onBack }: OfflineScreenProps) {
                   </div>
                 </div>
 
-                {/* Action Button */}
                 <button 
                   className={`w-full py-3 rounded-2xl text-xs font-bold tracking-wide transition-all active:scale-[0.98] ${
                     sector.isDownloaded 
@@ -109,18 +106,28 @@ export default function OfflineScreen({ onBack }: OfflineScreenProps) {
                       : 'bg-blue-600 text-white shadow-lg shadow-blue-900/20 hover:bg-blue-500'
                   }`}
                 >
-                  {sector.isDownloaded ? 'Update Map Data' : 'Download to Device'}
+                  {sector.isDownloaded ? 'Update Map Data' : 'Resume Download'}
                 </button>
               </div>
             ))}
           </div>
         </section>
 
-        {/* Footer info */}
-        <p className="text-gray-500 text-[11px] text-center mt-2 px-4 leading-relaxed">
+        {/* ─── DOWNLOAD NEW MAP BUTTON ─── */}
+        <div className="mt-2">
+          <button 
+            onClick={onNavigateDownload}
+            className="w-full py-4 bg-blue-600 text-white rounded-3xl text-sm font-bold tracking-wide flex items-center justify-center gap-2 shadow-lg shadow-blue-900/30 hover:bg-blue-500 transition-all active:scale-95"
+          >
+            <span className="material-symbols-outlined">add_location</span>
+            Download New Region
+          </button>
+        </div>
+          
+          <p className="text-gray-500 text-[11px] text-center mt-4 px-4 leading-relaxed">
           Downloading maps allows you to navigate and use the ERIS emergency network even without internet access.
         </p>
-
+        
       </div>
     </div>
   );
