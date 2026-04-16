@@ -6,6 +6,7 @@ import OfflineScreen from './components/OfflineScreen';
 import ProfileScreen from './components/ProfileScreen';
 import SettingsScreen from './components/SettingsScreen';
 import AlertScreen from './components/AlertScreen';
+import DownloadMapScreen from './components/DownloadMapScreen';
 
 export default function App() {
   const mapRef = useRef<HTMLDivElement>(null);
@@ -15,7 +16,7 @@ export default function App() {
   // State for REAL GPS position
   const [userPosition, setUserPosition] = useState({ lat: 0, lng: 0, alt: 0 });
   const [gpsStatus, setGpsStatus] = useState('Locating...');
-  const [activeTab, setActiveTab] = useState<'MAP' | 'ALERTS' | 'OFFLINE' | 'USER' | 'SETTINGS'>('ALERTS');
+  const [activeTab, setActiveTab] = useState<'MAP' | 'ALERTS' | 'OFFLINE' | 'USER' | 'SETTINGS' | 'DOWNLOAD_MAP'>('ALERTS');
   const [offlineMode, setOfflineMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showHazardAlert, setShowHazardAlert] = useState(true);
@@ -219,9 +220,25 @@ export default function App() {
         </div>
 
         {/* ── OVERLAYS ── */}
+        
+        {activeTab === 'ALERTS' && (
+          <div className="absolute inset-0 z-[2000] bg-[#0f141e]">
+            <AlertScreen />
+          </div>
+        )}
+
         {activeTab === 'OFFLINE' && (
           <div className="absolute inset-0 z-[2000] bg-[#0f141e]">
-            <OfflineScreen onBack={() => setActiveTab('MAP')} />
+            <OfflineScreen 
+              onBack={() => setActiveTab('MAP')} 
+              onNavigateDownload={() => setActiveTab('DOWNLOAD_MAP')}
+            />
+          </div>
+        )}
+
+        {activeTab === 'DOWNLOAD_MAP' && (
+          <div className="absolute inset-0 z-[3000] bg-[#0f141e]">
+            <DownloadMapScreen onBack={() => setActiveTab('OFFLINE')} />
           </div>
         )}
 
@@ -234,12 +251,6 @@ export default function App() {
         {activeTab === 'SETTINGS' && (
           <div className="absolute inset-0 z-[3000] bg-[#0f141e]">
             <SettingsScreen onBack={() => setActiveTab('USER')} />
-          </div>
-        )}
-
-        {activeTab === 'ALERTS' && (
-          <div className="absolute inset-0 z-[2000] bg-[#0f141e]">
-            <AlertScreen />
           </div>
         )}
       </main>
