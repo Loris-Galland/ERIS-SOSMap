@@ -5,6 +5,7 @@ import { Geolocation } from '@capacitor/geolocation';
 import OfflineScreen from './components/OfflineScreen';
 import ProfileScreen from './components/ProfileScreen';
 import SettingsScreen from './components/SettingsScreen';
+import AlertScreen from './components/AlertScreen';
 
 export default function App() {
   const mapRef = useRef<HTMLDivElement>(null);
@@ -14,7 +15,7 @@ export default function App() {
   // State for REAL GPS position
   const [userPosition, setUserPosition] = useState({ lat: 0, lng: 0, alt: 0 });
   const [gpsStatus, setGpsStatus] = useState('Locating...');
-  const [activeTab, setActiveTab] = useState<'MAP' | 'ALERTS' | 'OFFLINE' | 'USER' | 'SETTINGS'>('MAP');
+  const [activeTab, setActiveTab] = useState<'MAP' | 'ALERTS' | 'OFFLINE' | 'USER' | 'SETTINGS'>('ALERTS');
   const [offlineMode, setOfflineMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showHazardAlert, setShowHazardAlert] = useState(true);
@@ -235,14 +236,20 @@ export default function App() {
             <SettingsScreen onBack={() => setActiveTab('USER')} />
           </div>
         )}
+
+        {activeTab === 'ALERTS' && (
+          <div className="absolute inset-0 z-[2000] bg-[#0f141e]">
+            <AlertScreen />
+          </div>
+        )}
       </main>
 
       {/* ─── BOTTOM NAVIGATION ─── */}
       <nav className="flex items-center justify-around h-20 bg-[#0f141e]/95 backdrop-blur-md border-t border-gray-800/50 pb-safe z-[1000]">
         {(
           [
-            { id: 'MAP', icon: 'map', label: 'Map' },
             { id: 'ALERTS', icon: 'notifications', label: 'Alerts' },
+            { id: 'MAP', icon: 'map', label: 'Map' },
             { id: 'OFFLINE', icon: 'cloud_download', label: 'Offline' },
             { id: 'USER', icon: 'person', label: 'Profile' },
           ] as const
