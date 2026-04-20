@@ -46,6 +46,12 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
+  useEffect(() => {
+    if (session) {
+      setActiveTab('ALERTS');
+    }
+  }, [session]);
+
   // Initialize map and GPS tracking only if logged in
   useEffect(() => {
     if (!session || !mapRef.current || mapInstance.current) return;
