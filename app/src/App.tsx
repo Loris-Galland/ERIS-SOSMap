@@ -53,7 +53,12 @@ export default function App() {
 
   useEffect(() => {
     if (session) {
-      setActiveTab('ALERTS');
+      const isSetupDone = session.user?.user_metadata?.profile_setup_completed;
+      if (!isSetupDone) {
+        setActiveTab('PROFILE_SETUP');
+      } else {
+        setActiveTab('ALERTS');
+      }
     }
   }, [session]);
 
@@ -266,7 +271,7 @@ export default function App() {
         )}
 
         {activeTab === 'PROFILE_SETUP' && session && (
-          <div className="absolute inset-0 z-[4000] bg-[#0f141e]">
+          <div className="absolute inset-0 z-[5000] bg-[#0f141e]">
             <SetupProfileScreen userId={session.user.id} onComplete={() => setActiveTab('ALERTS')} />
           </div>
         )}
