@@ -2,6 +2,12 @@ import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Geolocation } from '@capacitor/geolocation';
+
+// Auth imports
+import { supabase } from './db/supabaseClient';
+import AuthScreen from './components/AuthScreen';
+
+// UI imports
 import OfflineScreen from './components/OfflineScreen';
 import ProfileScreen from './components/ProfileScreen';
 import SettingsScreen from './components/SettingsScreen';
@@ -10,53 +16,64 @@ import DownloadMapScreen from './components/DownloadMapScreen';
 import logo from './assets/small_logo.png';
 
 export default function App() {
+  // Auth states
+  const [session, setSession] = useState<any>(null);
+  const [isInitializing, setIsInitializing] = useState(true);
+
+  // App and Map states
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<L.Map | null>(null);
   const userMarker = useRef<L.Marker | null>(null);
 
-  // State for REAL GPS position
   const [userPosition, setUserPosition] = useState({ lat: 0, lng: 0, alt: 0 });
   const [gpsStatus, setGpsStatus] = useState('Locating...');
-  const [activeTab, setActiveTab] = useState<'MAP' | 'ALERTS' | 'OFFLINE' | 'USER' | 'SETTINGS' | 'DOWNLOAD_MAP'>(
-    'ALERTS',
-  );
+  const [activeTab, setActiveTab] = useState<'MAP' | 'ALERTS' | 'OFFLINE' | 'USER' | 'SETTINGS' | 'DOWNLOAD_MAP'>('ALERTS');
   const [offlineMode, setOfflineMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showHazardAlert, setShowHazardAlert] = useState(true);
 
+  // Check auth session
   useEffect(() => {
-    if (!mapRef.current || mapInstance.current) return;
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setIsInitializing(false);
+    });
 
-    // Initialize Leaflet map with standard controls hidden
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Initialize map and GPS tracking only if logged in
+  useEffect(() => {
+    if (!session || !mapRef.current || mapInstance.current) return;
+
     mapInstance.current = L.map(mapRef.current, {
       zoomControl: false,
       attributionControl: false,
     }).setView([48.8584, 2.2945], 13);
 
-    // Modern dark map base layer (Voyager dark)
     L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png').addTo(mapInstance.current);
 
     setTimeout(() => {
       mapInstance.current?.invalidateSize();
     }, 250);
 
-    // --- REAL GPS TRACKING LOGIC ---
     const startTracking = async () => {
       try {
         await Geolocation.watchPosition({ enableHighAccuracy: true, timeout: 10000 }, (position) => {
           if (position) {
             const { latitude, longitude, altitude } = position.coords;
 
-            // 1. Update telemetry state
             setUserPosition({ lat: latitude, lng: longitude, alt: altitude || 0 });
             setGpsStatus('Connected');
 
-            // 2. Update visual marker on map
             if (mapInstance.current) {
               if (userMarker.current) {
                 userMarker.current.setLatLng([latitude, longitude]);
               } else {
-                // Modern pulsing blue dot for citizen position
                 const icon = L.divIcon({
                   className: '',
                   html: `<div style="
@@ -70,7 +87,6 @@ export default function App() {
                   iconAnchor: [9, 9],
                 });
                 userMarker.current = L.marker([latitude, longitude], { icon }).addTo(mapInstance.current);
-                // Center map on first GPS fix
                 mapInstance.current.setView([latitude, longitude], 15);
               }
             }
@@ -87,29 +103,33 @@ export default function App() {
       mapInstance.current?.remove();
       mapInstance.current = null;
     };
-  }, []);
+  }, [session]);
+
+  // Loading screen to prevent UI flash
+  if (isInitializing) {
+    return <div className="h-screen w-full bg-[#0f141e]"></div>;
+  }
+
+  // Show auth screen if not logged in
+  if (!session) {
+    return <AuthScreen />;
+  }
 
   return (
     <div className="flex flex-col h-screen w-full bg-[#0f141e] text-white overflow-hidden font-sans">
-      {/* ─── HEADER ─── */}
+      {/* Header */}
       <header className="flex justify-between items-center px-5 py-3 bg-[#0f141e]/95 backdrop-blur-md border-b border-gray-800/50 z-[1000] relative">
-        {/* Logo icon */}
         <div className="flex items-center gap-2">
           <img src={logo} alt="ERIS-SOSMap" className="h-7 w-auto object-contain" />
         </div>
-
-        {/* Title */}
         <h1 className="flex-1 text-center text-white text-lg font-bold tracking-wide">ERIS Safety</h1>
-
-        {/* Top small SOS pill */}
         <button className="bg-red-500 hover:bg-red-600 text-white text-xs font-bold uppercase tracking-wider px-4 py-1.5 rounded-full transition-colors shadow-lg shadow-red-900/20 active:scale-95">
           SOS
         </button>
       </header>
 
-      {/* ─── SEARCH & OFFLINE BAR ─── */}
+      {/* Search and Offline Bar */}
       <div className="flex items-center px-4 py-3 bg-[#0f141e]/80 backdrop-blur-md z-[999] gap-3 relative">
-        {/* Search input (Soft rounded shape) */}
         <div className="flex items-center flex-1 bg-gray-800/60 border border-gray-700/50 rounded-full px-4 py-2.5 gap-2 shadow-inner">
           <span className="material-symbols-outlined text-gray-400 text-lg">search</span>
           <input
@@ -120,8 +140,6 @@ export default function App() {
             className="bg-transparent text-sm text-white w-full outline-none placeholder-gray-500"
           />
         </div>
-
-        {/* Offline Mode Toggle Button */}
         <button
           onClick={() => setOfflineMode((v) => !v)}
           className={`flex items-center justify-center w-11 h-11 rounded-full transition-colors shadow-lg ${
@@ -134,18 +152,16 @@ export default function App() {
         </button>
       </div>
 
-      {/* ─── MAIN CONTENT ─── */}
+      {/* Main Content */}
       <main className="flex-1 relative overflow-hidden">
-        {/* MAP layer */}
+        {/* Map Container */}
         <div ref={mapRef} className="absolute inset-0 z-0" />
 
-        {/* ── LOCATION CARD (Top Left, replaced military telemetry) ── */}
+        {/* Location Card */}
         <div className="absolute top-4 left-4 z-[1000] pointer-events-none flex flex-col gap-2">
           <div className="bg-gray-900/80 backdrop-blur-md border border-gray-700/50 rounded-2xl p-4 shadow-xl">
             <div className="flex items-center gap-2 mb-2">
-              <span
-                className={`w-2 h-2 rounded-full ${gpsStatus === 'Connected' ? 'bg-green-500' : 'bg-yellow-500 animate-pulse'}`}
-              ></span>
+              <span className={`w-2 h-2 rounded-full ${gpsStatus === 'Connected' ? 'bg-green-500' : 'bg-yellow-500 animate-pulse'}`}></span>
               <span className="text-gray-300 text-xs font-semibold">{gpsStatus}</span>
             </div>
             {userPosition.lat !== 0 ? (
@@ -161,7 +177,7 @@ export default function App() {
           </div>
         </div>
 
-        {/* ── RIGHT MAP CONTROLS ── */}
+        {/* Map Controls */}
         <div className="absolute top-4 right-4 z-[1000] flex flex-col gap-3">
           <button
             onClick={() => mapInstance.current?.setZoom(mapInstance.current?.getZoom() ?? 13)}
@@ -181,7 +197,7 @@ export default function App() {
           </button>
         </div>
 
-        {/* ── HAZARD ALERT NOTIFICATION (Bottom, above SOS) ── */}
+        {/* Hazard Alert */}
         {showHazardAlert && (
           <div className="absolute bottom-24 left-4 right-20 z-[1000] animate-fade-in">
             <div className="bg-red-500/90 backdrop-blur-md rounded-2xl p-4 flex items-start gap-3 shadow-[0_8px_30px_rgba(239,68,68,0.3)] border border-red-400/30">
@@ -194,25 +210,21 @@ export default function App() {
                   High avalanche risk reported in your current sector. Avoid steep terrains.
                 </p>
               </div>
-              <button
-                onClick={() => setShowHazardAlert(false)}
-                className="text-red-200 hover:text-white transition-colors"
-              >
+              <button onClick={() => setShowHazardAlert(false)} className="text-red-200 hover:text-white transition-colors">
                 <span className="material-symbols-outlined text-xl">close</span>
               </button>
             </div>
           </div>
         )}
 
-        {/* ── MAIN SOS BUTTON (Bottom Right) ── */}
+        {/* SOS Button */}
         <div className="absolute bottom-6 right-4 z-[1000]">
           <button className="w-16 h-16 rounded-full bg-red-500 border-4 border-red-400/50 flex flex-col items-center justify-center shadow-[0_0_20px_rgba(239,68,68,0.4)] active:scale-95 transition-all">
             <span className="material-symbols-outlined text-white text-3xl">sensors</span>
           </button>
         </div>
 
-        {/* ── OVERLAYS ── */}
-
+        {/* Tab Screens */}
         {activeTab === 'ALERTS' && (
           <div className="absolute inset-0 z-[2000] bg-[#0f141e]">
             <AlertScreen />
@@ -244,7 +256,7 @@ export default function App() {
         )}
       </main>
 
-      {/* ─── BOTTOM NAVIGATION ─── */}
+      {/* Bottom Navigation */}
       <nav className="flex items-center justify-around h-20 bg-[#0f141e]/95 backdrop-blur-md border-t border-gray-800/50 pb-safe z-[1000]">
         {(
           [
@@ -259,17 +271,10 @@ export default function App() {
             <button
               key={id}
               onClick={() => setActiveTab(id)}
-              className={`flex flex-col items-center justify-center w-16 gap-1 transition-all ${
-                isActive ? 'text-blue-500' : 'text-gray-500 hover:text-gray-400'
-              }`}
+              className={`flex flex-col items-center justify-center w-16 gap-1 transition-all ${isActive ? 'text-blue-500' : 'text-gray-500 hover:text-gray-400'}`}
             >
-              <div
-                className={`px-4 py-1 rounded-full transition-all ${isActive ? 'bg-blue-500/10' : 'bg-transparent'}`}
-              >
-                <span
-                  className="material-symbols-outlined text-2xl"
-                  style={{ fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0" }}
-                >
+              <div className={`px-4 py-1 rounded-full transition-all ${isActive ? 'bg-blue-500/10' : 'bg-transparent'}`}>
+                <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0" }}>
                   {icon}
                 </span>
               </div>
