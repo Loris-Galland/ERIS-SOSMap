@@ -13,6 +13,7 @@ export default function SetupProfileScreen({ userId, onComplete }: SetupProfileS
     blood_type: '',
     allergies: '',
     medical_conditions: '',
+    current_medications: '',
   });
   const [loading, setLoading] = useState(false);
 
@@ -76,7 +77,7 @@ export default function SetupProfileScreen({ userId, onComplete }: SetupProfileS
           </div>
 
           <select
-            className="w-full bg-gray-800/50 border border-gray-700 rounded-xl p-3 outline-none text-gray-300"
+            className="w-full bg-gray-800/50 border border-gray-700 rounded-xl p-3 outline-none text-gray-300 appearance-none"
             value={formData.blood_type}
             onChange={(e) => setFormData({ ...formData, blood_type: e.target.value })}
           >
@@ -89,17 +90,24 @@ export default function SetupProfileScreen({ userId, onComplete }: SetupProfileS
           </select>
 
           <textarea
-            placeholder="Allergies (ex: Pénicilline, Arachides...)"
-            className="w-full bg-gray-800/50 border border-gray-700 rounded-xl p-3 h-24 outline-none focus:border-blue-500"
+            placeholder="Allergies (ex: Peanuts, Penicillin...)"
+            className="w-full bg-gray-800/50 border border-gray-700 rounded-xl p-3 h-24 outline-none focus:border-blue-500 resize-none"
             value={formData.allergies}
             onChange={(e) => setFormData({ ...formData, allergies: e.target.value })}
           />
 
           <textarea
-            placeholder="Conditions médicales (ex: Diabète, Asthme...)"
-            className="w-full bg-gray-800/50 border border-gray-700 rounded-xl p-3 h-24 outline-none focus:border-blue-500"
+            placeholder="Medical Conditions (ex: Diabetes, Asthma...)"
+            className="w-full bg-gray-800/50 border border-gray-700 rounded-xl p-3 h-24 outline-none focus:border-blue-500 resize-none"
             value={formData.medical_conditions}
             onChange={(e) => setFormData({ ...formData, medical_conditions: e.target.value })}
+          />
+
+          <textarea
+            placeholder="Current Medications (ex: Ventolin, Aspirin...)"
+            className="w-full bg-gray-800/50 border border-gray-700 rounded-xl p-3 h-24 outline-none focus:border-blue-500 resize-none"
+            value={formData.current_medications}
+            onChange={(e) => setFormData({ ...formData, current_medications: e.target.value })}
           />
 
           <div className="flex flex-col gap-3 pt-4">
