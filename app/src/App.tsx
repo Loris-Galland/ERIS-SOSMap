@@ -7,6 +7,7 @@ import ProfileScreen from './components/ProfileScreen';
 import SettingsScreen from './components/SettingsScreen';
 import AlertScreen from './components/AlertScreen';
 import DownloadMapScreen from './components/DownloadMapScreen';
+import logo from './assets/small_logo.png';
 
 export default function App() {
   const mapRef = useRef<HTMLDivElement>(null);
@@ -16,7 +17,9 @@ export default function App() {
   // State for REAL GPS position
   const [userPosition, setUserPosition] = useState({ lat: 0, lng: 0, alt: 0 });
   const [gpsStatus, setGpsStatus] = useState('Locating...');
-  const [activeTab, setActiveTab] = useState<'MAP' | 'ALERTS' | 'OFFLINE' | 'USER' | 'SETTINGS' | 'DOWNLOAD_MAP'>('ALERTS');
+  const [activeTab, setActiveTab] = useState<'MAP' | 'ALERTS' | 'OFFLINE' | 'USER' | 'SETTINGS' | 'DOWNLOAD_MAP'>(
+    'ALERTS',
+  );
   const [offlineMode, setOfflineMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showHazardAlert, setShowHazardAlert] = useState(true);
@@ -31,9 +34,7 @@ export default function App() {
     }).setView([48.8584, 2.2945], 13);
 
     // Modern dark map base layer (Voyager dark)
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png').addTo(
-      mapInstance.current
-    );
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png').addTo(mapInstance.current);
 
     setTimeout(() => {
       mapInstance.current?.invalidateSize();
@@ -42,44 +43,39 @@ export default function App() {
     // --- REAL GPS TRACKING LOGIC ---
     const startTracking = async () => {
       try {
-        await Geolocation.watchPosition(
-          { enableHighAccuracy: true, timeout: 10000 },
-          (position) => {
-            if (position) {
-              const { latitude, longitude, altitude } = position.coords;
+        await Geolocation.watchPosition({ enableHighAccuracy: true, timeout: 10000 }, (position) => {
+          if (position) {
+            const { latitude, longitude, altitude } = position.coords;
 
-              // 1. Update telemetry state
-              setUserPosition({ lat: latitude, lng: longitude, alt: altitude || 0 });
-              setGpsStatus('Connected');
+            // 1. Update telemetry state
+            setUserPosition({ lat: latitude, lng: longitude, alt: altitude || 0 });
+            setGpsStatus('Connected');
 
-              // 2. Update visual marker on map
-              if (mapInstance.current) {
-                if (userMarker.current) {
-                  userMarker.current.setLatLng([latitude, longitude]);
-                } else {
-                  // Modern pulsing blue dot for citizen position
-                  const icon = L.divIcon({
-                    className: '',
-                    html: `<div style="
+            // 2. Update visual marker on map
+            if (mapInstance.current) {
+              if (userMarker.current) {
+                userMarker.current.setLatLng([latitude, longitude]);
+              } else {
+                // Modern pulsing blue dot for citizen position
+                const icon = L.divIcon({
+                  className: '',
+                  html: `<div style="
                       width:18px; height:18px;
                       background:#3b82f6;
                       border:3px solid #ffffff;
                       border-radius:50%;
                       box-shadow: 0 0 15px rgba(59, 130, 246, 0.6);
                     "></div>`,
-                    iconSize: [18, 18],
-                    iconAnchor: [9, 9],
-                  });
-                  userMarker.current = L.marker([latitude, longitude], { icon }).addTo(
-                    mapInstance.current
-                  );
-                  // Center map on first GPS fix
-                  mapInstance.current.setView([latitude, longitude], 15);
-                }
+                  iconSize: [18, 18],
+                  iconAnchor: [9, 9],
+                });
+                userMarker.current = L.marker([latitude, longitude], { icon }).addTo(mapInstance.current);
+                // Center map on first GPS fix
+                mapInstance.current.setView([latitude, longitude], 15);
               }
             }
           }
-        );
+        });
       } catch {
         setGpsStatus('GPS Unavailable');
       }
@@ -95,18 +91,15 @@ export default function App() {
 
   return (
     <div className="flex flex-col h-screen w-full bg-[#0f141e] text-white overflow-hidden font-sans">
-      
       {/* ─── HEADER ─── */}
       <header className="flex justify-between items-center px-5 py-3 bg-[#0f141e]/95 backdrop-blur-md border-b border-gray-800/50 z-[1000] relative">
-        {/* Menu icon */}
-        <button className="text-gray-400 hover:text-white transition-colors">
-          <span className="material-symbols-outlined text-2xl">menu</span>
-        </button>
+        {/* Logo icon */}
+        <div className="flex items-center gap-2">
+          <img src={logo} alt="ERIS-SOSMap" className="h-7 w-auto object-contain" />
+        </div>
 
         {/* Title */}
-        <h1 className="flex-1 text-center text-white text-lg font-bold tracking-wide">
-          ERIS Safety
-        </h1>
+        <h1 className="flex-1 text-center text-white text-lg font-bold tracking-wide">ERIS Safety</h1>
 
         {/* Top small SOS pill */}
         <button className="bg-red-500 hover:bg-red-600 text-white text-xs font-bold uppercase tracking-wider px-4 py-1.5 rounded-full transition-colors shadow-lg shadow-red-900/20 active:scale-95">
@@ -137,15 +130,12 @@ export default function App() {
               : 'bg-gray-800 border border-gray-700 text-gray-400'
           }`}
         >
-          <span className="material-symbols-outlined text-xl">
-            {offlineMode ? 'cloud_off' : 'cloud_download'}
-          </span>
+          <span className="material-symbols-outlined text-xl">{offlineMode ? 'cloud_off' : 'cloud_download'}</span>
         </button>
       </div>
 
       {/* ─── MAIN CONTENT ─── */}
       <main className="flex-1 relative overflow-hidden">
-        
         {/* MAP layer */}
         <div ref={mapRef} className="absolute inset-0 z-0" />
 
@@ -153,7 +143,9 @@ export default function App() {
         <div className="absolute top-4 left-4 z-[1000] pointer-events-none flex flex-col gap-2">
           <div className="bg-gray-900/80 backdrop-blur-md border border-gray-700/50 rounded-2xl p-4 shadow-xl">
             <div className="flex items-center gap-2 mb-2">
-              <span className={`w-2 h-2 rounded-full ${gpsStatus === 'Connected' ? 'bg-green-500' : 'bg-yellow-500 animate-pulse'}`}></span>
+              <span
+                className={`w-2 h-2 rounded-full ${gpsStatus === 'Connected' ? 'bg-green-500' : 'bg-yellow-500 animate-pulse'}`}
+              ></span>
               <span className="text-gray-300 text-xs font-semibold">{gpsStatus}</span>
             </div>
             {userPosition.lat !== 0 ? (
@@ -172,7 +164,7 @@ export default function App() {
         {/* ── RIGHT MAP CONTROLS ── */}
         <div className="absolute top-4 right-4 z-[1000] flex flex-col gap-3">
           <button
-            onClick={() => mapInstance.current?.setZoom((mapInstance.current?.getZoom() ?? 13))}
+            onClick={() => mapInstance.current?.setZoom(mapInstance.current?.getZoom() ?? 13)}
             className="w-12 h-12 bg-gray-900/90 border border-gray-700/50 rounded-full flex items-center justify-center text-gray-300 hover:bg-gray-800 transition-colors shadow-lg active:scale-95"
           >
             <span className="material-symbols-outlined text-xl">layers</span>
@@ -220,7 +212,7 @@ export default function App() {
         </div>
 
         {/* ── OVERLAYS ── */}
-        
+
         {activeTab === 'ALERTS' && (
           <div className="absolute inset-0 z-[2000] bg-[#0f141e]">
             <AlertScreen />
@@ -229,10 +221,7 @@ export default function App() {
 
         {activeTab === 'OFFLINE' && (
           <div className="absolute inset-0 z-[2000] bg-[#0f141e]">
-            <OfflineScreen 
-              onBack={() => setActiveTab('MAP')} 
-              onNavigateDownload={() => setActiveTab('DOWNLOAD_MAP')}
-            />
+            <OfflineScreen onBack={() => setActiveTab('MAP')} onNavigateDownload={() => setActiveTab('DOWNLOAD_MAP')} />
           </div>
         )}
 
@@ -274,8 +263,13 @@ export default function App() {
                 isActive ? 'text-blue-500' : 'text-gray-500 hover:text-gray-400'
               }`}
             >
-              <div className={`px-4 py-1 rounded-full transition-all ${isActive ? 'bg-blue-500/10' : 'bg-transparent'}`}>
-                <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0" }}>
+              <div
+                className={`px-4 py-1 rounded-full transition-all ${isActive ? 'bg-blue-500/10' : 'bg-transparent'}`}
+              >
+                <span
+                  className="material-symbols-outlined text-2xl"
+                  style={{ fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0" }}
+                >
                   {icon}
                 </span>
               </div>
@@ -284,7 +278,6 @@ export default function App() {
           );
         })}
       </nav>
-      
     </div>
   );
 }
