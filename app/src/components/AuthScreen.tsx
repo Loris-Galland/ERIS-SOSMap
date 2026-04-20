@@ -25,17 +25,17 @@ export default function AuthScreen() {
         if (error) throw error;
       }
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message === 'Invalid login credentials' ? 'Incorrect email or password.' : err.message);
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#0f141e] w-full items-center justify-center font-sans px-6">
+    <div className="flex flex-col h-screen w-screen bg-[#0f141e] items-center justify-center font-sans px-6 overflow-hidden">
       
       {/* --- HEADER LOGO --- */}
-      <div className="flex flex-col items-center mb-10">
+      <div className="flex flex-col items-center mb-10 w-full max-w-sm text-center">
         <div className="w-20 h-20 bg-blue-500/10 rounded-3xl flex items-center justify-center border border-blue-500/20 mb-6 shadow-lg shadow-blue-500/10">
           <span className="material-symbols-outlined text-blue-500 text-4xl" style={{ fontVariationSettings: "'FILL' 1" }}>
             satellite_alt
@@ -55,9 +55,11 @@ export default function AuthScreen() {
           </div>
         )}
 
-        <div className="space-y-1">
+        {/* MODIFICATION ICI : flex flex-col gap-1 pour rapprocher le label de l'input */}
+        <div className="flex flex-col gap-1">
           <label className="text-gray-500 text-[10px] font-black uppercase tracking-widest ml-2">Email Address</label>
-          <div className="flex items-center bg-gray-800/40 border border-gray-700/50 rounded-2xl px-4 py-3 focus-within:border-blue-500/50 transition-colors">
+          {/* MODIFICATION ICI : w-full sur la div englobante */}
+          <div className="flex items-center bg-gray-800/40 border border-gray-700/50 rounded-2xl px-4 py-3 focus-within:border-blue-500/50 transition-colors w-full">
              <span className="material-symbols-outlined text-gray-500 mr-3">mail</span>
              <input 
                type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
@@ -67,9 +69,9 @@ export default function AuthScreen() {
           </div>
         </div>
 
-        <div className="space-y-1">
+        <div className="flex flex-col gap-1">
           <label className="text-gray-500 text-[10px] font-black uppercase tracking-widest ml-2">Password</label>
-          <div className="flex items-center bg-gray-800/40 border border-gray-700/50 rounded-2xl px-4 py-3 focus-within:border-blue-500/50 transition-colors">
+          <div className="flex items-center bg-gray-800/40 border border-gray-700/50 rounded-2xl px-4 py-3 focus-within:border-blue-500/50 transition-colors w-full">
             <span className="material-symbols-outlined text-gray-500 mr-3">lock</span>
             <input 
               type="password" required value={password} onChange={(e) => setPassword(e.target.value)}
