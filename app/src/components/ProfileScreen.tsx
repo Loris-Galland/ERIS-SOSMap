@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../db/supabaseClient';
 
 interface ProfileScreenProps {
@@ -6,19 +6,38 @@ interface ProfileScreenProps {
 }
 
 export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
-  // Mock medical data
-  const [medicalInfo] = useState({
-    bloodType: 'O+',
-    allergies: 'Penicillin, Peanuts',
-    conditions: 'Asthma (Mild)',
-    medications: 'Ventolin HFA',
-  });
+  // État pour stocker les vraies données de Supabase
+  const [profileData, setProfileData] = useState<any>(null);
 
-  // Mock emergency contacts
+  // On garde cette info en mock car elle n'est pas dans ta table user_profiles
+  const [medications] = useState('Ventolin HFA');
+
+  // Mock emergency contacts (Conservés intacts)
   const [contacts] = useState([
     { id: 1, name: 'Marie Dupont', relation: 'Family', phone: '+33 6 12 34 56 78' },
     { id: 2, name: 'Thomas Girard', relation: 'Friend', phone: '+33 7 98 76 54 32' },
   ]);
+
+  // Récupérer les informations de l'utilisateur connecté
+  useEffect(() => {
+    const fetchProfile = async () => {
+      // 1. Obtenir l'ID de l'utilisateur actuel
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (user) {
+        // 2. Chercher sa fiche médicale dans user_profiles
+        const { data, error } = await supabase.from('user_profiles').select('*').eq('id', user.id).single();
+
+        if (data && !error) {
+          setProfileData(data);
+        }
+      }
+    };
+
+    fetchProfile();
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -68,7 +87,10 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
             <span className="material-symbols-outlined text-3xl text-blue-400">person</span>
           </div>
           <div>
-            <h3 className="text-white text-xl font-bold">Julien Martin</h3>
+            <h3 className="text-white text-xl font-bold">
+              {/* Affichage du vrai nom de la base de données */}
+              {profileData ? `${profileData.first_name} ${profileData.last_name}` : 'Chargement...'}
+            </h3>
             <p className="text-blue-300/70 text-xs font-mono mt-0.5 mb-2">ID: ERIS-F7492</p>
             <div className="flex items-center gap-1.5 bg-green-500/10 w-fit px-2 py-1 rounded-md">
               <span className="w-1.5 h-1.5 bg-green-400 rounded-full"></span>
@@ -90,20 +112,20 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
             <div className="flex justify-between items-center border-b border-gray-700/50 pb-3">
               <span className="text-gray-400 text-sm">Blood Type :</span>
               <span className="text-red-400 font-bold text-sm bg-red-400/10 px-2 py-1 rounded-md">
-                {medicalInfo.bloodType}
+                {profileData?.blood_type || 'N/A'}
               </span>
             </div>
             <div className="flex flex-col gap-1 border-b border-gray-700/50 pb-3">
               <span className="text-gray-400 text-sm">Allergies :</span>
-              <span className="text-white font-medium">{medicalInfo.allergies}</span>
+              <span className="text-white font-medium">{profileData?.allergies || 'None'}</span>
             </div>
             <div className="flex flex-col gap-1 border-b border-gray-700/50 pb-3">
               <span className="text-gray-400 text-sm">Medical Conditions :</span>
-              <span className="text-white font-medium">{medicalInfo.conditions}</span>
+              <span className="text-white font-medium">{profileData?.medical_conditions || 'None'}</span>
             </div>
             <div className="flex flex-col gap-1">
               <span className="text-gray-400 text-sm">Current Medications :</span>
-              <span className="text-white font-medium">{medicalInfo.medications}</span>
+              <span className="text-white font-medium">{medications}</span>
             </div>
           </div>
         </section>
