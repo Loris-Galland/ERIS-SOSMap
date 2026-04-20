@@ -14,6 +14,7 @@ import SettingsScreen from './components/SettingsScreen';
 import AlertScreen from './components/AlertScreen';
 import DownloadMapScreen from './components/DownloadMapScreen';
 import logo from './assets/small_logo.png';
+import SetupProfileScreen from './components/SetupProfileScreen';
 
 export default function App() {
   // Auth states
@@ -27,7 +28,9 @@ export default function App() {
 
   const [userPosition, setUserPosition] = useState({ lat: 0, lng: 0, alt: 0 });
   const [gpsStatus, setGpsStatus] = useState('Locating...');
-  const [activeTab, setActiveTab] = useState<'MAP' | 'ALERTS' | 'OFFLINE' | 'USER' | 'SETTINGS' | 'DOWNLOAD_MAP'>('ALERTS');
+  const [activeTab, setActiveTab] = useState<
+    'MAP' | 'ALERTS' | 'OFFLINE' | 'USER' | 'SETTINGS' | 'DOWNLOAD_MAP' | 'PROFILE_SETUP'
+  >('ALERTS');
   const [offlineMode, setOfflineMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showHazardAlert, setShowHazardAlert] = useState(true);
@@ -39,7 +42,9 @@ export default function App() {
       setIsInitializing(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
     });
 
@@ -167,7 +172,9 @@ export default function App() {
         <div className="absolute top-4 left-4 z-[1000] pointer-events-none flex flex-col gap-2">
           <div className="bg-gray-900/80 backdrop-blur-md border border-gray-700/50 rounded-2xl p-4 shadow-xl">
             <div className="flex items-center gap-2 mb-2">
-              <span className={`w-2 h-2 rounded-full ${gpsStatus === 'Connected' ? 'bg-green-500' : 'bg-yellow-500 animate-pulse'}`}></span>
+              <span
+                className={`w-2 h-2 rounded-full ${gpsStatus === 'Connected' ? 'bg-green-500' : 'bg-yellow-500 animate-pulse'}`}
+              ></span>
               <span className="text-gray-300 text-xs font-semibold">{gpsStatus}</span>
             </div>
             {userPosition.lat !== 0 ? (
@@ -216,7 +223,10 @@ export default function App() {
                   High avalanche risk reported in your current sector. Avoid steep terrains.
                 </p>
               </div>
-              <button onClick={() => setShowHazardAlert(false)} className="text-red-200 hover:text-white transition-colors">
+              <button
+                onClick={() => setShowHazardAlert(false)}
+                className="text-red-200 hover:text-white transition-colors"
+              >
                 <span className="material-symbols-outlined text-xl">close</span>
               </button>
             </div>
@@ -255,6 +265,12 @@ export default function App() {
           </div>
         )}
 
+        {activeTab === 'PROFILE_SETUP' && session && (
+          <div className="absolute inset-0 z-[4000] bg-[#0f141e]">
+            <SetupProfileScreen userId={session.user.id} onComplete={() => setActiveTab('ALERTS')} />
+          </div>
+        )}
+
         {activeTab === 'SETTINGS' && (
           <div className="absolute inset-0 z-[3000] bg-[#0f141e]">
             <SettingsScreen onBack={() => setActiveTab('USER')} />
@@ -279,8 +295,13 @@ export default function App() {
               onClick={() => setActiveTab(id)}
               className={`flex flex-col items-center justify-center w-16 gap-1 transition-all ${isActive ? 'text-blue-500' : 'text-gray-500 hover:text-gray-400'}`}
             >
-              <div className={`px-4 py-1 rounded-full transition-all ${isActive ? 'bg-blue-500/10' : 'bg-transparent'}`}>
-                <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0" }}>
+              <div
+                className={`px-4 py-1 rounded-full transition-all ${isActive ? 'bg-blue-500/10' : 'bg-transparent'}`}
+              >
+                <span
+                  className="material-symbols-outlined text-2xl"
+                  style={{ fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0" }}
+                >
                   {icon}
                 </span>
               </div>
