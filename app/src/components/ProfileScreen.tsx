@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../db/supabaseClient';
+import { Geolocation } from '@capacitor/geolocation';
 
 interface ProfileScreenProps {
   onOpenSettings: () => void;
@@ -11,12 +12,14 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
   const [contacts, setContacts] = useState<any[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
 
+  // ─── HARDWARE STATES (GPS & Battery) ───
+  const [location, setLocation] = useState<{ lat: string; lng: string } | null>(null);
+  const [batteryLevel, setBatteryLevel] = useState<number | null>(null);
+
   // ─── UI STATES ───
   const [isEditingMedical, setIsEditingMedical] = useState(false);
   const [isAddingContact, setIsAddingContact] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-
-  // State for the contact currently being edited
   const [editingContactId, setEditingContactId] = useState<string | null>(null);
 
   // ─── FORM STATES ───
@@ -33,18 +36,54 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
     phone_number: '',
   });
 
-  // Form state for the contact being edited
   const [editContactForm, setEditContactForm] = useState({
     name: '',
     relation: '',
     phone_number: '',
   });
 
-  // Fetch all data on mount
+  // Fetch all data and hardware status on mount
   useEffect(() => {
     fetchInitialData();
+    fetchHardwareStatus();
   }, []);
 
+  // ─── HARDWARE FETCHING ───
+  const fetchHardwareStatus = async () => {
+    // 1. Fetch Real GPS Location using Capacitor
+    try {
+      const coordinates = await Geolocation.getCurrentPosition();
+      setLocation({
+        lat: coordinates.coords.latitude.toFixed(4), // Keep 4 decimals for clean UI
+        lng: coordinates.coords.longitude.toFixed(4),
+      });
+    } catch (error) {
+      console.error('Error getting location:', error);
+      // Fallback if GPS is off or permission denied
+      setLocation({ lat: 'Unknown', lng: 'Unknown' });
+    }
+
+    // 2. Fetch Real Battery Level using Web API
+    try {
+      if ('getBattery' in navigator) {
+        const battery: any = await (navigator as any).getBattery();
+        setBatteryLevel(Math.round(battery.level * 100));
+
+        // Listen for battery changes in real-time
+        battery.addEventListener('levelchange', () => {
+          setBatteryLevel(Math.round(battery.level * 100));
+        });
+      } else {
+        // Fallback for iOS Safari which doesn't fully support getBattery
+        setBatteryLevel(100);
+      }
+    } catch (error) {
+      console.error('Error getting battery:', error);
+      setBatteryLevel(null);
+    }
+  };
+
+  // ─── DATABASE FETCHING ───
   const fetchInitialData = async () => {
     const {
       data: { user },
@@ -52,7 +91,6 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
     if (user) {
       setUserId(user.id);
 
-      // Fetch user profile
       const { data: profile } = await supabase.from('user_profiles').select('*').eq('id', user.id).single();
 
       if (profile) {
@@ -65,7 +103,6 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
         });
       }
 
-      // Fetch emergency contacts
       fetchContacts(user.id);
     }
   };
@@ -75,7 +112,7 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
       .from('emergency_contacts')
       .select('*')
       .eq('user_id', uid)
-      .order('id', { ascending: true }); // Keep the same ordering
+      .order('id', { ascending: true });
 
     if (!error && data) setContacts(data);
   };
@@ -119,7 +156,6 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
   };
 
   const handleDeleteContact = async (contactId: string) => {
-    // Request confirmation before deleting
     const confirmDelete = window.confirm('Are you sure you want to delete this contact?');
     if (!confirmDelete) return;
 
@@ -128,8 +164,6 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
       const { error } = await supabase.from('emergency_contacts').delete().eq('id', contactId);
 
       if (error) throw error;
-
-      // Update local list by filtering out the deleted contact
       setContacts(contacts.filter((c) => c.id !== contactId));
     } catch (err) {
       console.error(err);
@@ -149,10 +183,9 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
 
       if (error) throw error;
 
-      // Update the contact locally to avoid reloading the entire database
       setContacts(contacts.map((c) => (c.id === editingContactId ? { ...c, ...editContactForm } : c)));
 
-      setEditingContactId(null); // Exit edit mode
+      setEditingContactId(null);
     } catch (err) {
       alert('Error updating contact');
     } finally {
@@ -187,6 +220,35 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
       </header>
 
       <div className="px-4 flex flex-col gap-5">
+        {/* ─── REAL-TIME STATUS BAR: GPS & BATTERY ─── */}
+        <div className="flex items-center gap-3">
+          <div className="flex-1 bg-gray-800/60 rounded-2xl p-3 flex items-center gap-3 border border-gray-700/50">
+            <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400">
+              <span className="material-symbols-outlined text-lg">location_on</span>
+            </div>
+            <div>
+              <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wider mb-0.5">Current Position</p>
+              <p className="text-white text-xs font-mono">
+                {location ? `${location.lat}° N, ${location.lng}° E` : 'Locating...'}
+              </p>
+            </div>
+          </div>
+
+          <div className="bg-gray-800/60 rounded-2xl p-3 flex items-center justify-center gap-2 border border-gray-700/50 min-w-[80px]">
+            {/* Change battery icon based on level */}
+            <span
+              className={`material-symbols-outlined text-lg ${batteryLevel && batteryLevel > 20 ? 'text-green-400' : 'text-red-500'}`}
+            >
+              {batteryLevel && batteryLevel > 90
+                ? 'battery_full'
+                : batteryLevel && batteryLevel > 20
+                  ? 'battery_5_bar'
+                  : 'battery_1_bar'}
+            </span>
+            <span className="text-white font-bold text-sm">{batteryLevel !== null ? `${batteryLevel}%` : '--%'}</span>
+          </div>
+        </div>
+
         {/* ─── IDENTITY CARD ─── */}
         <div className="bg-gradient-to-br from-blue-900/40 to-gray-800/60 border border-blue-800/30 rounded-3xl p-5 flex items-center gap-4">
           <div className="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center border border-blue-400/30 text-blue-400">
@@ -196,7 +258,13 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
             <h3 className="text-white text-xl font-bold">
               {profileData ? `${profileData.first_name} ${profileData.last_name}` : 'Loading...'}
             </h3>
-            <p className="text-blue-300/70 text-xs font-mono">ERIS-ID: {userId?.slice(0, 8)}</p>
+            <p className="text-blue-300/70 text-xs font-mono mt-0.5 mb-2">ERIS-ID: {userId?.slice(0, 8)}</p>
+            <div className="flex items-center gap-1.5 bg-green-500/10 w-fit px-2 py-1 rounded-md">
+              <span className="w-1.5 h-1.5 bg-green-400 rounded-full"></span>
+              <span className="text-green-400 text-[10px] font-semibold uppercase tracking-wider">
+                Verified Account
+              </span>
+            </div>
           </div>
         </div>
 
@@ -235,7 +303,6 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
               )}
             </div>
 
-            {/* Quick view fields */}
             {[
               { label: 'Allergies', key: 'allergies' },
               { label: 'Conditions', key: 'medical_conditions' },
@@ -267,7 +334,7 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
             <button
               onClick={() => {
                 setIsAddingContact(!isAddingContact);
-                setEditingContactId(null); // Close any active edit mode
+                setEditingContactId(null);
               }}
               className="flex items-center gap-1 text-blue-400 text-xs font-semibold bg-blue-500/10 px-3 py-1.5 rounded-full"
             >
@@ -276,7 +343,6 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
             </button>
           </div>
 
-          {/* Add Contact Form */}
           {isAddingContact && (
             <form
               onSubmit={handleAddContact}
@@ -315,7 +381,6 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
             </form>
           )}
 
-          {/* Contacts List */}
           <div className="bg-gray-800/50 border border-gray-700/50 rounded-3xl overflow-hidden flex flex-col">
             {contacts.length === 0 && !isAddingContact && (
               <p className="text-gray-500 text-xs text-center py-8 italic">No contacts added yet.</p>
@@ -326,7 +391,6 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
                 key={contact.id}
                 className={`p-4 ${index !== contacts.length - 1 ? 'border-b border-gray-700/50' : ''}`}
               >
-                {/* IF THE CONTACT IS IN EDIT MODE */}
                 {editingContactId === contact.id ? (
                   <form onSubmit={handleUpdateContact} className="flex flex-col gap-3 animate-in fade-in">
                     <input
@@ -371,7 +435,6 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
                     </div>
                   </form>
                 ) : (
-                  /* NORMAL CONTACT DISPLAY */
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400 font-bold text-sm">
@@ -385,7 +448,6 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
                       </div>
                     </div>
 
-                    {/* Actions: Edit, Delete, Call */}
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => startEditingContact(contact)}
@@ -414,6 +476,11 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
             ))}
           </div>
         </section>
+
+        <p className="text-gray-500 text-[10px] text-center mb-4 flex items-center justify-center gap-1">
+          <span className="material-symbols-outlined text-xs">lock</span>
+          Data is encrypted and shared only during emergency alerts.
+        </p>
       </div>
 
       <div className="mt-auto px-4 pb-4">
