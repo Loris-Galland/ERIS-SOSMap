@@ -3,11 +3,12 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Geolocation } from '@capacitor/geolocation';
 
-// Auth imports
+// Auth & Services imports
 import { supabase } from './db/supabaseClient';
-import AuthScreen from './components/AuthScreen';
+import { dispatchSOS } from './services/sosService'; 
 
 // UI imports
+import AuthScreen from './components/AuthScreen';
 import OfflineScreen from './components/OfflineScreen';
 import ProfileScreen from './components/ProfileScreen';
 import SettingsScreen from './components/SettingsScreen';
@@ -34,6 +35,10 @@ export default function App() {
   const [offlineMode, setOfflineMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showHazardAlert, setShowHazardAlert] = useState(true);
+
+  // SOS States 
+  const [isSendingSOS, setIsSendingSOS] = useState(false);
+  const [sosStatusMessage, setSosStatusMessage] = useState<string | null>(null);
 
   // Check auth session
   useEffect(() => {
@@ -121,6 +126,38 @@ export default function App() {
     };
   }, [session]);
 
+  // SOS Click Handler 
+  const handleSOSClick = async () => {
+    if (!session?.user || userPosition.lat === 0) {
+      setSosStatusMessage("Acquiring GPS, please wait...");
+      setTimeout(() => setSosStatusMessage(null), 3000);
+      return;
+    }
+
+    setIsSendingSOS(true);
+    setSosStatusMessage("Transmitting alert...");
+
+    // Call the native-powered service
+    const result = await dispatchSOS(
+      session.user.id, 
+      { lat: userPosition.lat, lng: userPosition.lng, alt: userPosition.alt }
+    );
+
+    // Update UI based on the transmission result
+    if (result.success && result.method === 'INTERNET') {
+      setSosStatusMessage("Received by Supabase (Global Network)");
+    } else if (result.success && result.method === 'WIFI_HARDWARE_FALLBACK') {
+      setSosStatusMessage("Transmitted via Local Hardware Fallback");
+    } else {
+      setSosStatusMessage("Offline: Alert saved. Auto-send on network restore.");
+    }
+
+    setIsSendingSOS(false);
+    
+    // Clear the status message after 5 seconds
+    setTimeout(() => setSosStatusMessage(null), 5000);
+  };
+
   // Loading screen to prevent UI flash
   if (isInitializing) {
     return <div className="h-screen w-full bg-[#0f141e]"></div>;
@@ -139,7 +176,15 @@ export default function App() {
           <img src={logo} alt="ERIS-SOSMap" className="h-7 w-auto object-contain" />
         </div>
         <h1 className="flex-1 text-center text-white text-lg font-bold tracking-wide">ERIS Safety</h1>
-        <button className="bg-red-500 hover:bg-red-600 text-white text-xs font-bold uppercase tracking-wider px-4 py-1.5 rounded-full transition-colors shadow-lg shadow-red-900/20 active:scale-95">
+        
+        {/* UPDATED: Header SOS Button */}
+        <button 
+          onClick={handleSOSClick}
+          disabled={isSendingSOS}
+          className={`text-white text-xs font-bold uppercase tracking-wider px-4 py-1.5 rounded-full transition-colors shadow-lg shadow-red-900/20 active:scale-95 ${
+            isSendingSOS ? 'bg-red-800 opacity-50 cursor-not-allowed' : 'bg-red-500 hover:bg-red-600'
+          }`}
+        >
           SOS
         </button>
       </header>
@@ -238,10 +283,30 @@ export default function App() {
           </div>
         )}
 
-        {/* SOS Button */}
+        {/* SOS Status Notification Panel */}
+        {sosStatusMessage && (
+          <div className="absolute bottom-28 left-4 right-4 z-[1000] animate-fade-in flex justify-center">
+            <div className="bg-gray-900/95 backdrop-blur-md border border-gray-700 rounded-2xl p-4 shadow-2xl flex items-center gap-3 w-full max-w-sm">
+              {isSendingSOS ? (
+                <span className="material-symbols-outlined animate-spin text-blue-500">sync</span>
+              ) : (
+                <span className="material-symbols-outlined text-green-500">info</span>
+              )}
+              <p className="text-white text-sm font-medium leading-tight">{sosStatusMessage}</p>
+            </div>
+          </div>
+        )}
+
+        {/* UPDATED: Floating SOS Button */}
         <div className="absolute bottom-6 right-4 z-[1000]">
-          <button className="w-16 h-16 rounded-full bg-red-500 border-4 border-red-400/50 flex flex-col items-center justify-center shadow-[0_0_20px_rgba(239,68,68,0.4)] active:scale-95 transition-all">
-            <span className="material-symbols-outlined text-white text-3xl">sensors</span>
+          <button 
+            onClick={handleSOSClick}
+            disabled={isSendingSOS}
+            className={`w-16 h-16 rounded-full border-4 flex flex-col items-center justify-center shadow-[0_0_20px_rgba(239,68,68,0.4)] transition-all ${
+              isSendingSOS ? 'bg-red-800 border-red-900 opacity-50 cursor-not-allowed' : 'bg-red-500 border-red-400/50 active:scale-95'
+            }`}
+          >
+            <span className={`material-symbols-outlined text-white text-3xl ${isSendingSOS ? 'animate-pulse' : ''}`}>sensors</span>
           </button>
         </div>
 
