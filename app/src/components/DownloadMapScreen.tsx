@@ -1,11 +1,133 @@
 import { useState } from 'react';
+import L from 'leaflet';
+import { createOfflineLayer, TILE_URL } from '../utils/MapUtils';
 
 interface DownloadMapScreenProps {
   onBack: () => void;
+  map: L.Map | null;
 }
+
+// Definition of the coordinates of suggested regions
+const REGIONS_BOUNDS: Record<number, L.LatLngBounds> = {
+  1: L.latLngBounds([48.5, 2.0], [49.0, 2.7]), // Paris & IDF
+  2: L.latLngBounds([45.6, 4.7], [45.9, 5.0]), // Lyon
+  3: L.latLngBounds([43.1, 5.2], [43.4, 5.5]), // Marseille
+  4: L.latLngBounds([44.5, 5.5], [46.5, 7.5]), // Alpes françaises
+  5: L.latLngBounds([44.7, -0.7], [45.0, -0.4]), // Bordeaux
+};
 
 export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [downloadingId, setDownloadingId] = useState<number | null>(null);
+  const [progress, setProgress] = useState(0);
+
+  // Downloading fonction linked to the ID of the region
+  const handleDownload = (id: number, name: string) => {
+    const bounds = REGIONS_BOUNDS[id];
+    if (!bounds) {
+      return;
+    }
+
+    setDownloadingId(id);
+    setProgress(0);
+
+    const tempDiv = document.createElement('div');
+    tempDiv.style.width = '256px';
+    tempDiv.style.height = '256px';
+    tempDiv.style.position = 'fixed';
+    tempDiv.style.top = '-9999px';
+    document.body.appendChild(tempDiv);
+
+    const tempMap = L.map(tempDiv, {
+      fadeAnimation: false,
+      zoomAnimation: false,
+      inertia: false,
+    });
+
+    tempMap.invalidateSize();
+    tempMap.fitBounds(bounds, { animate: false });
+
+    // 1. Création de la couche hors ligne
+    const layer = createOfflineLayer().addTo(tempMap);
+
+    // 2. Configuration du contrôleur de sauvegarde (plugin leaflet.offline)
+    const control = (L.control as any).savetiles(layer, {
+      zoomlevels: [12, 13, 14, 15], // Niveaux de zoom optimisés pour ERIS
+      confirm: (data: any) => {
+        const tilesToSave = Array.isArray(data) ? data : data.tiles || [];
+        const count = tilesToSave.length;
+
+        if (count === 0) {
+          alert('No tiles found for this area. Check your zoom levels.');
+          cleanup();
+          return false;
+        }
+
+        if (window.confirm(`Download ${count} tiles for ${name}?`)) {
+          return true;
+        }
+        cleanup(); // Reset si l'utilisateur annule
+        return false;
+      },
+      confirmNoTiles: () => {
+        alert('This zone is already downloaded');
+        cleanup();
+      },
+    });
+
+    control.addTo(tempMap);
+
+    const cleanup = () => {
+      setDownloadingId(null);
+      if (tempMap) {
+        tempMap.remove();
+      }
+      if (document.body.contains(tempDiv)) {
+        document.body.removeChild(tempDiv);
+      }
+    };
+
+    let totalTiles = 0;
+    let savedTiles = 0;
+
+    // 3. Gestion des événements pour l'interface
+    layer.on('savestart', (e: any) => {
+      totalTiles = e.length || (e.tiles ? e.tiles.length : 0);
+    });
+
+    layer.on('savetileend', () => {
+      savedTiles++;
+      if (totalTiles > 0) {
+        const percent = Math.floor((savedTiles / totalTiles) * 100);
+        setProgress(percent);
+      }
+    });
+
+    layer.on('saveend', () => {
+      setProgress(100);
+      alert(`Success : The zone ${name} is available offline.`);
+      cleanup();
+    });
+
+    layer.on('tilelayeroffline:saveerror', (err: any) => {
+      console.error('Downloading error:', err);
+      alert('Error during downloading. Check your connexion.');
+      cleanup();
+    });
+
+    // 4. Lancement du téléchargement
+    tempMap.whenReady(() => {
+      setTimeout(() => {
+        try {
+          // On passe explicitement les bounds au plugin
+          control._saveTiles(bounds);
+        } catch (e) {
+          console.error('Erreur interne SaveTiles:', e);
+          cleanup();
+        }
+      }, 500); // Un peu de répit pour le processeur
+    });
+  };
 
   // Suggested regions to download
   const [suggestions] = useState([
@@ -18,23 +140,20 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
 
   return (
     <div className="flex flex-col h-full bg-[#0f141e] w-full overflow-y-auto font-sans relative pb-20">
-      
       {/* ─── HEADER ─── */}
       <header className="flex justify-between items-center px-6 py-4 sticky top-0 z-50 bg-[#0f141e]/90 backdrop-blur-md">
         <div className="flex items-center">
-          <button 
+          <button
             onClick={onBack}
             className="text-gray-400 hover:text-white transition-colors mr-4 active:scale-95 flex items-center justify-center w-10 h-10 bg-gray-800/50 rounded-full"
           >
             <span className="material-symbols-outlined">chevron_left</span>
           </button>
-          <h2 className="text-white text-xl font-bold tracking-wide">
-            Download Maps
-          </h2>
+          <h2 className="text-white text-xl font-bold tracking-wide">Download Maps</h2>
         </div>
-        
+
         {/* Custom Area Map Button (Top Right) */}
-        <button 
+        <button
           className="text-blue-400 hover:text-blue-300 transition-colors flex items-center justify-center w-10 h-10 bg-blue-500/10 rounded-full active:scale-95"
           title="Select Custom Area"
         >
@@ -43,7 +162,6 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
       </header>
 
       <div className="px-4 flex flex-col gap-6 mt-2">
-        
         {/* ─── SEARCH BAR ─── */}
         <div className="flex items-center bg-gray-800/40 border border-gray-700/50 rounded-2xl px-4 py-3 gap-3 shadow-inner">
           <span className="material-symbols-outlined text-gray-400 text-xl">search</span>
@@ -58,14 +176,12 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
 
         {/* ─── SUGGESTIONS LIST ─── */}
         <section>
-          <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3 px-2">
-            Suggested Regions
-          </h3>
+          <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3 px-2">Suggested Regions</h3>
 
           <div className="flex flex-col gap-3">
             {suggestions.map((region) => (
-              <div 
-                key={region.id} 
+              <div
+                key={region.id}
                 className="bg-gray-800/40 border border-gray-700/50 rounded-3xl p-4 flex items-center justify-between shadow-sm"
               >
                 <div className="flex items-center gap-4">
@@ -73,29 +189,36 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
                   <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 bg-gray-700/50 text-gray-400">
                     <span className="material-symbols-outlined text-xl">location_city</span>
                   </div>
-                  
+
                   {/* Region Info */}
                   <div>
-                    <h4 className="text-white text-sm font-bold mb-0.5">
-                      {region.name}
-                    </h4>
+                    <h4 className="text-white text-sm font-bold mb-0.5">{region.name}</h4>
                     <p className="text-gray-500 text-[11px] font-medium">
-                      {region.size} • Map & Navigation Data
+                      {downloadingId === region.id
+                        ? `Downloading... ${progress}%`
+                        : `${region.size} • Map & Navigation Data`}
                     </p>
                   </div>
                 </div>
 
                 {/* Download Button */}
-                <button 
-                  className="w-10 h-10 rounded-full bg-blue-600/10 text-blue-400 hover:bg-blue-600/20 flex items-center justify-center transition-all active:scale-95 shrink-0"
+                <button
+                  onClick={() => handleDownload(region.id, region.name)}
+                  disabled={downloadingId !== null}
+                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-all active:scale-95 shrink-0 ${
+                    downloadingId === region.id
+                      ? 'bg-yellow-500/20 text-yellow-500 animate-pulse'
+                      : 'bg-blue-600/10 text-blue-400 hover:bg-blue-600/20'
+                  }`}
                 >
-                  <span className="material-symbols-outlined text-xl">download</span>
+                  <span className="material-symbols-outlined text-xl">
+                    {downloadingId === region.id ? 'sync' : 'download'}
+                  </span>
                 </button>
               </div>
             ))}
           </div>
         </section>
-
       </div>
     </div>
   );

@@ -34,7 +34,17 @@ export default function App() {
     }).setView([48.8584, 2.2945], 13);
 
     // Modern dark map base layer (Voyager dark)
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png').addTo(mapInstance.current);
+    //L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png').addTo(mapInstance.current);
+
+    (L.tileLayer as any)
+      .offline('https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png', {
+        attribution: 'ERIS Safety',
+        subdomains: 'abcd',
+        minZoom: 12,
+        maxZoom: 15,
+        crossOrigin: true,
+      })
+      .addTo(mapInstance.current);
 
     setTimeout(() => {
       mapInstance.current?.invalidateSize();
@@ -227,7 +237,7 @@ export default function App() {
 
         {activeTab === 'DOWNLOAD_MAP' && (
           <div className="absolute inset-0 z-[3000] bg-[#0f141e]">
-            <DownloadMapScreen onBack={() => setActiveTab('OFFLINE')} />
+            <DownloadMapScreen onBack={() => setActiveTab('OFFLINE')} map={mapInstance.current} />
           </div>
         )}
 
