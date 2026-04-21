@@ -39,6 +39,14 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
       localStorage.setItem('eris_offline_regions', JSON.stringify(updated));
       return updated;
     });
+
+    const savedMetadata = localStorage.getItem('eris_offline_metadata');
+    const metadata = savedMetadata ? JSON.parse(savedMetadata) : {};
+    metadata[id] = {
+      lastUpdate: Date.now(),
+    };
+
+    localStorage.setItem('eris_offline_metadata', JSON.stringify(metadata));
   };
 
   const removeRegionFromDownloaded = (id: number) => {

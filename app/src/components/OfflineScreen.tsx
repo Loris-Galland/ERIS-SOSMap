@@ -1,31 +1,171 @@
 import { useEffect, useState } from 'react';
+import L from 'leaflet';
+import { createOfflineLayer } from '../utils/MapUtils';
+
+function getRelativeTimeString(timestamp: number): string {
+  const diff = Date.now() - timestamp;
+  const minutes = Math.floor(diff / 60000);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (days > 0) return `Mis à jour il y a ${days} jour${days > 1 ? 's' : ''}`;
+  if (hours > 0) return `Mis à jour il y a ${hours} h`;
+  if (minutes > 0) return `Mis à jour il y a ${minutes} min`;
+  return "Mis à jour à l'instant";
+}
 
 interface OfflineScreenProps {
   onBack: () => void;
   onNavigateDownload: () => void; // New prop for navigation
 }
 
-const REGIONS_DATA: Record<number, { name: string; size: string; detail: string }> = {
-  1: { name: 'Paris & Île-de-France', size: '345 MB', detail: 'Île-de-France' },
-  2: { name: 'Lyon Metropolitan', size: '180 MB', detail: 'Auvergne-Rhône-Alpes' },
-  3: { name: 'Marseille & Calanques', size: '210 MB', detail: 'Provence-Alpes-Côte d’Azur' },
-  4: { name: 'French Alps Sector', size: '420 MB', detail: 'Savoie / Haute-Savoie' },
-  5: { name: 'Bordeaux & Gironde', size: '150 MB', detail: 'Nouvelle-Aquitaine' },
+const REGIONS_DATA: Record<number, { name: string; size: string; detail: string; bounds: L.LatLngBounds }> = {
+  1: {
+    name: 'Paris & Île-de-France',
+    size: '345 MB',
+    detail: 'Île-de-France',
+    bounds: L.latLngBounds([48.5, 2.0], [49.0, 2.7]),
+  },
+  2: {
+    name: 'Lyon Metropolitan',
+    size: '180 MB',
+    detail: 'Auvergne-Rhône-Alpes',
+    bounds: L.latLngBounds([45.6, 4.7], [45.9, 5.0]),
+  },
+  3: {
+    name: 'Marseille & Calanques',
+    size: '210 MB',
+    detail: 'PACA',
+    bounds: L.latLngBounds([43.1, 5.2], [43.4, 5.5]),
+  },
+  4: {
+    name: 'French Alps Sector',
+    size: '420 MB',
+    detail: 'Savoie / Haute-Savoie',
+    bounds: L.latLngBounds([44.5, 5.5], [46.5, 7.5]),
+  },
+  5: {
+    name: 'Bordeaux & Gironde',
+    size: '150 MB',
+    detail: 'Nouvelle-Aquitaine',
+    bounds: L.latLngBounds([44.7, -0.7], [45.0, -0.4]),
+  },
 };
 
 export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScreenProps) {
   const [downloadedIds, setDownloadedIds] = useState<number[]>([]);
+  const [metadata, setMetadata] = useState<Record<number, { lastUpdate: number }>>({});
+  const [activeMenu, setActiveMenu] = useState<number | null>(null);
+  const [updatingId, setUpdatingId] = useState<number | null>(null);
+  const [progress, setProgress] = useState(0);
+  const [storageUsedMB, setStorageUsedMB] = useState(0);
+
+  const MAX_STORAGE_MB = 1024;
+
+  useEffect(() => {
+    async function calculateRealStorage() {
+      // Vérifie si le navigateur supporte l'API de stockage
+      if (navigator.storage && navigator.storage.estimate) {
+        try {
+          const { usage } = await navigator.storage.estimate();
+          // L'usage est renvoyé en octets (bytes), on le convertit en MB
+          const mb = (usage || 0) / (1024 * 1024);
+          setStorageUsedMB(Number(mb.toFixed(1))); // Garde 1 chiffre après la virgule
+        } catch (e) {
+          console.error('Erreur de calcul du stockage', e);
+        }
+      }
+    }
+
+    // Premier calcul au chargement
+    calculateRealStorage();
+
+    // Actualisation automatique toutes les 5 secondes (pratique si un téléchargement tourne en fond)
+    const interval = setInterval(calculateRealStorage, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const progressPercent = Math.min((storageUsedMB / MAX_STORAGE_MB) * 100, 100);
 
   useEffect(() => {
     const saved = localStorage.getItem('eris_offline_regions');
-    if (saved) {
-      try {
-        setDownloadedIds(JSON.parse(saved));
-      } catch (e) {
-        console.error('Erreur lors de la récupération des zones', e);
-      }
-    }
+    if (saved) setDownloadedIds(JSON.parse(saved));
+
+    const savedMeta = localStorage.getItem('eris_offline_metadata');
+    if (savedMeta) setMetadata(JSON.parse(savedMeta));
   }, []);
+
+  // --- DELETION LOGIC ---
+  const handleDelete = (id: number, name: string) => {
+    if (window.confirm(`Delete ${name} from offline storage?`)) {
+      const updated = downloadedIds.filter((rid) => rid !== id);
+      setDownloadedIds(updated);
+      localStorage.setItem('eris_offline_regions', JSON.stringify(updated));
+      setActiveMenu(null);
+    }
+  };
+
+  // --- UPDATING LOGIC ---
+  const handleUpdate = (id: number, name: string) => {
+    const region = REGIONS_DATA[id];
+    if (!region) return;
+
+    setUpdatingId(id);
+    setProgress(0);
+    setActiveMenu(null);
+
+    const tempDiv = document.createElement('div');
+    tempDiv.style.cssText = 'width:256px; height:256px; position:fixed; top:-9999px;';
+    document.body.appendChild(tempDiv);
+
+    const tempMap = L.map(tempDiv, { fadeAnimation: false, zoomAnimation: false });
+    tempMap.fitBounds(region.bounds);
+
+    const layer = createOfflineLayer().addTo(tempMap);
+    const control = (L.control as any).savetiles(layer, {
+      zoomlevels: [12, 13, 14, 15],
+      confirm: (_: any, success: () => void) => success(), // Auto-confirm pour l'update
+    });
+    control.addTo(tempMap);
+
+    const cleanup = () => {
+      setUpdatingId(null);
+      tempMap.remove();
+      if (document.body.contains(tempDiv)) document.body.removeChild(tempDiv);
+    };
+
+    layer.on('savestart', (e: any) => {
+      const total = e.length || (e._tilesforSave ? e._tilesforSave.length : 0);
+      layer.on('savetileend', () => {
+        const current = (layer as any)._tilesforSave?.length || total;
+        setProgress((prev) => Math.min(prev + 5, 95));
+      });
+    });
+
+    layer.on('saveend', () => {
+      setProgress(100);
+
+      const now = Date.now();
+      setMetadata((prev) => ({
+        ...prev,
+        [id]: { lastUpdate: now },
+      }));
+
+      const savedMeta = localStorage.getItem('eris_offline_metadata');
+      const currentMeta = savedMeta ? JSON.parse(savedMeta) : {};
+      currentMeta[id] = { lastUpdate: now };
+      localStorage.setItem('eris_offline_metadata', JSON.stringify(currentMeta));
+
+      setTimeout(() => {
+        alert(`${name} updated successfully.`);
+        cleanup();
+      }, 500);
+    });
+
+    tempMap.whenReady(() => {
+      setTimeout(() => control._saveTiles(), 500);
+    });
+  };
 
   // Mock data for regional maps
   /*const [sectors] = useState([
@@ -62,23 +202,34 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
 
       <div className="p-4 flex-1 flex flex-col gap-6">
         {/* ─── STORAGE CARD ─── */}
-        <div className="bg-gradient-to-br from-blue-900/30 to-gray-800/40 border border-blue-800/20 rounded-3xl p-5 shadow-lg">
-          <div className="flex justify-between items-end mb-4">
+        <div className="bg-gradient-to-br from-blue-900/30 to-gray-800/40 border border-blue-800/20 rounded-3xl p-5 shadow-lg relative overflow-hidden">
+          {/* Optionnel : petite animation de chargement en fond si la valeur est 0 au début */}
+          {storageUsedMB === 0 && <div className="absolute inset-0 bg-blue-500/5 animate-pulse rounded-3xl" />}
+
+          <div className="flex justify-between items-end mb-4 relative z-10">
             <div>
               <p className="text-gray-400 text-xs font-semibold uppercase tracking-wider mb-1">Local Storage</p>
               <h3 className="text-white text-3xl font-bold">
-                124 <span className="text-gray-400 text-sm font-normal">MB used</span>
+                {storageUsedMB} <span className="text-gray-400 text-sm font-normal">MB used</span>
               </h3>
             </div>
             <span className="text-gray-500 text-sm font-medium bg-gray-900/50 px-3 py-1 rounded-lg">1.0 GB Total</span>
           </div>
 
-          <div className="w-full h-3 bg-gray-900 rounded-full overflow-hidden border border-gray-700/50">
+          <div className="w-full h-3 bg-gray-900 rounded-full overflow-hidden border border-gray-700/50 relative z-10">
             <div
-              className="h-full bg-blue-500 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.6)]"
-              style={{ width: '12.4%' }}
+              className={`h-full bg-blue-500 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.6)] transition-all duration-1000 ease-out`}
+              style={{ width: `${progressPercent}%` }}
             ></div>
           </div>
+
+          {/* Petit message d'avertissement si le stockage est presque plein */}
+          {progressPercent > 90 && (
+            <p className="text-red-400 text-[11px] font-medium mt-3 flex items-center gap-1">
+              <span className="material-symbols-outlined text-sm">warning</span>
+              Storage is almost full. Consider deleting old maps.
+            </p>
+          )}
         </div>
 
         {/* ─── REGIONAL MAPS LIST ─── */}
@@ -90,6 +241,7 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
               downloadedIds.map((id) => {
                 const info = REGIONS_DATA[id];
                 if (!info) return null;
+                const lastUpdate = metadata[id]?.lastUpdate;
                 return (
                   <div
                     key={id}
@@ -102,13 +254,38 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
                       <div>
                         <h4 className="text-white text-sm font-bold mb-0.5">{info.name}</h4>
                         <p className="text-gray-500 text-[11px] font-medium">
-                          {info.detail} • {info.size}
+                          {lastUpdate ? getRelativeTimeString(lastUpdate) : 'Date inconnue'} • {info.size}
                         </p>
                       </div>
                     </div>
-                    <button className="text-gray-500 hover:text-white transition-colors">
-                      <span className="material-symbols-outlined">more_vert</span>
-                    </button>
+
+                    {/* BOUTON MORE */}
+                    <div className="relative">
+                      <button
+                        onClick={() => setActiveMenu(activeMenu === id ? null : id)}
+                        className="text-gray-500 hover:text-white transition-colors w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-700/30"
+                      >
+                        <span className="material-symbols-outlined">more_vert</span>
+                      </button>
+
+                      {/* MENU ACTIONS */}
+                      {activeMenu === id && (
+                        <div className="absolute right-0 mt-2 w-36 bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl z-[3000] overflow-hidden animate-in fade-in zoom-in duration-150">
+                          <button
+                            onClick={() => handleUpdate(id, info.name)}
+                            className="w-full px-4 py-3 text-left text-xs font-bold text-blue-400 hover:bg-gray-800 flex items-center gap-2 border-b border-gray-800"
+                          >
+                            <span className="material-symbols-outlined text-sm">update</span> Update
+                          </button>
+                          <button
+                            onClick={() => handleDelete(id, info.name)}
+                            className="w-full px-4 py-3 text-left text-xs font-bold text-red-400 hover:bg-gray-800 flex items-center gap-2"
+                          >
+                            <span className="material-symbols-outlined text-sm">delete</span> Delete
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 );
               })
