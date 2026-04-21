@@ -99,6 +99,7 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
       },
       confirmNoTiles: () => {
         alert('This zone is already downloaded');
+        saveRegionAsDownloaded(id);
         cleanup();
       },
     });
@@ -134,6 +135,7 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
     layer.on('saveend', () => {
       setProgress(100);
       alert(`Success : The zone ${name} is available offline.`);
+      saveRegionAsDownloaded(id);
       cleanup();
     });
 
@@ -153,7 +155,7 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
           console.error('Erreur interne SaveTiles:', e);
           cleanup();
         }
-      }, 500); // Un peu de répit pour le processeur
+      }, 500);
     });
   };
 
@@ -243,7 +245,7 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
                     </div>
                   </div>
 
-                  {/* Download/Update/Delete Button */}
+                  {/* Buttons (Download / Loading / Delete) */}
                   <div className="flex items-center gap-2">
                     {isDownloadingThis ? (
                       <button
@@ -253,29 +255,18 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
                         <span className="material-symbols-outlined text-xl">sync</span>
                       </button>
                     ) : isDownloaded ? (
-                      <>
-                        {/* Bouton de Mise à jour */}
-                        <button
-                          onClick={() => handleDownload(region.id, region.name)}
-                          className="w-10 h-10 rounded-full flex items-center justify-center bg-blue-600/10 text-blue-400 hover:bg-blue-600/20 transition-all shrink-0"
-                          title="Update Zone"
-                        >
-                          <span className="material-symbols-outlined text-xl">update</span>
-                        </button>
-                        {/* Bouton de Suppression */}
-                        <button
-                          onClick={() => handleDelete(region.id, region.name)}
-                          className="w-10 h-10 rounded-full flex items-center justify-center bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all shrink-0"
-                          title="Delete Zone"
-                        >
-                          <span className="material-symbols-outlined text-xl">delete</span>
-                        </button>
-                      </>
+                      <button
+                        onClick={() => handleDelete(region.id, region.name)}
+                        className="w-10 h-10 rounded-full flex items-center justify-center bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all shrink-0"
+                        title="Delete Zone"
+                      >
+                        <span className="material-symbols-outlined text-xl">delete</span>
+                      </button>
                     ) : (
-                      // Bouton de Téléchargement initial
                       <button
                         onClick={() => handleDownload(region.id, region.name)}
                         className="w-10 h-10 rounded-full flex items-center justify-center bg-blue-600/10 text-blue-400 hover:bg-blue-600/20 transition-all shrink-0"
+                        title="Download Zone"
                       >
                         <span className="material-symbols-outlined text-xl">download</span>
                       </button>

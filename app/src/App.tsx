@@ -37,9 +37,8 @@ export default function App() {
     //L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png').addTo(mapInstance.current);
 
     (L.tileLayer as any)
-      .offline('https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png', {
+      .offline('https://a.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png', {
         attribution: 'ERIS Safety',
-        subdomains: 'abcd',
         minZoom: 12,
         maxZoom: 15,
         crossOrigin: true,
