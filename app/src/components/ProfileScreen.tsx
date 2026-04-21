@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../db/supabaseClient';
 import { Geolocation } from '@capacitor/geolocation';
+import { Device } from '@capacitor/device';
 
 interface ProfileScreenProps {
   onOpenSettings: () => void;
@@ -54,32 +55,24 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
     try {
       const coordinates = await Geolocation.getCurrentPosition();
       setLocation({
-        lat: coordinates.coords.latitude.toFixed(4), // Keep 4 decimals for clean UI
+        lat: coordinates.coords.latitude.toFixed(4),
         lng: coordinates.coords.longitude.toFixed(4),
       });
     } catch (error) {
       console.error('Error getting location:', error);
-      // Fallback if GPS is off or permission denied
       setLocation({ lat: 'Unknown', lng: 'Unknown' });
     }
 
-    // 2. Fetch Real Battery Level using Web API
+    // 2. Fetch NATIVE Battery Level using Capacitor Device Plugin
     try {
-      if ('getBattery' in navigator) {
-        const battery: any = await (navigator as any).getBattery();
-        setBatteryLevel(Math.round(battery.level * 100));
-
-        // Listen for battery changes in real-time
-        battery.addEventListener('levelchange', () => {
-          setBatteryLevel(Math.round(battery.level * 100));
-        });
-      } else {
-        // Fallback for iOS Safari which doesn't fully support getBattery
-        setBatteryLevel(100);
+      const info = await Device.getBatteryInfo();
+      // Le plugin renvoie un chiffre entre 0.0 et 1.0 (ex: 0.81 pour 81%)
+      if (info.batteryLevel !== undefined) {
+        setBatteryLevel(Math.round(info.batteryLevel * 100));
       }
     } catch (error) {
-      console.error('Error getting battery:', error);
-      setBatteryLevel(null);
+      console.error('Error getting native battery:', error);
+      setBatteryLevel(null); // Affichera '--%' en cas d'erreur
     }
   };
 

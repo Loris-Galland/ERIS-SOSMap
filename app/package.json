@@ -12,6 +12,7 @@
   "dependencies": {
     "@capacitor/cli": "^8.3.0",
     "@capacitor/core": "^8.3.0",
+    "@capacitor/device": "^8.0.2",
     "@capacitor/geolocation": "^8.2.0",
     "@supabase/supabase-js": "^2.103.3",
     "capacitor-eris-sosmap": "file:..",
