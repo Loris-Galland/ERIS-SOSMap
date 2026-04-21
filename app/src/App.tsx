@@ -8,6 +8,7 @@ import SettingsScreen from './components/SettingsScreen';
 import AlertScreen from './components/AlertScreen';
 import DownloadMapScreen from './components/DownloadMapScreen';
 import logo from './assets/small_logo.png';
+import { PRESET_REGIONS } from './utils/MapUtils';
 
 export default function App() {
   const mapRef = useRef<HTMLDivElement>(null);
@@ -27,6 +28,15 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [localSearchableRegions, setLocalSearchableRegions] = useState<any[]>([]);
+
+  const [previewArea, setPreviewArea] = useState<{
+    id: string;
+    name: string;
+    bounds: L.LatLngBounds;
+    isOffline?: boolean;
+  } | null>(null);
+  const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
 
   useEffect(() => {
     if (!mapRef.current || mapInstance.current) return;
@@ -100,6 +110,40 @@ export default function App() {
     };
   }, []);
 
+  // --- LOCAL DATA CHARGING---
+  useEffect(() => {
+    if (activeTab !== 'MAP') return;
+
+    // Manual zones
+    const savedCustom = localStorage.getItem('eris_custom_regions');
+    const customRegs = savedCustom ? JSON.parse(savedCustom) : [];
+
+    const formattedCustom = customRegs.map((r: any) => ({
+      place_id: r.id,
+      display_name: `${r.name}, Zone personnalisée`,
+      boundingbox: [r.bounds.southWest[0], r.bounds.northEast[0], r.bounds.southWest[1], r.bounds.northEast[1]],
+      isOffline: true,
+    }));
+
+    // Presets zones
+    const savedOffline = localStorage.getItem('eris_offline_regions');
+    const downloadedIds = savedOffline ? JSON.parse(savedOffline) : [];
+
+    const downloadedPresets = PRESET_REGIONS.filter((pr) => downloadedIds.includes(pr.id)).map((pr) => ({
+      place_id: pr.id.toString(),
+      display_name: `${pr.name}, Zone enregistrée`,
+      boundingbox: [
+        pr.bounds.getSouthWest().lat,
+        pr.bounds.getNorthEast().lat,
+        pr.bounds.getSouthWest().lng,
+        pr.bounds.getNorthEast().lng,
+      ],
+      isOffline: true,
+    }));
+
+    setLocalSearchableRegions([...formattedCustom, ...downloadedPresets]);
+  }, [activeTab]);
+
   // Search logic
   useEffect(() => {
     const delayDebounceFn = setTimeout(async () => {
@@ -108,6 +152,17 @@ export default function App() {
         return;
       }
       setIsSearching(true);
+      const searchLower = searchQuery.toLowerCase();
+
+      // If offline: searcgh local cache
+      if (offlineMode || !navigator.onLine) {
+        const localResults = localSearchableRegions.filter((r) => r.display_name.toLowerCase().includes(searchLower));
+        setSearchResults(localResults);
+        setIsSearching(false);
+        return;
+      }
+
+      // If online: search on the internet
       try {
         const res = await fetch(
           `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=4`,
@@ -115,14 +170,16 @@ export default function App() {
         const data = await res.json();
         setSearchResults(data);
       } catch (e) {
-        console.error('Search error', e);
+        // Fallback sécurité : Si l'API échoue, on cherche en local
+        const localResults = localSearchableRegions.filter((r) => r.display_name.toLowerCase().includes(searchLower));
+        setSearchResults(localResults);
       } finally {
         setIsSearching(false);
       }
     }, 600);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [searchQuery]);
+  }, [searchQuery, offlineMode, localSearchableRegions]);
 
   // Search result
   const handleSelectResult = (item: any) => {
@@ -137,6 +194,13 @@ export default function App() {
 
     // Déplace la carte principale vers la zone recherchée avec une animation fluide
     mapInstance.current.fitBounds(bounds, { animate: true, duration: 1.5 });
+
+    setPreviewArea({
+      id: item.place_id.toString(),
+      name: item.display_name.split(',')[0],
+      bounds: bounds,
+      isOffline: item.isOffline,
+    });
 
     // Nettoie l'interface
     setSearchQuery('');

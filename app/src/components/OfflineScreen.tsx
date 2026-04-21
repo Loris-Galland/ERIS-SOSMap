@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import L from 'leaflet';
-import { createOfflineLayer } from '../utils/MapUtils';
+import { createOfflineLayer, PRESET_REGIONS } from '../utils/MapUtils';
 import OfflineMapViewer from './OfflineMapViewer';
 
 function getRelativeTimeString(timestamp: number): string {

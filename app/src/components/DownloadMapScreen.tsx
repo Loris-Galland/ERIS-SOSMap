@@ -1,29 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
-import { createOfflineLayer, TILE_URL } from '../utils/MapUtils';
+import { createOfflineLayer, PRESET_REGIONS } from '../utils/MapUtils';
 
 interface DownloadMapScreenProps {
   onBack: () => void;
   map: L.Map | null;
 }
-
-// Definition of the coordinates of suggested regions
-const REGIONS_BOUNDS: Record<number, L.LatLngBounds> = {
-  1: L.latLngBounds([48.5, 2.0], [49.0, 2.7]), // Paris & IDF
-  2: L.latLngBounds([45.6, 4.7], [45.9, 5.0]), // Lyon
-  3: L.latLngBounds([43.1, 5.2], [43.4, 5.5]), // Marseille
-  4: L.latLngBounds([44.5, 5.5], [46.5, 7.5]), // Alpes françaises
-  5: L.latLngBounds([44.7, -0.7], [45.0, -0.4]), // Bordeaux
-};
-
-// Suggested regions to download
-const PRESET_SUGGESTIONS = [
-  { id: 1, name: 'Paris & Île-de-France', size: '345 MB' },
-  { id: 2, name: 'Lyon Metropolitan', size: '180 MB' },
-  { id: 3, name: 'Marseille & Calanques', size: '210 MB' },
-  { id: 4, name: 'French Alps Sector', size: '420 MB' },
-  { id: 5, name: 'Bordeaux & Gironde', size: '150 MB' },
-];
 
 export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -176,7 +158,7 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
 
     if (!bounds) {
       if (typeof id === 'number') {
-        bounds = REGIONS_BOUNDS[id];
+        bounds = PRESET_REGIONS.find((r) => r.id === id)?.bounds; // <-- MODIFIÉ ICI
       } else {
         const customReg = customRegions.find((r) => r.id === id);
         if (customReg) {
@@ -288,7 +270,7 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
     }
   };
 
-  const displayRegions = [...customRegions, ...PRESET_SUGGESTIONS];
+  const displayRegions = [...customRegions, ...PRESET_REGIONS];
 
   return (
     <div className="flex flex-col h-full bg-[#0f141e] w-full overflow-y-auto font-sans relative pb-20">
