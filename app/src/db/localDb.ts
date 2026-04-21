@@ -3,10 +3,14 @@ import Dexie, { type Table } from 'dexie';
 // Define the structure for SOS alerts waiting for network sync
 export interface PendingSOS {
   id?: number;
+  user_id: string; 
   lat: number;
   lon: number;
+  altitude: number;
+  battery_level: number;
   notes: string;
-  status: 'pending' | 'syncing';
+  status: 'pending' | 'queued' | 'delivered' | 'delivered_to_hardware';
+  transmission_method: string;
   timestamp: number;
 }
 
@@ -26,9 +30,9 @@ export class ErisLocalDB extends Dexie {
     super('ErisLocalDB');
     
     // Define tables and indexes (++id means auto-incremented primary key)
-    this.version(1).stores({
-      sosQueue: '++id, status, timestamp',
-      userProfile: 'id'
+    this.version(2).stores({
+      sosQueue: '++id, status, timestamp, user_id',
+      userProfile: 'id',
     });
   }
 }
