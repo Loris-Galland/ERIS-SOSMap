@@ -8,88 +8,103 @@ interface ProfileScreenProps {
 export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
   // ─── DATA STATES ───
   const [profileData, setProfileData] = useState<any>(null);
+  const [contacts, setContacts] = useState<any[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
 
-  // ─── EDIT MODE STATES ───
-  const [isEditing, setIsEditing] = useState(false);
+  // ─── UI STATES ───
+  const [isEditingMedical, setIsEditingMedical] = useState(false);
+  const [isAddingContact, setIsAddingContact] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [editForm, setEditForm] = useState({
+
+  // ─── FORM STATES ───
+  const [medicalForm, setMedicalForm] = useState({
     blood_type: '',
     allergies: '',
     medical_conditions: '',
     current_medications: '',
   });
 
-  // Mock emergency contacts
-  const [contacts] = useState([
-    { id: 1, name: 'Marie Dupont', relation: 'Family', phone: '+33 6 12 34 56 78' },
-    { id: 2, name: 'Thomas Girard', relation: 'Friend', phone: '+33 7 98 76 54 32' },
-  ]);
+  const [newContact, setNewContact] = useState({
+    name: '',
+    relation: '',
+    phone_number: '',
+  });
 
-  // Fetch logged-in user information
+  // Fetch all data on mount
   useEffect(() => {
-    const fetchProfile = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (user) {
-        setUserId(user.id);
-        const { data, error } = await supabase.from('user_profiles').select('*').eq('id', user.id).single();
-
-        if (data && !error) {
-          setProfileData(data);
-          // Initialize the form with database data
-          setEditForm({
-            blood_type: data.blood_type || '',
-            allergies: data.allergies || '',
-            medical_conditions: data.medical_conditions || '',
-            current_medications: data.current_medications || '',
-          });
-        }
-      }
-    };
-
-    fetchProfile();
+    fetchInitialData();
   }, []);
 
-  // ─── SAVE FUNCTION ───
-  const handleSave = async () => {
+  const fetchInitialData = async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user) {
+      setUserId(user.id);
+
+      // Fetch Profile
+      const { data: profile } = await supabase.from('user_profiles').select('*').eq('id', user.id).single();
+
+      if (profile) {
+        setProfileData(profile);
+        setMedicalForm({
+          blood_type: profile.blood_type || '',
+          allergies: profile.allergies || '',
+          medical_conditions: profile.medical_conditions || '',
+          current_medications: profile.current_medications || '',
+        });
+      }
+
+      // Fetch Emergency Contacts
+      fetchContacts(user.id);
+    }
+  };
+
+  const fetchContacts = async (uid: string) => {
+    const { data, error } = await supabase.from('emergency_contacts').select('*').eq('user_id', uid);
+
+    if (!error && data) setContacts(data);
+  };
+
+  // ─── ACTIONS ───
+  const handleSaveMedical = async () => {
     if (!userId) return;
     setIsSaving(true);
-
     try {
-      const { error } = await supabase
-        .from('user_profiles')
-        .update({
-          blood_type: editForm.blood_type,
-          allergies: editForm.allergies,
-          medical_conditions: editForm.medical_conditions,
-          current_medications: editForm.current_medications,
-        })
-        .eq('id', userId);
+      const { error } = await supabase.from('user_profiles').update(medicalForm).eq('id', userId);
+      if (error) throw error;
+      setProfileData({ ...profileData, ...medicalForm });
+      setIsEditingMedical(false);
+    } catch (err) {
+      alert('Error saving medical info');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleAddContact = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!userId) return;
+    setIsSaving(true);
+    try {
+      const { data, error } = await supabase
+        .from('emergency_contacts')
+        .insert([{ ...newContact, user_id: userId }])
+        .select();
 
       if (error) throw error;
-
-      // Update UI with new data
-      setProfileData({ ...profileData, ...editForm });
-      setIsEditing(false); // Exit edit mode
-    } catch (error) {
-      console.error('Error updating profile:', error);
-      alert('Error during save.');
+      setContacts([...contacts, ...data]);
+      setNewContact({ name: '', relation: '', phone_number: '' });
+      setIsAddingContact(false);
+    } catch (err) {
+      alert('Error adding contact');
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleLogout = async () => {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      console.log('Logout successful');
-    } catch (error) {
-      console.error('Error during logout:', error);
-    }
+    await supabase.auth.signOut();
   };
 
   return (
@@ -99,102 +114,46 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
         <h2 className="text-white text-xl font-bold tracking-wide">My Profile</h2>
         <button
           onClick={onOpenSettings}
-          className="text-gray-400 hover:text-white transition-colors active:scale-95 flex items-center justify-center w-10 h-10 bg-gray-800/50 rounded-full"
+          className="text-gray-400 w-10 h-10 bg-gray-800/50 rounded-full flex items-center justify-center"
         >
           <span className="material-symbols-outlined">settings</span>
         </button>
       </header>
 
       <div className="px-4 flex flex-col gap-5">
-        {/* ─── STATUS BAR: GPS & BATTERY ─── */}
-        <div className="flex items-center gap-3">
-          <div className="flex-1 bg-gray-800/60 rounded-2xl p-3 flex items-center gap-3 border border-gray-700/50">
-            <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400">
-              <span className="material-symbols-outlined text-lg">location_on</span>
-            </div>
-            <div>
-              <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wider mb-0.5">Current Position</p>
-              <p className="text-white text-xs font-mono">48.8566° N, 2.3522° E</p>
-            </div>
-          </div>
-
-          <div className="bg-gray-800/60 rounded-2xl p-3 flex items-center justify-center gap-2 border border-gray-700/50 min-w-[80px]">
-            <span className="material-symbols-outlined text-green-400 text-lg">battery_5_bar</span>
-            <span className="text-white font-bold text-sm">84%</span>
-          </div>
-        </div>
-
-        {/* ─── CITIZEN IDENTITY CARD ─── */}
+        {/* ─── IDENTITY CARD ─── */}
         <div className="bg-gradient-to-br from-blue-900/40 to-gray-800/60 border border-blue-800/30 rounded-3xl p-5 flex items-center gap-4">
-          <div className="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center border border-blue-400/30">
-            <span className="material-symbols-outlined text-3xl text-blue-400">person</span>
+          <div className="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center border border-blue-400/30 text-blue-400">
+            <span className="material-symbols-outlined text-3xl">person</span>
           </div>
           <div>
             <h3 className="text-white text-xl font-bold">
               {profileData ? `${profileData.first_name} ${profileData.last_name}` : 'Loading...'}
             </h3>
-            <p className="text-blue-300/70 text-xs font-mono mt-0.5 mb-2">ID: ERIS-F7492</p>
-            <div className="flex items-center gap-1.5 bg-green-500/10 w-fit px-2 py-1 rounded-md">
-              <span className="w-1.5 h-1.5 bg-green-400 rounded-full"></span>
-              <span className="text-green-400 text-[10px] font-semibold uppercase tracking-wider">
-                Verified Account
-              </span>
-            </div>
+            <p className="text-blue-300/70 text-xs font-mono">ERIS-ID: {userId?.slice(0, 8)}</p>
           </div>
         </div>
 
-        {/* ─── MEDICAL INFORMATION (WITH EDIT MODE) ─── */}
+        {/* ─── MEDICAL INFO ─── */}
         <section>
           <div className="flex justify-between items-center mb-3 px-1">
             <h3 className="text-gray-400 text-xs font-bold uppercase tracking-wider">Medical Information</h3>
-
-            {/* Edit / Save / Cancel Buttons */}
-            <div className="flex gap-4">
-              {isEditing ? (
-                <>
-                  <button
-                    onClick={() => {
-                      setIsEditing(false);
-                      // Reset the form on cancel
-                      setEditForm({
-                        blood_type: profileData?.blood_type || '',
-                        allergies: profileData?.allergies || '',
-                        medical_conditions: profileData?.medical_conditions || '',
-                        current_medications: profileData?.current_medications || '',
-                      });
-                    }}
-                    className="text-gray-400 text-xs font-semibold hover:text-gray-300 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleSave}
-                    disabled={isSaving}
-                    className="text-green-400 text-xs font-bold hover:text-green-300 transition-colors"
-                  >
-                    {isSaving ? 'Saving...' : 'Save'}
-                  </button>
-                </>
-              ) : (
-                <button
-                  onClick={() => setIsEditing(true)}
-                  className="text-blue-400 text-xs font-semibold hover:text-blue-300 transition-colors"
-                >
-                  Edit
-                </button>
-              )}
-            </div>
+            <button
+              onClick={() => (isEditingMedical ? handleSaveMedical() : setIsEditingMedical(true))}
+              className="text-blue-400 text-xs font-semibold"
+            >
+              {isEditingMedical ? (isSaving ? 'Saving...' : 'Save') : 'Edit'}
+            </button>
           </div>
 
-          <div className="bg-gray-800/50 border border-gray-700/50 rounded-3xl p-5 flex flex-col gap-4 transition-all">
-            {/* Blood Type */}
+          <div className="bg-gray-800/50 border border-gray-700/50 rounded-3xl p-5 flex flex-col gap-4">
             <div className="flex justify-between items-center border-b border-gray-700/50 pb-3">
               <span className="text-gray-400 text-sm">Blood Type :</span>
-              {isEditing ? (
+              {isEditingMedical ? (
                 <select
-                  value={editForm.blood_type}
-                  onChange={(e) => setEditForm({ ...editForm, blood_type: e.target.value })}
-                  className="bg-gray-900/60 border border-gray-600/50 text-red-400 font-bold text-sm rounded-md px-2 py-1 outline-none focus:border-blue-500/50 appearance-none text-center"
+                  value={medicalForm.blood_type}
+                  onChange={(e) => setMedicalForm({ ...medicalForm, blood_type: e.target.value })}
+                  className="bg-gray-900 border border-gray-700 text-red-400 text-xs font-bold p-1 rounded"
                 >
                   <option value="">N/A</option>
                   {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map((t) => (
@@ -210,50 +169,28 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
               )}
             </div>
 
-            {/* Allergies */}
-            <div className="flex flex-col gap-1 border-b border-gray-700/50 pb-3">
-              <span className="text-gray-400 text-sm">Allergies :</span>
-              {isEditing ? (
-                <textarea
-                  value={editForm.allergies}
-                  onChange={(e) => setEditForm({ ...editForm, allergies: e.target.value })}
-                  placeholder="Ex: Peanuts, Penicillin..."
-                  className="bg-gray-900/60 border border-gray-600/50 rounded-lg p-2 text-white text-sm outline-none focus:border-blue-500/50 w-full mt-1 h-14 resize-none"
-                />
-              ) : (
-                <span className="text-white font-medium">{profileData?.allergies || 'None'}</span>
-              )}
-            </div>
-
-            {/* Medical Conditions */}
-            <div className="flex flex-col gap-1 border-b border-gray-700/50 pb-3">
-              <span className="text-gray-400 text-sm">Medical Conditions :</span>
-              {isEditing ? (
-                <textarea
-                  value={editForm.medical_conditions}
-                  onChange={(e) => setEditForm({ ...editForm, medical_conditions: e.target.value })}
-                  placeholder="Ex: Asthma, Diabetes..."
-                  className="bg-gray-900/60 border border-gray-600/50 rounded-lg p-2 text-white text-sm outline-none focus:border-blue-500/50 w-full mt-1 h-14 resize-none"
-                />
-              ) : (
-                <span className="text-white font-medium">{profileData?.medical_conditions || 'None'}</span>
-              )}
-            </div>
-
-            {/* Medications (Kept static as requested) */}
-            <div className="flex flex-col gap-1">
-              <span className="text-gray-400 text-sm">Current Medications :</span>
-              {isEditing ? (
-                <textarea
-                  value={editForm.current_medications}
-                  onChange={(e) => setEditForm({ ...editForm, current_medications: e.target.value })}
-                  placeholder="Ex: Ventolin, Aspirin..."
-                  className="bg-gray-900/60 border border-gray-600/50 rounded-lg p-2 text-white text-sm outline-none focus:border-blue-500/50 w-full mt-1 h-14 resize-none"
-                />
-              ) : (
-                <span className="text-white font-medium">{profileData?.current_medications || 'None'}</span>
-              )}
-            </div>
+            {/* Quick view fields */}
+            {[
+              { label: 'Allergies', key: 'allergies' },
+              { label: 'Conditions', key: 'medical_conditions' },
+              { label: 'Medications', key: 'current_medications' },
+            ].map((field) => (
+              <div
+                key={field.key}
+                className="flex flex-col gap-1 border-b last:border-0 border-gray-700/50 pb-3 last:pb-0"
+              >
+                <span className="text-gray-400 text-sm">{field.label} :</span>
+                {isEditingMedical ? (
+                  <textarea
+                    value={(medicalForm as any)[field.key]}
+                    onChange={(e) => setMedicalForm({ ...medicalForm, [field.key]: e.target.value })}
+                    className="bg-gray-900/60 border border-gray-700 rounded-lg p-2 text-white text-xs outline-none h-12"
+                  />
+                ) : (
+                  <span className="text-white font-medium text-sm">{(profileData as any)?.[field.key] || 'None'}</span>
+                )}
+              </div>
+            ))}
           </div>
         </section>
 
@@ -261,50 +198,93 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
         <section className="mb-6">
           <div className="flex justify-between items-center mb-3 px-1">
             <h3 className="text-gray-400 text-xs font-bold uppercase tracking-wider">Emergency Contacts</h3>
-            <button className="flex items-center gap-1 text-blue-400 text-xs font-semibold bg-blue-500/10 px-3 py-1.5 rounded-full hover:bg-blue-500/20 transition-colors">
-              <span className="material-symbols-outlined text-sm">add</span> Add New
+            <button
+              onClick={() => setIsAddingContact(!isAddingContact)}
+              className="flex items-center gap-1 text-blue-400 text-xs font-semibold bg-blue-500/10 px-3 py-1.5 rounded-full"
+            >
+              <span className="material-symbols-outlined text-sm">{isAddingContact ? 'close' : 'add'}</span>
+              {isAddingContact ? 'Cancel' : 'Add New'}
             </button>
           </div>
 
+          {/* Add Contact Form */}
+          {isAddingContact && (
+            <form
+              onSubmit={handleAddContact}
+              className="bg-gray-800/80 border border-blue-500/30 rounded-3xl p-5 mb-4 flex flex-col gap-3 animate-in fade-in slide-in-from-top-2"
+            >
+              <input
+                placeholder="Full Name"
+                required
+                value={newContact.name}
+                onChange={(e) => setNewContact({ ...newContact, name: e.target.value })}
+                className="bg-gray-900 border border-gray-700 rounded-xl p-3 text-white text-sm outline-none"
+              />
+              <div className="flex gap-2">
+                <input
+                  placeholder="Relation (e.g. Mom)"
+                  required
+                  value={newContact.relation}
+                  onChange={(e) => setNewContact({ ...newContact, relation: e.target.value })}
+                  className="flex-1 bg-gray-900 border border-gray-700 rounded-xl p-3 text-white text-sm outline-none"
+                />
+                <input
+                  placeholder="Phone"
+                  type="tel"
+                  required
+                  value={newContact.phone_number}
+                  onChange={(e) => setNewContact({ ...newContact, phone_number: e.target.value })}
+                  className="flex-1 bg-gray-900 border border-gray-700 rounded-xl p-3 text-white text-sm outline-none"
+                />
+              </div>
+              <button
+                disabled={isSaving}
+                className="bg-blue-600 text-white font-bold py-3 rounded-xl active:scale-95 transition-all"
+              >
+                {isSaving ? 'Adding...' : 'Save Contact'}
+              </button>
+            </form>
+          )}
+
+          {/* Contacts List */}
           <div className="bg-gray-800/50 border border-gray-700/50 rounded-3xl overflow-hidden flex flex-col">
+            {contacts.length === 0 && !isAddingContact && (
+              <p className="text-gray-500 text-xs text-center py-8 italic">No contacts added yet.</p>
+            )}
             {contacts.map((contact, index) => (
               <div
                 key={contact.id}
                 className={`flex items-center justify-between p-4 ${index !== contacts.length - 1 ? 'border-b border-gray-700/50' : ''}`}
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-gray-300 font-bold text-sm">
+                  <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400 font-bold text-sm">
                     {contact.name.charAt(0)}
                   </div>
                   <div>
                     <h4 className="text-white font-medium text-sm">{contact.name}</h4>
                     <p className="text-gray-400 text-xs">
-                      {contact.relation} • {contact.phone}
+                      {contact.relation} • {contact.phone_number}
                     </p>
                   </div>
                 </div>
-                <button className="w-10 h-10 rounded-full bg-gray-700/50 flex items-center justify-center text-blue-400 hover:bg-gray-700 transition-colors">
+                <a
+                  href={`tel:${contact.phone_number}`}
+                  className="w-10 h-10 rounded-full bg-gray-700/50 flex items-center justify-center text-green-400"
+                >
                   <span className="material-symbols-outlined text-lg">call</span>
-                </button>
+                </a>
               </div>
             ))}
           </div>
         </section>
-
-        <p className="text-gray-500 text-[10px] text-center mb-4 flex items-center justify-center gap-1">
-          <span className="material-symbols-outlined text-xs">lock</span>
-          Data is encrypted and shared only during emergency alerts.
-        </p>
       </div>
 
-      {/* LOGOUT BUTTON */}
-      <div className="mt-8 mb-4 px-4">
+      <div className="mt-auto px-4 pb-4">
         <button
           onClick={handleLogout}
-          className="w-full flex items-center justify-center gap-2 py-3.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 font-semibold rounded-2xl border border-red-500/20 transition-all active:scale-95"
+          className="w-full flex items-center justify-center gap-2 py-3.5 bg-red-500/10 text-red-500 font-semibold rounded-2xl border border-red-500/20 active:scale-95"
         >
-          <span className="material-symbols-outlined text-xl">logout</span>
-          Sign Out
+          <span className="material-symbols-outlined text-xl">logout</span> Sign Out
         </button>
       </div>
     </div>
