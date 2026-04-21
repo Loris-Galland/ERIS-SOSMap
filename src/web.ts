@@ -15,6 +15,6 @@ export class CapacitorErisSosmapWeb extends WebPlugin implements CapacitorErisSo
     
     console.log('WEB MOCK - Emergency Triggered:', options);
     
-    return { success: true, transmissionMethod: 'WEB_SIMULATION' };
+    return { success: true, transmissionMethod: 'INTERNET' };
   }
 }

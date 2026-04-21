@@ -5,7 +5,7 @@ import { Geolocation } from '@capacitor/geolocation';
 
 // Auth & Services imports
 import { supabase } from './db/supabaseClient';
-import { dispatchSOS } from './services/sosService'; 
+import { dispatchSOS } from './services/sosService';
 
 // UI imports
 import AuthScreen from './components/AuthScreen';
@@ -128,7 +128,7 @@ export default function App() {
 
   // SOS Click Handler 
   const handleSOSClick = async () => {
-    if (!session?.user || userPosition.lat === 0) {
+    if (!session?.user) {
       setSosStatusMessage("Acquiring GPS, please wait...");
       setTimeout(() => setSosStatusMessage(null), 3000);
       return;
