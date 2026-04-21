@@ -16,6 +16,9 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
   const [isAddingContact, setIsAddingContact] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
+  // State for the contact currently being edited
+  const [editingContactId, setEditingContactId] = useState<string | null>(null);
+
   // ─── FORM STATES ───
   const [medicalForm, setMedicalForm] = useState({
     blood_type: '',
@@ -25,6 +28,13 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
   });
 
   const [newContact, setNewContact] = useState({
+    name: '',
+    relation: '',
+    phone_number: '',
+  });
+
+  // Form state for the contact being edited
+  const [editContactForm, setEditContactForm] = useState({
     name: '',
     relation: '',
     phone_number: '',
@@ -42,7 +52,7 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
     if (user) {
       setUserId(user.id);
 
-      // Fetch Profile
+      // Fetch user profile
       const { data: profile } = await supabase.from('user_profiles').select('*').eq('id', user.id).single();
 
       if (profile) {
@@ -55,18 +65,22 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
         });
       }
 
-      // Fetch Emergency Contacts
+      // Fetch emergency contacts
       fetchContacts(user.id);
     }
   };
 
   const fetchContacts = async (uid: string) => {
-    const { data, error } = await supabase.from('emergency_contacts').select('*').eq('user_id', uid);
+    const { data, error } = await supabase
+      .from('emergency_contacts')
+      .select('*')
+      .eq('user_id', uid)
+      .order('id', { ascending: true }); // Keep the same ordering
 
     if (!error && data) setContacts(data);
   };
 
-  // ─── ACTIONS ───
+  // ─── MEDICAL ACTIONS ───
   const handleSaveMedical = async () => {
     if (!userId) return;
     setIsSaving(true);
@@ -82,6 +96,7 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
     }
   };
 
+  // ─── CONTACT ACTIONS ───
   const handleAddContact = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!userId) return;
@@ -101,6 +116,57 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleDeleteContact = async (contactId: string) => {
+    // Request confirmation before deleting
+    const confirmDelete = window.confirm('Are you sure you want to delete this contact?');
+    if (!confirmDelete) return;
+
+    setIsSaving(true);
+    try {
+      const { error } = await supabase.from('emergency_contacts').delete().eq('id', contactId);
+
+      if (error) throw error;
+
+      // Update local list by filtering out the deleted contact
+      setContacts(contacts.filter((c) => c.id !== contactId));
+    } catch (err) {
+      console.error(err);
+      alert('Error deleting contact');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleUpdateContact = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingContactId) return;
+    setIsSaving(true);
+
+    try {
+      const { error } = await supabase.from('emergency_contacts').update(editContactForm).eq('id', editingContactId);
+
+      if (error) throw error;
+
+      // Update the contact locally to avoid reloading the entire database
+      setContacts(contacts.map((c) => (c.id === editingContactId ? { ...c, ...editContactForm } : c)));
+
+      setEditingContactId(null); // Exit edit mode
+    } catch (err) {
+      alert('Error updating contact');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const startEditingContact = (contact: any) => {
+    setEditingContactId(contact.id);
+    setEditContactForm({
+      name: contact.name,
+      relation: contact.relation,
+      phone_number: contact.phone_number,
+    });
   };
 
   const handleLogout = async () => {
@@ -199,7 +265,10 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
           <div className="flex justify-between items-center mb-3 px-1">
             <h3 className="text-gray-400 text-xs font-bold uppercase tracking-wider">Emergency Contacts</h3>
             <button
-              onClick={() => setIsAddingContact(!isAddingContact)}
+              onClick={() => {
+                setIsAddingContact(!isAddingContact);
+                setEditingContactId(null); // Close any active edit mode
+              }}
               className="flex items-center gap-1 text-blue-400 text-xs font-semibold bg-blue-500/10 px-3 py-1.5 rounded-full"
             >
               <span className="material-symbols-outlined text-sm">{isAddingContact ? 'close' : 'add'}</span>
@@ -251,28 +320,96 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
             {contacts.length === 0 && !isAddingContact && (
               <p className="text-gray-500 text-xs text-center py-8 italic">No contacts added yet.</p>
             )}
+
             {contacts.map((contact, index) => (
               <div
                 key={contact.id}
-                className={`flex items-center justify-between p-4 ${index !== contacts.length - 1 ? 'border-b border-gray-700/50' : ''}`}
+                className={`p-4 ${index !== contacts.length - 1 ? 'border-b border-gray-700/50' : ''}`}
               >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400 font-bold text-sm">
-                    {contact.name.charAt(0)}
+                {/* IF THE CONTACT IS IN EDIT MODE */}
+                {editingContactId === contact.id ? (
+                  <form onSubmit={handleUpdateContact} className="flex flex-col gap-3 animate-in fade-in">
+                    <input
+                      placeholder="Full Name"
+                      required
+                      value={editContactForm.name}
+                      onChange={(e) => setEditContactForm({ ...editContactForm, name: e.target.value })}
+                      className="bg-gray-900 border border-gray-700 rounded-xl p-3 text-white text-sm outline-none"
+                    />
+                    <div className="flex gap-2">
+                      <input
+                        placeholder="Relation"
+                        required
+                        value={editContactForm.relation}
+                        onChange={(e) => setEditContactForm({ ...editContactForm, relation: e.target.value })}
+                        className="flex-1 bg-gray-900 border border-gray-700 rounded-xl p-3 text-white text-sm outline-none"
+                      />
+                      <input
+                        placeholder="Phone"
+                        type="tel"
+                        required
+                        value={editContactForm.phone_number}
+                        onChange={(e) => setEditContactForm({ ...editContactForm, phone_number: e.target.value })}
+                        className="flex-1 bg-gray-900 border border-gray-700 rounded-xl p-3 text-white text-sm outline-none"
+                      />
+                    </div>
+                    <div className="flex justify-end gap-2 mt-1">
+                      <button
+                        type="button"
+                        onClick={() => setEditingContactId(null)}
+                        className="px-4 py-2 text-gray-400 text-xs font-bold rounded-lg hover:bg-gray-700/50"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isSaving}
+                        className="px-4 py-2 bg-green-500/20 text-green-400 text-xs font-bold rounded-lg"
+                      >
+                        {isSaving ? 'Saving...' : 'Save'}
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  /* NORMAL CONTACT DISPLAY */
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400 font-bold text-sm">
+                        {contact.name.charAt(0)}
+                      </div>
+                      <div>
+                        <h4 className="text-white font-medium text-sm">{contact.name}</h4>
+                        <p className="text-gray-400 text-xs">
+                          {contact.relation} • {contact.phone_number}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Actions: Edit, Delete, Call */}
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => startEditingContact(contact)}
+                        className="w-8 h-8 rounded-full bg-gray-700/50 flex items-center justify-center text-gray-400 hover:text-white"
+                      >
+                        <span className="material-symbols-outlined text-sm">edit</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleDeleteContact(contact.id)}
+                        className="w-8 h-8 rounded-full bg-red-500/10 flex items-center justify-center text-red-400 hover:bg-red-500/20"
+                      >
+                        <span className="material-symbols-outlined text-sm">delete</span>
+                      </button>
+
+                      <a
+                        href={`tel:${contact.phone_number}`}
+                        className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center text-green-400 ml-1"
+                      >
+                        <span className="material-symbols-outlined text-lg">call</span>
+                      </a>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="text-white font-medium text-sm">{contact.name}</h4>
-                    <p className="text-gray-400 text-xs">
-                      {contact.relation} • {contact.phone_number}
-                    </p>
-                  </div>
-                </div>
-                <a
-                  href={`tel:${contact.phone_number}`}
-                  className="w-10 h-10 rounded-full bg-gray-700/50 flex items-center justify-center text-green-400"
-                >
-                  <span className="material-symbols-outlined text-lg">call</span>
-                </a>
+                )}
               </div>
             ))}
           </div>
