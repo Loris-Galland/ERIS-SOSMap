@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import L from 'leaflet';
 import { createOfflineLayer, TILE_URL } from '../utils/MapUtils';
 
@@ -20,6 +20,34 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [downloadingId, setDownloadingId] = useState<number | null>(null);
   const [progress, setProgress] = useState(0);
+  const [downloadedRegions, setDownloadedRegions] = useState<number[]>([]);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('eris_offline_regions');
+    if (saved) {
+      try {
+        setDownloadedRegions(JSON.parse(saved));
+      } catch (e) {
+        console.error('Erreur de lecture du localStorage', e);
+      }
+    }
+  }, []);
+
+  const saveRegionAsDownloaded = (id: number) => {
+    setDownloadedRegions((prev) => {
+      const updated = prev.includes(id) ? prev : [...prev, id];
+      localStorage.setItem('eris_offline_regions', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const removeRegionFromDownloaded = (id: number) => {
+    setDownloadedRegions((prev) => {
+      const updated = prev.filter((regionId) => regionId !== id);
+      localStorage.setItem('eris_offline_regions', JSON.stringify(updated));
+      return updated;
+    });
+  };
 
   // Downloading fonction linked to the ID of the region
   const handleDownload = (id: number, name: string) => {
@@ -53,8 +81,8 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
     // 2. Configuration du contrôleur de sauvegarde (plugin leaflet.offline)
     const control = (L.control as any).savetiles(layer, {
       zoomlevels: [12, 13, 14, 15], // Niveaux de zoom optimisés pour ERIS
-      confirm: (data: any) => {
-        const tilesToSave = Array.isArray(data) ? data : data.tiles || [];
+      confirm: (offlineLayer: any, successCallback: () => void) => {
+        const tilesToSave = offlineLayer._tilesforSave || [];
         const count = tilesToSave.length;
 
         if (count === 0) {
@@ -64,10 +92,10 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
         }
 
         if (window.confirm(`Download ${count} tiles for ${name}?`)) {
-          return true;
+          successCallback();
+        } else {
+          cleanup(); // Reset si l'utilisateur annule
         }
-        cleanup(); // Reset si l'utilisateur annule
-        return false;
       },
       confirmNoTiles: () => {
         alert('This zone is already downloaded');
@@ -92,7 +120,7 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
 
     // 3. Gestion des événements pour l'interface
     layer.on('savestart', (e: any) => {
-      totalTiles = e.length || (e.tiles ? e.tiles.length : 0);
+      totalTiles = e.length || (e._tilesforSave ? e._tilesforSave.length : 0);
     });
 
     layer.on('savetileend', () => {
@@ -120,13 +148,20 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
       setTimeout(() => {
         try {
           // On passe explicitement les bounds au plugin
-          control._saveTiles(bounds);
+          control._saveTiles();
         } catch (e) {
           console.error('Erreur interne SaveTiles:', e);
           cleanup();
         }
       }, 500); // Un peu de répit pour le processeur
     });
+  };
+
+  const handleDelete = (id: number, name: string) => {
+    if (window.confirm(`Are you sure you want to delete ${name} offline data?`)) {
+      removeRegionFromDownloaded(id);
+      alert(`${name} removed from your offline maps.`);
+    }
   };
 
   // Suggested regions to download
@@ -179,44 +214,76 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
           <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3 px-2">Suggested Regions</h3>
 
           <div className="flex flex-col gap-3">
-            {suggestions.map((region) => (
-              <div
-                key={region.id}
-                className="bg-gray-800/40 border border-gray-700/50 rounded-3xl p-4 flex items-center justify-between shadow-sm"
-              >
-                <div className="flex items-center gap-4">
-                  {/* Location Icon */}
-                  <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 bg-gray-700/50 text-gray-400">
-                    <span className="material-symbols-outlined text-xl">location_city</span>
+            {suggestions.map((region) => {
+              const isDownloaded = downloadedRegions.includes(region.id);
+              const isDownloadingThis = downloadingId === region.id;
+              return (
+                <div
+                  key={region.id}
+                  className="bg-gray-800/40 border border-gray-700/50 rounded-3xl p-4 flex items-center justify-between shadow-sm"
+                >
+                  <div className="flex items-center gap-4">
+                    {/* Location Icon */}
+                    <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 bg-gray-700/50 text-gray-400">
+                      <span className="material-symbols-outlined text-xl">
+                        {isDownloaded ? 'offline_pin' : 'location_city'}
+                      </span>
+                    </div>
+
+                    {/* Region Info */}
+                    <div>
+                      <h4 className="text-white text-sm font-bold mb-0.5">{region.name}</h4>
+                      <p className="text-gray-500 text-[11px] font-medium">
+                        {isDownloadingThis
+                          ? `Downloading... ${progress}%`
+                          : isDownloaded
+                            ? 'Available Offline'
+                            : `${region.size} • Map & Navigation Data`}
+                      </p>
+                    </div>
                   </div>
 
-                  {/* Region Info */}
-                  <div>
-                    <h4 className="text-white text-sm font-bold mb-0.5">{region.name}</h4>
-                    <p className="text-gray-500 text-[11px] font-medium">
-                      {downloadingId === region.id
-                        ? `Downloading... ${progress}%`
-                        : `${region.size} • Map & Navigation Data`}
-                    </p>
+                  {/* Download/Update/Delete Button */}
+                  <div className="flex items-center gap-2">
+                    {isDownloadingThis ? (
+                      <button
+                        disabled
+                        className="w-10 h-10 rounded-full flex items-center justify-center bg-yellow-500/20 text-yellow-500 animate-pulse shrink-0"
+                      >
+                        <span className="material-symbols-outlined text-xl">sync</span>
+                      </button>
+                    ) : isDownloaded ? (
+                      <>
+                        {/* Bouton de Mise à jour */}
+                        <button
+                          onClick={() => handleDownload(region.id, region.name)}
+                          className="w-10 h-10 rounded-full flex items-center justify-center bg-blue-600/10 text-blue-400 hover:bg-blue-600/20 transition-all shrink-0"
+                          title="Update Zone"
+                        >
+                          <span className="material-symbols-outlined text-xl">update</span>
+                        </button>
+                        {/* Bouton de Suppression */}
+                        <button
+                          onClick={() => handleDelete(region.id, region.name)}
+                          className="w-10 h-10 rounded-full flex items-center justify-center bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all shrink-0"
+                          title="Delete Zone"
+                        >
+                          <span className="material-symbols-outlined text-xl">delete</span>
+                        </button>
+                      </>
+                    ) : (
+                      // Bouton de Téléchargement initial
+                      <button
+                        onClick={() => handleDownload(region.id, region.name)}
+                        className="w-10 h-10 rounded-full flex items-center justify-center bg-blue-600/10 text-blue-400 hover:bg-blue-600/20 transition-all shrink-0"
+                      >
+                        <span className="material-symbols-outlined text-xl">download</span>
+                      </button>
+                    )}
                   </div>
                 </div>
-
-                {/* Download Button */}
-                <button
-                  onClick={() => handleDownload(region.id, region.name)}
-                  disabled={downloadingId !== null}
-                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-all active:scale-95 shrink-0 ${
-                    downloadingId === region.id
-                      ? 'bg-yellow-500/20 text-yellow-500 animate-pulse'
-                      : 'bg-blue-600/10 text-blue-400 hover:bg-blue-600/20'
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-xl">
-                    {downloadingId === region.id ? 'sync' : 'download'}
-                  </span>
-                </button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
       </div>
