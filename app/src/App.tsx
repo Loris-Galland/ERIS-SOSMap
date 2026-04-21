@@ -21,8 +21,12 @@ export default function App() {
     'ALERTS',
   );
   const [offlineMode, setOfflineMode] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
   const [showHazardAlert, setShowHazardAlert] = useState(true);
+
+  // Search states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
     if (!mapRef.current || mapInstance.current) return;
@@ -34,8 +38,6 @@ export default function App() {
     }).setView([48.8584, 2.2945], 13);
 
     // Modern dark map base layer (Voyager dark)
-    //L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png').addTo(mapInstance.current);
-
     (L.tileLayer as any)
       .offline('https://a.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png', {
         attribution: 'ERIS Safety',
@@ -98,6 +100,49 @@ export default function App() {
     };
   }, []);
 
+  // Search logic
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(async () => {
+      if (!searchQuery.trim()) {
+        setSearchResults([]);
+        return;
+      }
+      setIsSearching(true);
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=4`,
+        );
+        const data = await res.json();
+        setSearchResults(data);
+      } catch (e) {
+        console.error('Search error', e);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 600);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery]);
+
+  // Search result
+  const handleSelectResult = (item: any) => {
+    if (!mapInstance.current) return;
+
+    // Récupération des limites de la zone (Bounding Box)
+    const bbox = item.boundingbox;
+    const bounds = L.latLngBounds(
+      [parseFloat(bbox[0]), parseFloat(bbox[2])],
+      [parseFloat(bbox[1]), parseFloat(bbox[3])],
+    );
+
+    // Déplace la carte principale vers la zone recherchée avec une animation fluide
+    mapInstance.current.fitBounds(bounds, { animate: true, duration: 1.5 });
+
+    // Nettoie l'interface
+    setSearchQuery('');
+    setSearchResults([]);
+  };
+
   return (
     <div className="flex flex-col h-screen w-full bg-[#0f141e] text-white overflow-hidden font-sans">
       {/* ─── HEADER ─── */}
@@ -117,17 +162,40 @@ export default function App() {
       </header>
 
       {/* ─── SEARCH & OFFLINE BAR ─── */}
-      <div className="flex items-center px-4 py-3 bg-[#0f141e]/80 backdrop-blur-md z-[999] gap-3 relative">
+      <div className="flex items-center px-4 py-3 bg-[#0f141e]/80 backdrop-blur-md z-[9999] gap-3 relative">
         {/* Search input (Soft rounded shape) */}
-        <div className="flex items-center flex-1 bg-gray-800/60 border border-gray-700/50 rounded-full px-4 py-2.5 gap-2 shadow-inner">
-          <span className="material-symbols-outlined text-gray-400 text-lg">search</span>
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search location or coordinates..."
-            className="bg-transparent text-sm text-white w-full outline-none placeholder-gray-500"
-          />
+        <div className="relative flex-1">
+          <div className="flex items-center bg-gray-800/60 border border-gray-700/50 rounded-full px-4 py-2.5 gap-2 shadow-inner">
+            <span className="material-symbols-outlined text-gray-400 text-lg">search</span>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search city or coordinates..."
+              className="bg-transparent text-sm text-white w-full outline-none placeholder-gray-500"
+            />
+            {isSearching && <span className="material-symbols-outlined text-blue-400 text-lg animate-spin">sync</span>}
+          </div>
+
+          {searchResults.length > 0 && (
+            <div className="absolute top-full mt-2 left-0 right-0 bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl overflow-hidden flex flex-col z-[5000]">
+              {searchResults.map((result, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleSelectResult(result)}
+                  className="px-4 py-3 text-left hover:bg-gray-700 flex items-center gap-3 border-b border-gray-700/50 last:border-0 transition-colors"
+                >
+                  <span className="material-symbols-outlined text-gray-400">location_on</span>
+                  <div className="flex-col overflow-hidden">
+                    <span className="text-white text-sm font-bold block truncate">
+                      {result.display_name.split(',')[0]}
+                    </span>
+                    <span className="text-gray-500 text-[10px] block truncate">{result.display_name}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Offline Mode Toggle Button */}

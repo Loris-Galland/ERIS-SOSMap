@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import { createOfflineLayer, TILE_URL } from '../utils/MapUtils';
 
@@ -16,11 +16,31 @@ const REGIONS_BOUNDS: Record<number, L.LatLngBounds> = {
   5: L.latLngBounds([44.7, -0.7], [45.0, -0.4]), // Bordeaux
 };
 
+// Suggested regions to download
+const PRESET_SUGGESTIONS = [
+  { id: 1, name: 'Paris & Île-de-France', size: '345 MB' },
+  { id: 2, name: 'Lyon Metropolitan', size: '180 MB' },
+  { id: 3, name: 'Marseille & Calanques', size: '210 MB' },
+  { id: 4, name: 'French Alps Sector', size: '420 MB' },
+  { id: 5, name: 'Bordeaux & Gironde', size: '150 MB' },
+];
+
 export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [downloadingId, setDownloadingId] = useState<number | null>(null);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [downloadingId, setDownloadingId] = useState<number | string | null>(null);
   const [progress, setProgress] = useState(0);
-  const [downloadedRegions, setDownloadedRegions] = useState<number[]>([]);
+  const [downloadedRegions, setDownloadedRegions] = useState<(number | string)[]>([]);
+
+  const [customRegions, setCustomRegions] = useState<any[]>([]);
+
+  const [isManualSelecting, setIsManualSelecting] = useState(false);
+  const [manualSearchQuery, setManualSearchQuery] = useState('');
+  const [manualSearchResults, setManualSearchResults] = useState<any[]>([]);
+  const [isManualSearching, setIsManualSearching] = useState(false);
+
+  const selectionMapRef = useRef<L.Map | null>(null);
+  const selectionContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem('eris_offline_regions');
@@ -28,12 +48,105 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
       try {
         setDownloadedRegions(JSON.parse(saved));
       } catch (e) {
-        console.error('Erreur de lecture du localStorage', e);
+        console.error(e);
+      }
+    }
+
+    const savedCustom = localStorage.getItem('eris_custom_regions');
+    if (savedCustom) {
+      try {
+        setCustomRegions(JSON.parse(savedCustom));
+      } catch (e) {
+        console.error(e);
       }
     }
   }, []);
 
-  const saveRegionAsDownloaded = (id: number) => {
+  // --- SEARCH LOGIC IN THE OVERLAY ---
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(async () => {
+      if (!manualSearchQuery.trim()) {
+        setManualSearchResults([]);
+        return;
+      }
+      setIsManualSearching(true);
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(manualSearchQuery)}&limit=4`,
+        );
+        const data = await res.json();
+        setManualSearchResults(data);
+      } catch (e) {
+        console.error('Erreur recherche manuelle', e);
+      } finally {
+        setIsManualSearching(false);
+      }
+    }, 600);
+    return () => clearTimeout(delayDebounceFn);
+  }, [manualSearchQuery]);
+
+  const handleManualSearchResultClick = (item: any) => {
+    if (!selectionMapRef.current) return;
+    const bbox = item.boundingbox;
+    const bounds = L.latLngBounds(
+      [parseFloat(bbox[0]), parseFloat(bbox[2])],
+      [parseFloat(bbox[1]), parseFloat(bbox[3])],
+    );
+    selectionMapRef.current.fitBounds(bounds, { animate: true });
+    setManualSearchQuery('');
+    setManualSearchResults([]);
+  };
+
+  // --- SELECTION MAP INITIALIZATION LOGIC ---
+  useEffect(() => {
+    if (isManualSelecting && selectionContainerRef.current && !selectionMapRef.current) {
+      selectionMapRef.current = L.map(selectionContainerRef.current, {
+        zoomControl: false,
+      }).setView([46.6033, 1.8883], 6); // Centered on France
+
+      createOfflineLayer().addTo(selectionMapRef.current);
+      setTimeout(() => selectionMapRef.current?.invalidateSize(), 200);
+    }
+    return () => {
+      if (selectionMapRef.current && !isManualSelecting) {
+        selectionMapRef.current.remove();
+        selectionMapRef.current = null;
+      }
+    };
+  }, [isManualSelecting]);
+
+  const handleConfirmManualArea = () => {
+    if (!selectionMapRef.current) return;
+
+    const bounds = selectionMapRef.current.getBounds();
+    const zoom = selectionMapRef.current.getZoom();
+
+    // On demande un nom à l'utilisateur
+    const customName = window.prompt('Name this personnalized zone :', 'My Zone');
+
+    if (customName && customName.trim() !== '') {
+      const customId = `custom_${Date.now()}`; // ID unique basé sur le temps
+
+      const newCustomRegion = {
+        id: customId,
+        name: customName,
+        size: 'Custom Area',
+        bounds: {
+          southWest: [bounds.getSouthWest().lat, bounds.getSouthWest().lng],
+          northEast: [bounds.getNorthEast().lat, bounds.getNorthEast().lng],
+        },
+      };
+
+      const updatedCustomRegions = [newCustomRegion, ...customRegions];
+      setCustomRegions(updatedCustomRegions);
+      localStorage.setItem('eris_custom_regions', JSON.stringify(updatedCustomRegions));
+
+      setIsManualSelecting(false);
+      handleDownload(customId, customName, bounds);
+    }
+  };
+
+  const saveRegionAsDownloaded = (id: number | string) => {
     setDownloadedRegions((prev) => {
       const updated = prev.includes(id) ? prev : [...prev, id];
       localStorage.setItem('eris_offline_regions', JSON.stringify(updated));
@@ -49,7 +162,7 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
     localStorage.setItem('eris_offline_metadata', JSON.stringify(metadata));
   };
 
-  const removeRegionFromDownloaded = (id: number) => {
+  const removeRegionFromDownloaded = (id: number | string) => {
     setDownloadedRegions((prev) => {
       const updated = prev.filter((regionId) => regionId !== id);
       localStorage.setItem('eris_offline_regions', JSON.stringify(updated));
@@ -58,29 +171,30 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
   };
 
   // Downloading fonction linked to the ID of the region
-  const handleDownload = (id: number, name: string) => {
-    const bounds = REGIONS_BOUNDS[id];
+  const handleDownload = (id: number | string, name: string, customBounds?: L.LatLngBounds) => {
+    let bounds = customBounds;
+
     if (!bounds) {
-      return;
+      if (typeof id === 'number') {
+        bounds = REGIONS_BOUNDS[id];
+      } else {
+        const customReg = customRegions.find((r) => r.id === id);
+        if (customReg) {
+          bounds = L.latLngBounds(customReg.bounds.southWest, customReg.bounds.northEast);
+        }
+      }
     }
+
+    if (!bounds) return;
 
     setDownloadingId(id);
     setProgress(0);
 
     const tempDiv = document.createElement('div');
-    tempDiv.style.width = '256px';
-    tempDiv.style.height = '256px';
-    tempDiv.style.position = 'fixed';
-    tempDiv.style.top = '-9999px';
+    tempDiv.style.cssText = 'width:256px; height:256px; position:fixed; top:-9999px;';
     document.body.appendChild(tempDiv);
 
-    const tempMap = L.map(tempDiv, {
-      fadeAnimation: false,
-      zoomAnimation: false,
-      inertia: false,
-    });
-
-    tempMap.invalidateSize();
+    const tempMap = L.map(tempDiv, { fadeAnimation: false, zoomAnimation: false, inertia: false });
     tempMap.fitBounds(bounds, { animate: false });
 
     // 1. Création de la couche hors ligne
@@ -174,17 +288,82 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
     }
   };
 
-  // Suggested regions to download
-  const [suggestions] = useState([
-    { id: 1, name: 'Paris & Île-de-France', size: '345 MB' },
-    { id: 2, name: 'Lyon Metropolitan', size: '180 MB' },
-    { id: 3, name: 'Marseille & Calanques', size: '210 MB' },
-    { id: 4, name: 'French Alps Sector', size: '420 MB' },
-    { id: 5, name: 'Bordeaux & Gironde', size: '150 MB' },
-  ]);
+  const displayRegions = [...customRegions, ...PRESET_SUGGESTIONS];
 
   return (
     <div className="flex flex-col h-full bg-[#0f141e] w-full overflow-y-auto font-sans relative pb-20">
+      {/* ─── MANUAL SELECTION OVERLAY ─── */}
+      {isManualSelecting && (
+        <div className="absolute inset-0 z-[7000] flex flex-col bg-[#0f141e] animate-in slide-in-from-bottom duration-300">
+          <header className="px-4 py-4 bg-[#0f141e]/95 backdrop-blur-md z-[50] shadow-md border-b border-gray-800">
+            <div className="flex items-center gap-3 mb-4">
+              <button
+                onClick={() => setIsManualSelecting(false)}
+                className="w-10 h-10 flex items-center justify-center bg-gray-800 rounded-full text-white"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+              <div className="flex-1">
+                <h2 className="text-white text-sm font-bold">Manual saving</h2>
+                <p className="text-gray-400 text-[10px]">Search a place or move the map</p>
+              </div>
+              <button
+                onClick={handleConfirmManualArea}
+                className="bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg active:scale-95"
+              >
+                Save this zone
+              </button>
+            </div>
+
+            {/* BARRE DE RECHERCHE INTERNE */}
+            <div className="relative">
+              <div className="flex items-center bg-gray-800/60 border border-gray-700/50 rounded-full px-4 py-2 gap-2">
+                <span className="material-symbols-outlined text-gray-400 text-sm">search</span>
+                <input
+                  type="text"
+                  value={manualSearchQuery}
+                  onChange={(e) => setManualSearchQuery(e.target.value)}
+                  placeholder="Trouver une ville à sauvegarder..."
+                  className="bg-transparent text-xs text-white w-full outline-none"
+                />
+                {isManualSearching && (
+                  <span className="material-symbols-outlined text-blue-400 text-sm animate-spin">sync</span>
+                )}
+              </div>
+
+              {/* RÉSULTATS DE RECHERCHE INTERNE */}
+              {manualSearchResults.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl overflow-hidden flex flex-col z-[100]">
+                  {manualSearchResults.map((result, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => handleManualSearchResultClick(result)}
+                      className="px-4 py-3 text-left hover:bg-gray-800 flex items-center gap-3 border-b border-gray-800 last:border-0"
+                    >
+                      <span className="material-symbols-outlined text-gray-400 text-sm">location_on</span>
+                      <div className="flex-col overflow-hidden">
+                        <span className="text-white text-xs font-bold block truncate">
+                          {result.display_name.split(',')[0]}
+                        </span>
+                        <span className="text-gray-500 text-[9px] block truncate">{result.display_name}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </header>
+
+          <div className="flex-1 w-full relative bg-gray-900">
+            <div className="absolute inset-0" ref={selectionContainerRef}></div>
+            {/* Viseur central */}
+            <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-[10]">
+              <div className="w-[85%] h-[65%] border-2 border-blue-500/40 rounded-3xl shadow-[0_0_0_9999px_rgba(15,20,30,0.5)]"></div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ─── HEADER ─── */}
       <header className="flex justify-between items-center px-6 py-4 sticky top-0 z-50 bg-[#0f141e]/90 backdrop-blur-md">
         <div className="flex items-center">
@@ -199,6 +378,7 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
 
         {/* Custom Area Map Button (Top Right) */}
         <button
+          onClick={() => setIsManualSelecting(true)}
           className="text-blue-400 hover:text-blue-300 transition-colors flex items-center justify-center w-10 h-10 bg-blue-500/10 rounded-full active:scale-95"
           title="Select Custom Area"
         >
@@ -224,9 +404,11 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
           <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3 px-2">Suggested Regions</h3>
 
           <div className="flex flex-col gap-3">
-            {suggestions.map((region) => {
+            {displayRegions.map((region) => {
               const isDownloaded = downloadedRegions.includes(region.id);
               const isDownloadingThis = downloadingId === region.id;
+              const isCustom = typeof region.id === 'string' && region.id.startsWith('custom');
+
               return (
                 <div
                   key={region.id}
@@ -236,7 +418,7 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
                     {/* Location Icon */}
                     <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 bg-gray-700/50 text-gray-400">
                       <span className="material-symbols-outlined text-xl">
-                        {isDownloaded ? 'offline_pin' : 'location_city'}
+                        {isDownloaded ? 'offline_pin' : isCustom ? 'dashboard_customize' : 'location_city'}
                       </span>
                     </div>
 

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import L from 'leaflet';
 import { createOfflineLayer } from '../utils/MapUtils';
+import OfflineMapViewer from './OfflineMapViewer';
 
 function getRelativeTimeString(timestamp: number): string {
   const diff = Date.now() - timestamp;
@@ -53,34 +54,31 @@ const REGIONS_DATA: Record<number, { name: string; size: string; detail: string;
 };
 
 export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScreenProps) {
-  const [downloadedIds, setDownloadedIds] = useState<number[]>([]);
-  const [metadata, setMetadata] = useState<Record<number, { lastUpdate: number }>>({});
-  const [activeMenu, setActiveMenu] = useState<number | null>(null);
-  const [updatingId, setUpdatingId] = useState<number | null>(null);
+  const [downloadedIds, setDownloadedIds] = useState<(number | string)[]>([]);
+  const [customRegions, setCustomRegions] = useState<any[]>([]);
+
+  const [metadata, setMetadata] = useState<Record<number | string, { lastUpdate: number }>>({});
+  const [activeMenu, setActiveMenu] = useState<number | string | null>(null);
+  const [updatingId, setUpdatingId] = useState<number | string | null>(null);
   const [progress, setProgress] = useState(0);
+  const [viewingRegion, setViewingRegion] = useState<number | string | null>(null);
   const [storageUsedMB, setStorageUsedMB] = useState(0);
 
   const MAX_STORAGE_MB = 1024;
 
   useEffect(() => {
     async function calculateRealStorage() {
-      // Vérifie si le navigateur supporte l'API de stockage
       if (navigator.storage && navigator.storage.estimate) {
         try {
           const { usage } = await navigator.storage.estimate();
-          // L'usage est renvoyé en octets (bytes), on le convertit en MB
           const mb = (usage || 0) / (1024 * 1024);
-          setStorageUsedMB(Number(mb.toFixed(1))); // Garde 1 chiffre après la virgule
+          setStorageUsedMB(Number(mb.toFixed(1)));
         } catch (e) {
           console.error('Erreur de calcul du stockage', e);
         }
       }
     }
-
-    // Premier calcul au chargement
     calculateRealStorage();
-
-    // Actualisation automatique toutes les 5 secondes (pratique si un téléchargement tourne en fond)
     const interval = setInterval(calculateRealStorage, 5000);
     return () => clearInterval(interval);
   }, []);
@@ -93,10 +91,35 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
 
     const savedMeta = localStorage.getItem('eris_offline_metadata');
     if (savedMeta) setMetadata(JSON.parse(savedMeta));
+
+    const savedCustom = localStorage.getItem('eris_custom_regions');
+    if (savedCustom) setCustomRegions(JSON.parse(savedCustom));
   }, []);
 
+  // Funstion used bto get the info of a zone
+  const getRegionInfo = (id: number | string) => {
+    // For presets
+    if (typeof id === 'number' || (typeof id === 'string' && !id.startsWith('custom_'))) {
+      const preset = REGIONS_DATA[Number(id)];
+      return preset ? { ...preset, isCustom: false } : null;
+    }
+
+    // For manual zones
+    const custom = customRegions.find((r) => r.id === id);
+    if (custom) {
+      return {
+        name: custom.name,
+        size: custom.size || 'Custom Size',
+        detail: 'Zone personnalisée',
+        bounds: L.latLngBounds(custom.bounds.southWest, custom.bounds.northEast),
+        isCustom: true,
+      };
+    }
+    return null;
+  };
+
   // --- DELETION LOGIC ---
-  const handleDelete = (id: number, name: string) => {
+  const handleDelete = (id: number | string, name: string) => {
     if (window.confirm(`Delete ${name} from offline storage?`)) {
       const updated = downloadedIds.filter((rid) => rid !== id);
       setDownloadedIds(updated);
@@ -106,8 +129,8 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
   };
 
   // --- UPDATING LOGIC ---
-  const handleUpdate = (id: number, name: string) => {
-    const region = REGIONS_DATA[id];
+  const handleUpdate = (id: number | string, name: string) => {
+    const region = getRegionInfo(id);
     if (!region) return;
 
     setUpdatingId(id);
@@ -189,6 +212,18 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
 
   return (
     <div className="flex flex-col h-full bg-[#0f141e] w-full overflow-y-auto font-sans relative pb-24">
+      {viewingRegion !== null &&
+        (() => {
+          const regionInfo = getRegionInfo(viewingRegion);
+          if (!regionInfo) return null;
+          return (
+            <OfflineMapViewer
+              name={regionInfo.name}
+              bounds={regionInfo.bounds}
+              onClose={() => setViewingRegion(null)}
+            />
+          );
+        })()}
       {/* ─── HEADER ─── */}
       <header className="flex items-center px-6 py-4 bg-[#0f141e]/90 backdrop-blur-md sticky top-0 z-50">
         <button
@@ -239,13 +274,17 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
           <div className="flex flex-col gap-3">
             {downloadedIds.length > 0 ? (
               downloadedIds.map((id) => {
-                const info = REGIONS_DATA[id];
+                const info = getRegionInfo(id);
                 if (!info) return null;
                 const lastUpdate = metadata[id]?.lastUpdate;
                 return (
                   <div
                     key={id}
-                    className="bg-gray-800/40 border border-gray-700/50 rounded-3xl p-4 flex items-center justify-between shadow-sm animate-fade-in"
+                    onClick={() => {
+                      const isUpdating = updatingId === id;
+                      if (!isUpdating) setViewingRegion(id);
+                    }}
+                    className="bg-gray-800/40 border border-gray-700/50 rounded-3xl p-4 flex items-center justify-between shadow-sm animate-fade-in cursor-pointer hover:bg-gray-800/60 transition-colors"
                   >
                     <div className="flex items-center gap-4">
                       <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 bg-green-500/10 text-green-400">
@@ -262,7 +301,10 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
                     {/* BOUTON MORE */}
                     <div className="relative">
                       <button
-                        onClick={() => setActiveMenu(activeMenu === id ? null : id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveMenu(activeMenu === id ? null : id);
+                        }}
                         className="text-gray-500 hover:text-white transition-colors w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-700/30"
                       >
                         <span className="material-symbols-outlined">more_vert</span>
@@ -272,13 +314,19 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
                       {activeMenu === id && (
                         <div className="absolute right-0 mt-2 w-36 bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl z-[3000] overflow-hidden animate-in fade-in zoom-in duration-150">
                           <button
-                            onClick={() => handleUpdate(id, info.name)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleUpdate(id, info.name);
+                            }}
                             className="w-full px-4 py-3 text-left text-xs font-bold text-blue-400 hover:bg-gray-800 flex items-center gap-2 border-b border-gray-800"
                           >
                             <span className="material-symbols-outlined text-sm">update</span> Update
                           </button>
                           <button
-                            onClick={() => handleDelete(id, info.name)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(id, info.name);
+                            }}
                             className="w-full px-4 py-3 text-left text-xs font-bold text-red-400 hover:bg-gray-800 flex items-center gap-2"
                           >
                             <span className="material-symbols-outlined text-sm">delete</span> Delete
