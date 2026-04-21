@@ -272,6 +272,10 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
 
   const displayRegions = [...customRegions, ...PRESET_REGIONS];
 
+  const filteredRegions = displayRegions.filter((region) =>
+    region.name.toLowerCase().includes(searchQuery.toLowerCase()),
+  );
+
   return (
     <div className="flex flex-col h-full bg-[#0f141e] w-full overflow-y-auto font-sans relative pb-20">
       {/* ─── MANUAL SELECTION OVERLAY ─── */}
@@ -386,67 +390,71 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
           <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3 px-2">Suggested Regions</h3>
 
           <div className="flex flex-col gap-3">
-            {displayRegions.map((region) => {
-              const isDownloaded = downloadedRegions.includes(region.id);
-              const isDownloadingThis = downloadingId === region.id;
-              const isCustom = typeof region.id === 'string' && region.id.startsWith('custom');
+            {filteredRegions.length > 0 ? (
+              filteredRegions.map((region) => {
+                const isDownloaded = downloadedRegions.includes(region.id);
+                const isDownloadingThis = downloadingId === region.id;
+                const isCustom = typeof region.id === 'string' && region.id.startsWith('custom');
 
-              return (
-                <div
-                  key={region.id}
-                  className="bg-gray-800/40 border border-gray-700/50 rounded-3xl p-4 flex items-center justify-between shadow-sm"
-                >
-                  <div className="flex items-center gap-4">
-                    {/* Location Icon */}
-                    <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 bg-gray-700/50 text-gray-400">
-                      <span className="material-symbols-outlined text-xl">
-                        {isDownloaded ? 'offline_pin' : isCustom ? 'dashboard_customize' : 'location_city'}
-                      </span>
+                return (
+                  <div
+                    key={region.id}
+                    className="bg-gray-800/40 border border-gray-700/50 rounded-3xl p-4 flex items-center justify-between shadow-sm"
+                  >
+                    <div className="flex items-center gap-4">
+                      {/* Location Icon */}
+                      <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 bg-gray-700/50 text-gray-400">
+                        <span className="material-symbols-outlined text-xl">
+                          {isDownloaded ? 'offline_pin' : isCustom ? 'dashboard_customize' : 'location_city'}
+                        </span>
+                      </div>
+
+                      {/* Region Info */}
+                      <div>
+                        <h4 className="text-white text-sm font-bold mb-0.5">{region.name}</h4>
+                        <p className="text-gray-500 text-[11px] font-medium">
+                          {isDownloadingThis
+                            ? `Downloading... ${progress}%`
+                            : isDownloaded
+                              ? 'Available Offline'
+                              : `${region.size} • Map & Navigation Data`}
+                        </p>
+                      </div>
                     </div>
 
-                    {/* Region Info */}
-                    <div>
-                      <h4 className="text-white text-sm font-bold mb-0.5">{region.name}</h4>
-                      <p className="text-gray-500 text-[11px] font-medium">
-                        {isDownloadingThis
-                          ? `Downloading... ${progress}%`
-                          : isDownloaded
-                            ? 'Available Offline'
-                            : `${region.size} • Map & Navigation Data`}
-                      </p>
+                    {/* Buttons (Download / Loading / Delete) */}
+                    <div className="flex items-center gap-2">
+                      {isDownloadingThis ? (
+                        <button
+                          disabled
+                          className="w-10 h-10 rounded-full flex items-center justify-center bg-yellow-500/20 text-yellow-500 animate-pulse shrink-0"
+                        >
+                          <span className="material-symbols-outlined text-xl">sync</span>
+                        </button>
+                      ) : isDownloaded ? (
+                        <button
+                          onClick={() => handleDelete(region.id, region.name)}
+                          className="w-10 h-10 rounded-full flex items-center justify-center bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all shrink-0"
+                          title="Delete Zone"
+                        >
+                          <span className="material-symbols-outlined text-xl">delete</span>
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleDownload(region.id, region.name)}
+                          className="w-10 h-10 rounded-full flex items-center justify-center bg-blue-600/10 text-blue-400 hover:bg-blue-600/20 transition-all shrink-0"
+                          title="Download Zone"
+                        >
+                          <span className="material-symbols-outlined text-xl">download</span>
+                        </button>
+                      )}
                     </div>
                   </div>
-
-                  {/* Buttons (Download / Loading / Delete) */}
-                  <div className="flex items-center gap-2">
-                    {isDownloadingThis ? (
-                      <button
-                        disabled
-                        className="w-10 h-10 rounded-full flex items-center justify-center bg-yellow-500/20 text-yellow-500 animate-pulse shrink-0"
-                      >
-                        <span className="material-symbols-outlined text-xl">sync</span>
-                      </button>
-                    ) : isDownloaded ? (
-                      <button
-                        onClick={() => handleDelete(region.id, region.name)}
-                        className="w-10 h-10 rounded-full flex items-center justify-center bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all shrink-0"
-                        title="Delete Zone"
-                      >
-                        <span className="material-symbols-outlined text-xl">delete</span>
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => handleDownload(region.id, region.name)}
-                        className="w-10 h-10 rounded-full flex items-center justify-center bg-blue-600/10 text-blue-400 hover:bg-blue-600/20 transition-all shrink-0"
-                        title="Download Zone"
-                      >
-                        <span className="material-symbols-outlined text-xl">download</span>
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })
+            ) : (
+              <div className="text-center py-6 text-gray-500 text-sm">Aucune région trouvée pour "{searchQuery}"</div>
+            )}
           </div>
         </section>
       </div>

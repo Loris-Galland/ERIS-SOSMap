@@ -20,39 +20,6 @@ interface OfflineScreenProps {
   onNavigateDownload: () => void; // New prop for navigation
 }
 
-const REGIONS_DATA: Record<number, { name: string; size: string; detail: string; bounds: L.LatLngBounds }> = {
-  1: {
-    name: 'Paris & Île-de-France',
-    size: '345 MB',
-    detail: 'Île-de-France',
-    bounds: L.latLngBounds([48.5, 2.0], [49.0, 2.7]),
-  },
-  2: {
-    name: 'Lyon Metropolitan',
-    size: '180 MB',
-    detail: 'Auvergne-Rhône-Alpes',
-    bounds: L.latLngBounds([45.6, 4.7], [45.9, 5.0]),
-  },
-  3: {
-    name: 'Marseille & Calanques',
-    size: '210 MB',
-    detail: 'PACA',
-    bounds: L.latLngBounds([43.1, 5.2], [43.4, 5.5]),
-  },
-  4: {
-    name: 'French Alps Sector',
-    size: '420 MB',
-    detail: 'Savoie / Haute-Savoie',
-    bounds: L.latLngBounds([44.5, 5.5], [46.5, 7.5]),
-  },
-  5: {
-    name: 'Bordeaux & Gironde',
-    size: '150 MB',
-    detail: 'Nouvelle-Aquitaine',
-    bounds: L.latLngBounds([44.7, -0.7], [45.0, -0.4]),
-  },
-};
-
 export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScreenProps) {
   const [downloadedIds, setDownloadedIds] = useState<(number | string)[]>([]);
   const [customRegions, setCustomRegions] = useState<any[]>([]);
@@ -100,7 +67,7 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
   const getRegionInfo = (id: number | string) => {
     // For presets
     if (typeof id === 'number' || (typeof id === 'string' && !id.startsWith('custom_'))) {
-      const preset = REGIONS_DATA[Number(id)];
+      const preset = PRESET_REGIONS.find((r) => r.id === Number(id));
       return preset ? { ...preset, isCustom: false } : null;
     }
 
