@@ -143,16 +143,6 @@ export default function App() {
     };
   }, [session]);
 
-  // Loading screen to prevent UI flash
-  if (isInitializing) {
-    return <div className="h-screen w-full bg-[#0f141e]"></div>;
-  }
-
-  // Show auth screen if not logged in
-  if (!session) {
-    return <AuthScreen />;
-  }
-
   // --- LOCAL DATA CHARGING---
   useEffect(() => {
     if (activeTab !== 'MAP') return;
@@ -223,6 +213,16 @@ export default function App() {
 
     return () => clearTimeout(delayDebounceFn);
   }, [searchQuery, offlineMode, localSearchableRegions]);
+
+  // Loading screen to prevent UI flash
+  if (isInitializing) {
+    return <div className="h-screen w-full bg-[#0f141e]"></div>;
+  }
+
+  // Show auth screen if not logged in
+  if (!session) {
+    return <AuthScreen />;
+  }
 
   // Search result
   const handleSelectResult = (item: any) => {
