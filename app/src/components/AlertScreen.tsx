@@ -93,18 +93,42 @@ export default function AlertScreen() {
     setStatusType(null);
 
     if (!userId) {
-      setStatusMessage('Authentication error. Please log in again.');
-      setStatusType('error');
-      setIsSending(false);
-      setTimeout(() => {
-        setStatusMessage(null);
-        setStatusType(null);
-      }, 4000);
-      return;
-    }
+      setStatusMessage('Authentication error. Please log in again.');
+      setStatusType('error');
+      setIsSending(false);
+      setTimeout(() => {
+        setStatusMessage(null);
+        setStatusType(null);
+      }, 4000);
+      return;
+    }
 
-    // Call SOS service
-    const result = await dispatchSOS(userId, rawPosition, 100, notes);
+    // Fallback sync if local profile is missing but internet is available
+    if (navigator.onLine) {
+      try {
+        const localProfile = await db.userProfile.get(userId);
+        if (!localProfile) {
+          console.log('[ERIS] Local profile missing, fetching from Supabase...');
+          const { data } = await supabase.from('user_profiles').select('*').eq('id', userId).single();
+          if (data) {
+            await db.userProfile.put({
+              id: userId,
+              firstName: data.first_name || '',
+              lastName: data.last_name || '',
+              bloodType: data.blood_type || 'Unknown',
+              allergies: data.allergies || 'None',
+              medicalConditions: data.medical_conditions || 'None',
+              currentCondition: data.current_condition || 'Healthy',
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('[ERIS] Could not fetch profile before dispatch', e);
+      }
+    }
+
+    // Call SOS service
+    const result = await dispatchSOS(userId, rawPosition, 100, notes);
 
     if (result.success && result.method === 'INTERNET') {
       setStatusMessage('Alert received by the global network.');
