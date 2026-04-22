@@ -5,9 +5,9 @@ import { Geolocation } from '@capacitor/geolocation';
 
 // Auth imports
 import { supabase } from './db/supabaseClient';
-import AuthScreen from './components/AuthScreen';
 
 // UI imports
+import AuthScreen from './components/AuthScreen';
 import OfflineScreen from './components/OfflineScreen';
 import ProfileScreen from './components/ProfileScreen';
 import SettingsScreen from './components/SettingsScreen';
@@ -139,9 +139,7 @@ export default function App() {
           <img src={logo} alt="ERIS-SOSMap" className="h-7 w-auto object-contain" />
         </div>
         <h1 className="flex-1 text-center text-white text-lg font-bold tracking-wide">ERIS Safety</h1>
-        <button className="bg-red-500 hover:bg-red-600 text-white text-xs font-bold uppercase tracking-wider px-4 py-1.5 rounded-full transition-colors shadow-lg shadow-red-900/20 active:scale-95">
-          SOS
-        </button>
+        <div className="w-16" /> {/* Spacer invisible pour garder le titre centré */}
       </header>
 
       {/* Search and Offline Bar */}
@@ -237,13 +235,6 @@ export default function App() {
             </div>
           </div>
         )}
-
-        {/* SOS Button */}
-        <div className="absolute bottom-6 right-4 z-[1000]">
-          <button className="w-16 h-16 rounded-full bg-red-500 border-4 border-red-400/50 flex flex-col items-center justify-center shadow-[0_0_20px_rgba(239,68,68,0.4)] active:scale-95 transition-all">
-            <span className="material-symbols-outlined text-white text-3xl">sensors</span>
-          </button>
-        </div>
 
         {/* Tab Screens */}
         {activeTab === 'ALERTS' && (
