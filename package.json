@@ -79,6 +79,7 @@
 	},
 	"dependencies": {
 		"@capacitor/device": "^8.0.2",
-		"@supabase/supabase-js": "^2.104.0"
+		"@supabase/supabase-js": "^2.104.0",
+		"leaflet.offline": "^3.2.1"
 	}
 }

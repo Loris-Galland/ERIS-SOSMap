@@ -11,7 +11,7 @@ export const flushRetryQueue = async () => {
       const { error } = await supabase.from('sos_alerts').insert({
         user_id: item.user_id,
         latitude: item.lat,
-        longitude: item.lon, 
+        longitude: item.lon,
         altitude: item.altitude,
         battery_level: item.battery_level,
         notes: item.notes,
@@ -19,9 +19,9 @@ export const flushRetryQueue = async () => {
         transmission_method: 'INTERNET_RETRY',
       });
       if (!error) {
-        await db.sosQueue.update(item.id!, { 
+        await db.sosQueue.update(item.id!, {
           status: 'delivered',
-          transmission_method: 'INTERNET_RETRY' 
+          transmission_method: 'INTERNET_RETRY',
         });
         console.log('[ERIS] Queued SOS successfully flushed:', item.id);
       }
@@ -35,11 +35,13 @@ export const flushRetryQueue = async () => {
 export const dispatchSOS = async (
   userId: string,
   position: { lat: number; lng: number; alt: number },
-  batteryLevel: number = 100
+  batteryLevel: number = 100,
+  notes: string = '',
 ) => {
-  
   // Try to flush any previously failed SOS alerts first
   await flushRetryQueue();
+
+  const finalNotes = notes.trim() !== '' ? notes : 'Manual SOS alert triggered';
 
   // Payload strictly formatted for Supabase schema
   const supabasePayload = {
@@ -48,7 +50,7 @@ export const dispatchSOS = async (
     longitude: position.lng,
     altitude: position.alt,
     battery_level: batteryLevel,
-    notes: 'Manual SOS alert triggered',
+    notes: finalNotes, // <-- 3. UTILISÉ ICI
     status: 'pending',
     transmission_method: 'PENDING',
   };
@@ -60,8 +62,8 @@ export const dispatchSOS = async (
     lon: position.lng,
     altitude: position.alt,
     battery_level: batteryLevel,
-    notes: 'Manual SOS alert triggered',
-    status: 'pending' as any, // Type cast to satisfy Dexie interface
+    notes: finalNotes,
+    status: 'pending' as any,
     transmission_method: 'PENDING',
     timestamp: Date.now(),
   };
@@ -75,14 +77,13 @@ export const dispatchSOS = async (
     });
 
     if (nativeResult.transmissionMethod === 'INTERNET') {
-      
       // Send directly to Supabase
       const { error } = await supabase.from('sos_alerts').insert({
         ...supabasePayload,
         status: 'delivered',
         transmission_method: 'INTERNET',
       });
-      
+
       if (error) throw error;
 
       // Keep a local history of successful alerts in Dexie
@@ -91,9 +92,7 @@ export const dispatchSOS = async (
       await db.sosQueue.add(dexiePayload);
 
       return { success: true, method: 'INTERNET' };
-      
     } else {
-      
       // Handled by Native Wi-Fi Fallback
       // Store in local queue for history and sync
       dexiePayload.status = 'delivered_to_hardware';
@@ -103,10 +102,9 @@ export const dispatchSOS = async (
       return { success: true, method: nativeResult.transmissionMethod };
     }
   } catch (error) {
-    
     // Total failure, queue for background retry
-    console.error("SOS Dispatch failed, adding to background retry queue:", error);
-    
+    console.error('SOS Dispatch failed, adding to background retry queue:', error);
+
     dexiePayload.status = 'queued';
     dexiePayload.transmission_method = 'QUEUED_FOR_RETRY';
     await db.sosQueue.add(dexiePayload);
