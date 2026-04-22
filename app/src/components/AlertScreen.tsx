@@ -22,15 +22,15 @@ export default function AlertScreen() {
   const [holding, setHolding] = useState<boolean>(false);
   const [sent, setSent] = useState<boolean>(false);
   const [progress, setProgress] = useState<number>(0);
-  const [notes, setNotes] = useState<string>(''); 
+  const [notes, setNotes] = useState<string>('');
   const [userId, setUserId] = useState<string | null>(null);
-  
+
   const [coords, setCoords] = useState<Coords>({
     lat: '0.0000° N',
     lon: '0.0000° E',
     alt: '0 m',
   });
-  
+
   // States added for backend logic
   const [rawPosition, setRawPosition] = useState<RawPosition>({ lat: 0, lng: 0, alt: 0 });
   const [isSending, setIsSending] = useState<boolean>(false);
@@ -43,28 +43,28 @@ export default function AlertScreen() {
   const HOLD_DURATION = 3000;
 
   // Live count of queued offline alerts from Dexie
-  const queuedCount = useLiveQuery(
-    () => db.sosQueue.where('status').equals('queued').count(),
-    [],
-    0
-  );
+  const queuedCount = useLiveQuery(() => db.sosQueue.where('status').equals('queued').count(), [], 0);
 
   // Simulate GPS updates
   useEffect(() => {
-    const watchId = navigator.geolocation.watchPosition((pos: GeolocationPosition) => {
-      setCoords({
-        lat: `${pos.coords.latitude.toFixed(4)}° N`,
-        lon: `${pos.coords.longitude.toFixed(4)}° E`,
-        alt: `${Math.round(pos.coords.altitude ?? 0)} m`,
-      });
-      // Save raw numbers for Supabase
-      setRawPosition({
-        lat: pos.coords.latitude,
-        lng: pos.coords.longitude,
-        alt: pos.coords.altitude ?? 0,
-      });
-    }, (error) => console.error(error), { enableHighAccuracy: true });
-    
+    const watchId = navigator.geolocation.watchPosition(
+      (pos: GeolocationPosition) => {
+        setCoords({
+          lat: `${pos.coords.latitude.toFixed(4)}° N`,
+          lon: `${pos.coords.longitude.toFixed(4)}° E`,
+          alt: `${Math.round(pos.coords.altitude ?? 0)} m`,
+        });
+        // Save raw numbers for Supabase
+        setRawPosition({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          alt: pos.coords.altitude ?? 0,
+        });
+      },
+      (error) => console.error(error),
+      { enableHighAccuracy: true },
+    );
+
     return () => navigator.geolocation.clearWatch(watchId);
   }, []);
 
@@ -75,7 +75,7 @@ export default function AlertScreen() {
     });
   }, []);
 
-  // Auto-sync when network is restored 
+  // Auto-sync when network is restored
   useEffect(() => {
     const handleOnline = () => {
       console.log('Réseau de retour ! Lancement de la synchronisation auto...');
@@ -96,12 +96,15 @@ export default function AlertScreen() {
       setStatusMessage('Authentication error. Please log in again.');
       setStatusType('error');
       setIsSending(false);
-      setTimeout(() => { setStatusMessage(null); setStatusType(null); }, 4000);
+      setTimeout(() => {
+        setStatusMessage(null);
+        setStatusType(null);
+      }, 4000);
       return;
     }
 
-    // Call SOS service (100 is for battery level)
-    const result = await dispatchSOS(userId, rawPosition, 100);
+    // Call SOS service
+    const result = await dispatchSOS(userId, rawPosition, 100, notes);
 
     if (result.success && result.method === 'INTERNET') {
       setStatusMessage('Alert received by the global network.');
@@ -123,8 +126,9 @@ export default function AlertScreen() {
       setProgress(0);
       setStatusMessage(null);
       setStatusType(null);
+      setNotes('');
     }, 5000);
-  }, [rawPosition]);
+  }, [rawPosition, userId, notes]);
 
   // SOS hold start
   const startHold = useCallback(() => {
@@ -145,7 +149,7 @@ export default function AlertScreen() {
       if (progressTimerRef.current) clearInterval(progressTimerRef.current);
       setHolding(false);
       setProgress(100);
-      triggerSOS(); 
+      triggerSOS();
     }, HOLD_DURATION);
   }, [sent, isSending, triggerSOS]);
 
@@ -160,16 +164,11 @@ export default function AlertScreen() {
 
   return (
     <div className="flex flex-col h-full bg-[#0f141e] w-full overflow-y-auto font-sans relative pb-24 pt-4 px-4">
-      
       {/* Header */}
       <header className="mb-8 mt-2 text-center">
-        <h2 className="text-white font-bold text-3xl tracking-tight mb-2">
-          Trigger SOS Alert
-        </h2>
+        <h2 className="text-white font-bold text-3xl tracking-tight mb-2">Trigger SOS Alert</h2>
         <div className="h-1 w-16 bg-red-500 mx-auto rounded-full mb-3" />
-        <p className="text-gray-400 font-medium text-xs">
-          Notifies local emergency services immediately
-        </p>
+        <p className="text-gray-400 font-medium text-xs">Notifies local emergency services immediately</p>
       </header>
 
       {/* Queued Banner */}
@@ -185,7 +184,6 @@ export default function AlertScreen() {
       {/* SOS Button Zone */}
       <section className="flex flex-col items-center justify-center py-6 mb-4">
         <div className="relative flex items-center justify-center mb-8">
-          
           {/* Rotating ring */}
           <div
             className="absolute rounded-full border border-red-500/20 bg-red-500/5"
@@ -241,7 +239,10 @@ export default function AlertScreen() {
             {isSending ? (
               <span className="material-symbols-outlined relative z-10 text-white text-6xl animate-spin">sync</span>
             ) : (
-              <span className="material-symbols-outlined relative z-10 text-white text-6xl" style={{ fontVariationSettings: "'FILL' 1" }}>
+              <span
+                className="material-symbols-outlined relative z-10 text-white text-6xl"
+                style={{ fontVariationSettings: "'FILL' 1" }}
+              >
                 {sent ? 'check_circle' : 'emergency_share'}
               </span>
             )}
@@ -254,19 +255,35 @@ export default function AlertScreen() {
 
         {/* Status Message Banner */}
         {statusMessage && (
-          <div className={`w-full max-w-xs rounded-2xl p-3 flex items-center gap-2 mb-4 ${
-            statusType === 'success' ? 'bg-green-500/10 border border-green-500/30' :
-            statusType === 'warning' ? 'bg-yellow-500/10 border border-yellow-500/30' :
-            statusType === 'error' ? 'bg-red-500/10 border border-red-500/30' :
-            'bg-gray-800/60 border border-gray-700/50'
-          }`}>
-            <span className={`material-symbols-outlined text-lg ${
-              statusType === 'success' ? 'text-green-400' :
-              statusType === 'warning' ? 'text-yellow-400' :
-              statusType === 'error' ? 'text-red-400' :
-              'text-blue-400'
-            }`}>
-              {statusType === 'success' ? 'check_circle' : statusType === 'warning' ? 'schedule_send' : statusType === 'error' ? 'error' : 'sync'}
+          <div
+            className={`w-full max-w-xs rounded-2xl p-3 flex items-center gap-2 mb-4 ${
+              statusType === 'success'
+                ? 'bg-green-500/10 border border-green-500/30'
+                : statusType === 'warning'
+                  ? 'bg-yellow-500/10 border border-yellow-500/30'
+                  : statusType === 'error'
+                    ? 'bg-red-500/10 border border-red-500/30'
+                    : 'bg-gray-800/60 border border-gray-700/50'
+            }`}
+          >
+            <span
+              className={`material-symbols-outlined text-lg ${
+                statusType === 'success'
+                  ? 'text-green-400'
+                  : statusType === 'warning'
+                    ? 'text-yellow-400'
+                    : statusType === 'error'
+                      ? 'text-red-400'
+                      : 'text-blue-400'
+              }`}
+            >
+              {statusType === 'success'
+                ? 'check_circle'
+                : statusType === 'warning'
+                  ? 'schedule_send'
+                  : statusType === 'error'
+                    ? 'error'
+                    : 'sync'}
             </span>
             <p className="text-white text-xs font-medium leading-snug">{statusMessage}</p>
           </div>
@@ -293,7 +310,10 @@ export default function AlertScreen() {
       {/* Alert Details Form */}
       <section className="space-y-4 px-2">
         <div className="bg-gray-800/40 border border-gray-700/50 rounded-3xl p-4 shadow-sm">
-          <label className="block font-bold text-xs uppercase tracking-wider mb-2 text-gray-400 px-1" htmlFor="alert-notes">
+          <label
+            className="block font-bold text-xs uppercase tracking-wider mb-2 text-gray-400 px-1"
+            htmlFor="alert-notes"
+          >
             Emergency Details (Optional)
           </label>
           <textarea
@@ -316,12 +336,8 @@ export default function AlertScreen() {
               { label: 'ALTITUDE', value: coords.alt },
             ].map(({ label, value }) => (
               <div key={label} className="flex flex-col gap-1">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">
-                  {label}
-                </span>
-                <span className="text-sm font-bold text-blue-400">
-                  {value}
-                </span>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">{label}</span>
+                <span className="text-sm font-bold text-blue-400">{value}</span>
               </div>
             ))}
           </div>
@@ -330,9 +346,7 @@ export default function AlertScreen() {
         {/* Network Indicator */}
         <div className="flex items-center justify-center gap-2 py-2">
           <span
-            className={`w-2 h-2 rounded-full ${
-              navigator.onLine ? 'bg-green-500' : 'bg-amber-500 animate-pulse'
-            }`}
+            className={`w-2 h-2 rounded-full ${navigator.onLine ? 'bg-green-500' : 'bg-amber-500 animate-pulse'}`}
           />
           <span className="text-gray-500 text-[11px] font-semibold uppercase tracking-wider">
             {navigator.onLine ? 'Connected — ERIS Network Active' : 'Offline — Hardware Fallback Ready'}
