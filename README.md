@@ -27,6 +27,7 @@ npx cap sync
 <docgen-index>
 
 * [`echo(...)`](#echo)
+* [`triggerEmergency(...)`](#triggeremergency)
 
 </docgen-index>
 
@@ -44,6 +45,21 @@ echo(options: { value: string; }) => Promise<{ value: string; }>
 | **`options`** | <code>{ value: string; }</code> |
 
 **Returns:** <code>Promise&lt;{ value: string; }&gt;</code>
+
+--------------------
+
+
+### triggerEmergency(...)
+
+```typescript
+triggerEmergency(options: { latitude: number; longitude: number; userId: string; }) => Promise<{ success: boolean; transmissionMethod: string; }>
+```
+
+| Param         | Type                                                                  |
+| ------------- | --------------------------------------------------------------------- |
+| **`options`** | <code>{ latitude: number; longitude: number; userId: string; }</code> |
+
+**Returns:** <code>Promise&lt;{ success: boolean; transmissionMethod: string; }&gt;</code>
 
 --------------------
 
