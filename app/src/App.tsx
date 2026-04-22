@@ -80,6 +80,8 @@ export default function App() {
   useEffect(() => {
     if (!session || !mapRef.current || mapInstance.current) return;
 
+    let watchId: string | null = null;
+
     mapInstance.current = L.map(mapRef.current, {
       zoomControl: false,
       attributionControl: false,
@@ -101,7 +103,7 @@ export default function App() {
 
     const startTracking = async () => {
       try {
-        await Geolocation.watchPosition({ enableHighAccuracy: true, timeout: 10000 }, (position) => {
+        watchId = await Geolocation.watchPosition({ enableHighAccuracy: true, timeout: 10000 }, (position) => {
           if (position) {
             const { latitude, longitude, altitude } = position.coords;
 
@@ -138,8 +140,13 @@ export default function App() {
     startTracking();
 
     return () => {
+      if (watchId) {
+        Geolocation.clearWatch({ id: watchId });
+      }
       mapInstance.current?.remove();
       mapInstance.current = null;
+
+      userMarker.current = null;
     };
   }, [session]);
 
@@ -258,7 +265,9 @@ export default function App() {
           <img src={logo} alt="ERIS-SOSMap" className="h-7 w-auto object-contain" />
         </div>
         <h1 className="flex-1 text-center text-white text-lg font-bold tracking-wide">ERIS Safety</h1>
-        <div className="w-16" /> {/* Spacer invisible pour garder le titre centré */}
+        <button className="bg-red-500 hover:bg-red-600 text-white text-xs font-bold uppercase tracking-wider px-4 py-1.5 rounded-full transition-colors shadow-lg shadow-red-900/20 active:scale-95">
+          SOS
+        </button>
       </header>
 
       {/* ─── SEARCH & OFFLINE BAR ─── */}
@@ -378,6 +387,13 @@ export default function App() {
             </div>
           </div>
         )}
+
+        {/* ── MAIN SOS BUTTON (Bottom Right) ── */}
+        <div className="absolute bottom-6 right-4 z-[1000]">
+          <button className="w-16 h-16 rounded-full bg-red-500 border-4 border-red-400/50 flex flex-col items-center justify-center shadow-[0_0_20px_rgba(239,68,68,0.4)] active:scale-95 transition-all">
+            <span className="material-symbols-outlined text-white text-3xl">sensors</span>
+          </button>
+        </div>
 
         {/* Tab Screens */}
         {activeTab === 'ALERTS' && (
