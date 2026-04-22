@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { supabase } from '../db/supabaseClient';
 
 interface SettingsScreenProps {
   onBack: () => void;
@@ -19,6 +20,17 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
   // Type-safe toggle function for boolean settings
   const toggle = (key: keyof typeof settings) => {
     setSettings(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  // Handle secure logout
+  const handleLogout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      // App.tsx is listening to auth state changes and will automatically redirect to AuthScreen
+    } catch (error) {
+      console.error("Error logging out:", error);
+    }
   };
 
   // Reusable Switch Component
@@ -160,8 +172,11 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
           </div>
         </section>
 
-        {/* ─── LOGOUT ─── */}
-        <button className="mt-4 mb-8 w-full bg-red-500/10 border border-red-500/30 text-red-500 hover:bg-red-500/20 py-4 rounded-3xl text-sm font-bold flex items-center justify-center gap-2 transition-all active:scale-95">
+        {/* ─── LOGOUT BUTTON ─── */}
+        <button 
+          onClick={handleLogout}
+          className="mt-4 mb-8 w-full bg-red-500/10 border border-red-500/30 text-red-500 hover:bg-red-500/20 py-4 rounded-3xl text-sm font-bold flex items-center justify-center gap-2 transition-all active:scale-95"
+        >
           <span className="material-symbols-outlined">logout</span>
           Sign Out of ERIS System
         </button>
