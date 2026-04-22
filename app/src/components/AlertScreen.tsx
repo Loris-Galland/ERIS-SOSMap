@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../db/supabaseClient';
-import { dispatchSOS, flushRetryQueue } from '../services/sosService';
+import { dispatchSOS, flushRetryQueue, revokeSOS } from '../services/sosService'; // Added revokeSOS
 import { db } from '../db/localDb';
 import { useLiveQuery } from 'dexie-react-hooks';
 
@@ -37,9 +37,14 @@ export default function AlertScreen() {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [statusType, setStatusType] = useState<'success' | 'warning' | 'error' | null>(null);
 
+  // States for Grace Period (Cancellation)
+  const [isGracePeriod, setIsGracePeriod] = useState<boolean>(false);
+  const [lastAlertIds, setLastAlertIds] = useState<{ supabase?: string; local?: number } | null>(null);
+
   const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const progressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef<number | null>(null);
+  const graceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null); // Added Grace Timer
   const HOLD_DURATION = 3000;
 
   // Live count of queued offline alerts from Dexie
@@ -86,6 +91,33 @@ export default function AlertScreen() {
     return () => window.removeEventListener('online', handleOnline);
   }, []);
 
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      if (graceTimerRef.current) clearTimeout(graceTimerRef.current);
+    };
+  }, []);
+
+  // Function to cancel the alert during the grace period
+  const handleCancelAlert = async () => {
+    if (graceTimerRef.current) clearTimeout(graceTimerRef.current);
+
+    if (lastAlertIds) {
+      await revokeSOS(lastAlertIds.supabase, lastAlertIds.local);
+    }
+
+    setIsGracePeriod(false);
+    setSent(false);
+    setLastAlertIds(null);
+    setStatusMessage('SOS Alert Cancelled');
+    setStatusType('error');
+
+    setTimeout(() => {
+      setStatusMessage(null);
+      setStatusType(null);
+    }, 3000);
+  };
+
   // Actual SOS dispatch
   const triggerSOS = useCallback(async () => {
     setIsSending(true);
@@ -106,33 +138,53 @@ export default function AlertScreen() {
     // Call SOS service
     const result = await dispatchSOS(userId, rawPosition, 100, notes);
 
-    if (result.success && result.method === 'INTERNET') {
-      setStatusMessage('Alert received by the global network.');
+    if (result.success) {
+      // Store IDs and launch the grace period popup
+      setLastAlertIds({ supabase: (result as any).supabaseId, local: result.localId as number });
+      setIsGracePeriod(true);
+      setSent(true);
+
+      if (result.method === 'INTERNET') {
+        setStatusMessage('Alert received by the global network.');
+      } else {
+        setStatusMessage('Alert transmitted via local hardware fallback.');
+      }
       setStatusType('success');
-    } else if (result.success && result.method === 'WIFI_HARDWARE_FALLBACK') {
-      setStatusMessage('Alert transmitted via local hardware fallback.');
-      setStatusType('success');
+
+      // 5-second timer for cancellation window
+      graceTimerRef.current = setTimeout(() => {
+        setIsGracePeriod(false);
+        // Reset screen after grace period is fully over
+        setTimeout(() => {
+          setSent(false);
+          setProgress(0);
+          setStatusMessage(null);
+          setStatusType(null);
+          setNotes('');
+        }, 3000);
+      }, 5000);
     } else {
+      // Offline fallback behavior
       setStatusMessage('Offline: Alert saved and will be sent when network is restored.');
       setStatusType('warning');
+      setSent(true);
+
+      setTimeout(() => {
+        setSent(false);
+        setProgress(0);
+        setStatusMessage(null);
+        setStatusType(null);
+        setNotes('');
+      }, 5000);
     }
 
     setIsSending(false);
-    setSent(true);
-
-    // Reset after 5 seconds
-    setTimeout(() => {
-      setSent(false);
-      setProgress(0);
-      setStatusMessage(null);
-      setStatusType(null);
-      setNotes('');
-    }, 5000);
   }, [rawPosition, userId, notes]);
 
   // SOS hold start
   const startHold = useCallback(() => {
-    if (sent || isSending) return;
+    // Prevent holding if already sent, sending, or currently in grace period
+    if (sent || isSending || isGracePeriod) return;
     setHolding(true);
     setProgress(0);
     startTimeRef.current = Date.now();
@@ -151,7 +203,7 @@ export default function AlertScreen() {
       setProgress(100);
       triggerSOS();
     }, HOLD_DURATION);
-  }, [sent, isSending, triggerSOS]);
+  }, [sent, isSending, isGracePeriod, triggerSOS]);
 
   // SOS hold cancel
   const cancelHold = useCallback(() => {
@@ -164,6 +216,36 @@ export default function AlertScreen() {
 
   return (
     <div className="flex flex-col h-full bg-[#0f141e] w-full overflow-y-auto font-sans relative pb-24 pt-4 px-4">
+      {/* ─── CANCELLATION POPUP (GRACE PERIOD) ─── */}
+      {isGracePeriod && (
+        <div className="fixed bottom-28 left-4 right-4 z-[9999] animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="bg-red-600 rounded-2xl p-4 shadow-2xl flex items-center justify-between border border-white/20 overflow-hidden relative">
+            <div className="flex items-center gap-3 relative z-10">
+              <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center animate-pulse">
+                <span className="material-symbols-outlined text-white text-lg">emergency</span>
+              </div>
+              <div>
+                <p className="text-white font-bold text-sm">Alert Sent!</p>
+                <p className="text-white/80 text-[10px] uppercase tracking-wider font-semibold">
+                  Cancel available (5s)
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={handleCancelAlert}
+              className="bg-white text-red-600 font-black px-4 py-2 rounded-xl text-xs active:scale-95 transition-transform relative z-10"
+            >
+              CANCEL
+            </button>
+            {/* Timer Progress Bar */}
+            <div
+              className="absolute bottom-0 left-0 h-1 bg-white/40 w-full origin-left"
+              style={{ animation: 'timer-bar 5s linear forwards' }}
+            ></div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header className="mb-8 mt-2 text-center">
         <h2 className="text-white font-bold text-3xl tracking-tight mb-2">Trigger SOS Alert</h2>
@@ -321,7 +403,7 @@ export default function AlertScreen() {
             rows={3}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            disabled={isSending}
+            disabled={isSending || isGracePeriod}
             className="w-full bg-gray-900/50 border border-gray-700/50 rounded-2xl p-3 resize-none outline-none focus:ring-2 focus:ring-blue-500/50 text-white text-sm placeholder-gray-500 transition-all disabled:opacity-50"
             placeholder="Describe your situation (e.g., medical, fire, trapped)..."
           />
@@ -365,6 +447,10 @@ export default function AlertScreen() {
           10%  { opacity: 0.5; }
           90%  { opacity: 0.5; }
           100% { top: 100%; opacity: 0; }
+        }
+        @keyframes timer-bar {
+          from { transform: scaleX(0); }
+          to   { transform: scaleX(1); }
         }
       `}</style>
     </div>
