@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../db/supabaseClient';
 import { Geolocation } from '@capacitor/geolocation';
 import { Device } from '@capacitor/device';
+import { db } from "../db/localDb";
 
 interface ProfileScreenProps {
   onOpenSettings: () => void;
@@ -94,6 +95,17 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
           medical_conditions: profile.medical_conditions || '',
           current_medications: profile.current_medications || '',
         });
+
+        // Sync fetched profile to local offline database
+        await db.userProfile.put({
+          id: user.id,
+          firstName: profile.first_name || '',
+          lastName: profile.last_name || '',
+          bloodType: profile.blood_type || 'Unknown',
+          allergies: profile.allergies || 'None',
+          medicalConditions: profile.medical_conditions || 'None',
+          currentCondition: profile.current_condition || 'Healthy',
+        });
       }
 
       fetchContacts(user.id);
@@ -117,7 +129,21 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
     try {
       const { error } = await supabase.from('user_profiles').update(medicalForm).eq('id', userId);
       if (error) throw error;
-      setProfileData({ ...profileData, ...medicalForm });
+      
+      const updatedProfile = { ...profileData, ...medicalForm };
+      setProfileData(updatedProfile);
+      
+      // Sync medical updates to local offline database
+      await db.userProfile.put({
+        id: userId,
+        firstName: updatedProfile.first_name || '',
+        lastName: updatedProfile.last_name || '',
+        bloodType: updatedProfile.blood_type || 'Unknown',
+        allergies: updatedProfile.allergies || 'None',
+        medicalConditions: updatedProfile.medical_conditions || 'None',
+        currentCondition: updatedProfile.current_condition || 'Healthy',
+      });
+
       setIsEditingMedical(false);
     } catch (err) {
       alert('Error saving medical info');

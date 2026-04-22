@@ -17,6 +17,13 @@ export const flushRetryQueue = async () => {
         notes: item.notes,
         status: 'delivered',
         transmission_method: 'INTERNET_RETRY',
+        // Inject offline profile data during retry
+        first_name: item.first_name,
+        last_name: item.last_name,
+        blood_type: item.blood_type,
+        allergies: item.allergies,
+        medical_conditions: item.medical_conditions,
+        current_condition: item.current_condition
       });
       if (!error) {
         await db.sosQueue.update(item.id!, {
@@ -44,6 +51,14 @@ export const dispatchSOS = async (
   // Use user input or a default message
   const finalNotes = notes.trim() !== '' ? notes : 'Manual SOS alert triggered';
 
+  // Fetch local user profile to attach medical data even when offline
+  let profile = undefined;
+  try {
+    profile = await db.userProfile.get(userId);
+  } catch (e) {
+    console.warn('[ERIS] Could not load local profile', e);
+  }
+
   // Payload strictly formatted for Supabase schema
   const supabasePayload = {
     user_id: userId,
@@ -54,18 +69,20 @@ export const dispatchSOS = async (
     notes: finalNotes,
     status: 'pending',
     transmission_method: 'PENDING',
+    first_name: profile?.firstName || 'Unknown',
+    last_name: profile?.lastName || 'Unknown',
+    blood_type: profile?.bloodType || 'Unknown',
+    allergies: profile?.allergies || 'None',
+    medical_conditions: profile?.medicalConditions || 'None',
+    current_condition: profile?.currentCondition || 'Unknown'
   };
 
-  // Payload merged with Dexie specific requirements (PendingSOS interface)
+  // Payload merged with Dexie specific requirements
   const dexiePayload = {
-    user_id: userId,
+    ...supabasePayload,
     lat: position.lat,
     lon: position.lng,
-    altitude: position.alt,
-    battery_level: batteryLevel,
-    notes: finalNotes,
     status: 'pending' as any,
-    transmission_method: 'PENDING',
     timestamp: Date.now(),
   };
 
