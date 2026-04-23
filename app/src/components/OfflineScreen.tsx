@@ -9,10 +9,10 @@ function getRelativeTimeString(timestamp: number): string {
   const hours = Math.floor(minutes / 60);
   const days = Math.floor(hours / 24);
 
-  if (days > 0) return `Mis à jour il y a ${days} jour${days > 1 ? 's' : ''}`;
-  if (hours > 0) return `Mis à jour il y a ${hours} h`;
-  if (minutes > 0) return `Mis à jour il y a ${minutes} min`;
-  return "Mis à jour à l'instant";
+  if (days > 0) return `Updated ${days} day${days > 1 ? 's' : ''} ago`;
+  if (hours > 0) return `Updated ${hours}h ago`;
+  if (minutes > 0) return `Updated ${minutes} min ago`;
+  return 'Updated just now';
 }
 
 interface OfflineScreenProps {
@@ -63,7 +63,7 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
     if (savedCustom) setCustomRegions(JSON.parse(savedCustom));
   }, []);
 
-  // Funstion used bto get the info of a zone
+  // Funstion used to get the info of a zone
   const getRegionInfo = (id: number | string) => {
     // For presets
     if (typeof id === 'number' || (typeof id === 'string' && !id.startsWith('custom_'))) {
@@ -114,7 +114,7 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
     const layer = createOfflineLayer().addTo(tempMap);
     const control = (L.control as any).savetiles(layer, {
       zoomlevels: [12, 13, 14, 15, 16, 17],
-      confirm: (_: any, success: () => void) => success(), // Auto-confirm pour l'update
+      confirm: (_: any, success: () => void) => success(),
     });
     control.addTo(tempMap);
 
@@ -304,7 +304,7 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
                 );
               })
             ) : (
-              /* Message si aucune carte n'est téléchargée */
+              /* If no map is downloaded */
               <div className="bg-gray-800/20 border border-dashed border-gray-700/50 rounded-3xl p-8 flex flex-col items-center justify-center text-center">
                 <span className="material-symbols-outlined text-gray-600 text-4xl mb-3">cloud_off</span>
                 <p className="text-gray-500 text-sm">No offline maps found.</p>
