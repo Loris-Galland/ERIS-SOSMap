@@ -14,7 +14,7 @@ import SettingsScreen from './components/SettingsScreen';
 import AlertScreen from './components/AlertScreen';
 import DownloadMapScreen from './components/DownloadMapScreen';
 import logo from './assets/small_logo.png';
-import { PRESET_REGIONS } from './utils/MapUtils';
+import { PRESET_REGIONS, MAP_STYLES } from './utils/MapUtils';
 import SetupProfileScreen from './components/SetupProfileScreen';
 
 export default function App() {
@@ -26,6 +26,7 @@ export default function App() {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<L.Map | null>(null);
   const userMarker = useRef<L.Marker | null>(null);
+  const baseLayerRef = useRef<any>(null);
 
   const [userPosition, setUserPosition] = useState({ lat: 0, lng: 0, alt: 0 });
   const [gpsStatus, setGpsStatus] = useState('Locating...');
@@ -34,6 +35,10 @@ export default function App() {
   >('ALERTS');
   const [offlineMode, setOfflineMode] = useState(false);
   const [showHazardAlert, setShowHazardAlert] = useState(true);
+
+  // Layer Menu States
+  const [showLayerMenu, setShowLayerMenu] = useState(false);
+  const [currentMapStyle, setCurrentMapStyle] = useState<string>('dark');
 
   // Search states
   const [searchQuery, setSearchQuery] = useState('');
@@ -87,9 +92,9 @@ export default function App() {
       attributionControl: false,
     }).setView([48.8584, 2.2945], 13);
 
-    // Modern dark map base layer (Voyager dark)
-    (L.tileLayer as any)
-      .offline('https://a.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png', {
+    // Initialisation dynamique de la carte <-- Rétabli
+    baseLayerRef.current = (L.tileLayer as any)
+      .offline(MAP_STYLES.dark.url, {
         attribution: 'ERIS Safety',
         minZoom: 12,
         maxZoom: 17,
@@ -145,8 +150,8 @@ export default function App() {
       }
       mapInstance.current?.remove();
       mapInstance.current = null;
-
       userMarker.current = null;
+      baseLayerRef.current = null; // Nettoyage de la réf
     };
   }, [session]);
 
@@ -220,6 +225,15 @@ export default function App() {
 
     return () => clearTimeout(delayDebounceFn);
   }, [searchQuery, offlineMode, localSearchableRegions]);
+
+  // Handle Layer Swap <-- Rétabli ici
+  const changeMapStyle = (styleKey: string) => {
+    setCurrentMapStyle(styleKey);
+    if (baseLayerRef.current) {
+      baseLayerRef.current.setUrl(MAP_STYLES[styleKey as keyof typeof MAP_STYLES].url);
+    }
+    setShowLayerMenu(false);
+  };
 
   // Loading screen to prevent UI flash
   if (isInitializing) {
@@ -357,14 +371,41 @@ export default function App() {
           </div>
         </div>
 
-        {/* Map Controls */}
+        {/* ─── MAP CONTROLS & LAYERS MENU ─── */}
         <div className="absolute top-4 right-4 z-[1000] flex flex-col gap-3">
-          <button
-            onClick={() => mapInstance.current?.setZoom(mapInstance.current?.getZoom() ?? 13)}
-            className="w-12 h-12 bg-gray-900/90 border border-gray-700/50 rounded-full flex items-center justify-center text-gray-300 hover:bg-gray-800 transition-colors shadow-lg active:scale-95"
-          >
-            <span className="material-symbols-outlined text-xl">layers</span>
-          </button>
+          {/* Layers Menu Container */}
+          <div className="relative">
+            <button
+              onClick={() => setShowLayerMenu(!showLayerMenu)}
+              className={`w-12 h-12 border border-gray-700/50 rounded-full flex items-center justify-center transition-colors shadow-lg active:scale-95 ${
+                showLayerMenu ? 'bg-gray-800 text-white' : 'bg-gray-900/90 text-gray-300 hover:bg-gray-800'
+              }`}
+            >
+              <span className="material-symbols-outlined text-xl">layers</span>
+            </button>
+
+            {/* Layers Dropdown */}
+            {showLayerMenu && (
+              <div className="absolute right-14 top-0 bg-gray-900/95 backdrop-blur-md border border-gray-700 rounded-2xl shadow-2xl overflow-hidden flex flex-col w-44 z-[1000] animate-in fade-in zoom-in duration-150">
+                <div className="px-3 py-2 bg-gray-800/50 border-b border-gray-700">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Map Type</span>
+                </div>
+                {Object.entries(MAP_STYLES).map(([key, style]) => (
+                  <button
+                    key={key}
+                    onClick={() => changeMapStyle(key)}
+                    className={`px-4 py-3 text-left text-xs font-bold flex items-center gap-3 border-b border-gray-800/50 last:border-0 transition-colors ${
+                      currentMapStyle === key ? 'text-blue-400 bg-gray-800/80' : 'text-gray-300 hover:bg-gray-800/40'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-base">{style.icon}</span>
+                    {style.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
           <button
             onClick={() => {
               if (mapInstance.current && userPosition.lat !== 0) {
