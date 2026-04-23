@@ -3,16 +3,46 @@ import 'leaflet.offline';
 
 export const TILE_URL = 'https://a.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png';
 
-export const createOfflineLayer = () => {
-  // Use (L.tileLayer as any) to tell TS to ignore the missing property
-  return (L.tileLayer as any).offline(TILE_URL, {
+// --- MAP STYLES DICTIONARY ---
+export const MAP_STYLES = {
+  dark: {
+    id: 'dark',
+    name: 'Dark Mode',
+    url: 'https://a.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png',
+    icon: 'dark_mode',
+    estimatedSizeFactor: 1, // Base size
+  },
+  light: {
+    id: 'light',
+    name: 'Light Mode',
+    url: 'https://a.basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}.png',
+    icon: 'light_mode',
+    estimatedSizeFactor: 1.1,
+  },
+  satellite: {
+    id: 'satellite',
+    name: 'Satellite',
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    icon: 'satellite',
+    estimatedSizeFactor: 2.5,
+  },
+  terrain: {
+    id: 'terrain',
+    name: 'Terrain',
+    url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+    icon: 'terrain',
+    estimatedSizeFactor: 1.5,
+  },
+};
+
+export const createOfflineLayer = (url: string = MAP_STYLES.dark.url) => {
+  return (L.tileLayer as any).offline(url, {
     attribution: 'ERIS Safety',
     minZoom: 12,
     maxZoom: 15,
     crossOrigin: true,
   });
 };
-
 export const PRESET_REGIONS = [
   {
     id: 1,
