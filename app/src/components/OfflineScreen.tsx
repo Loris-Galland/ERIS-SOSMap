@@ -205,7 +205,6 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
       <div className="p-4 flex-1 flex flex-col gap-6">
         {/* ─── STORAGE CARD ─── */}
         <div className="bg-gradient-to-br from-blue-900/30 to-gray-800/40 border border-blue-800/20 rounded-3xl p-5 shadow-lg relative overflow-hidden">
-          {/* Optionnel : petite animation de chargement en fond si la valeur est 0 au début */}
           {storageUsedMB === 0 && <div className="absolute inset-0 bg-blue-500/5 animate-pulse rounded-3xl" />}
 
           <div className="flex justify-between items-end mb-4 relative z-10">
@@ -225,7 +224,7 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
             ></div>
           </div>
 
-          {/* Petit message d'avertissement si le stockage est presque plein */}
+          {/* warning message for when the storage is almost full */}
           {progressPercent > 90 && (
             <p className="text-red-400 text-[11px] font-medium mt-3 flex items-center gap-1">
               <span className="material-symbols-outlined text-sm">warning</span>

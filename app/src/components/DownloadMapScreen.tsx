@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import { createOfflineLayer, PRESET_REGIONS } from '../utils/MapUtils';
+import OfflineMapViewer from './OfflineMapViewer';
 
 interface DownloadMapScreenProps {
   onBack: () => void;
@@ -20,6 +21,8 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
   const [manualSearchQuery, setManualSearchQuery] = useState('');
   const [manualSearchResults, setManualSearchResults] = useState<any[]>([]);
   const [isManualSearching, setIsManualSearching] = useState(false);
+
+  const [viewingRegion, setViewingRegion] = useState<number | string | null>(null);
 
   const selectionMapRef = useRef<L.Map | null>(null);
   const selectionContainerRef = useRef<HTMLDivElement>(null);
@@ -43,6 +46,19 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
       }
     }
   }, []);
+
+  //  Get bounds of regions
+  const getBoundsForRegion = (id: number | string): L.LatLngBounds | undefined => {
+    if (typeof id === 'number' || (typeof id === 'string' && !id.startsWith('custom_'))) {
+      return PRESET_REGIONS.find((r) => r.id === Number(id))?.bounds;
+    } else {
+      const customReg = customRegions.find((r) => r.id === id);
+      if (customReg) {
+        return L.latLngBounds(customReg.bounds.southWest, customReg.bounds.northEast);
+      }
+    }
+    return undefined;
+  };
 
   // --- SEARCH LOGIC IN THE OVERLAY ---
   useEffect(() => {
@@ -74,7 +90,17 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
       [parseFloat(bbox[0]), parseFloat(bbox[2])],
       [parseFloat(bbox[1]), parseFloat(bbox[3])],
     );
-    selectionMapRef.current.fitBounds(bounds, { animate: true });
+
+    const exactLat = parseFloat(item.lat);
+    const exactLon = parseFloat(item.lon);
+
+    const targetZoom = Math.min(selectionMapRef.current.getBoundsZoom(bounds), 14);
+
+    selectionMapRef.current.flyTo([exactLat, exactLon], targetZoom, {
+      animate: true,
+      duration: 1.5,
+    });
+
     setManualSearchQuery('');
     setManualSearchResults([]);
   };
@@ -278,6 +304,16 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
 
   return (
     <div className="flex flex-col h-full bg-[#0f141e] w-full overflow-y-auto font-sans relative pb-20">
+      {viewingRegion !== null &&
+        (() => {
+          const bounds = getBoundsForRegion(viewingRegion);
+          const regionObj = displayRegions.find((r) => String(r.id) === String(viewingRegion));
+
+          if (!bounds || !regionObj) return null;
+
+          return <OfflineMapViewer name={regionObj.name} bounds={bounds} onClose={() => setViewingRegion(null)} />;
+        })()}
+
       {/* ─── MANUAL SELECTION OVERLAY ─── */}
       {isManualSelecting && (
         <div className="absolute inset-0 z-[7000] flex flex-col bg-[#0f141e] animate-in slide-in-from-bottom duration-300">
@@ -399,6 +435,11 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
                 return (
                   <div
                     key={region.id}
+                    onClick={() => {
+                      if (isDownloaded && !isDownloadingThis) {
+                        setViewingRegion(region.id);
+                      }
+                    }}
                     className="bg-gray-800/40 border border-gray-700/50 rounded-3xl p-4 flex items-center justify-between shadow-sm"
                   >
                     <div className="flex items-center gap-4">
@@ -423,7 +464,7 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
                     </div>
 
                     {/* Buttons (Download / Loading / Delete) */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                       {isDownloadingThis ? (
                         <button
                           disabled

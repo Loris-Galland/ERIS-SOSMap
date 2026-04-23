@@ -279,52 +279,56 @@ export default function App() {
       </header>
 
       {/* ─── SEARCH & OFFLINE BAR ─── */}
-      <div className="flex items-center px-4 py-3 bg-[#0f141e]/80 backdrop-blur-md z-[9999] gap-3 relative">
-        {/* Search input (Soft rounded shape) */}
-        <div className="relative flex-1">
-          <div className="flex items-center bg-gray-800/60 border border-gray-700/50 rounded-full px-4 py-2.5 gap-2 shadow-inner">
-            <span className="material-symbols-outlined text-gray-400 text-lg">search</span>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search city or coordinates..."
-              className="bg-transparent text-sm text-white w-full outline-none placeholder-gray-500"
-            />
-            {isSearching && <span className="material-symbols-outlined text-blue-400 text-lg animate-spin">sync</span>}
-          </div>
-
-          {searchResults.length > 0 && (
-            <div className="absolute top-full mt-2 left-0 right-0 bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl overflow-hidden flex flex-col z-[5000]">
-              {searchResults.map((result, index) => (
-                <button
-                  key={index}
-                  onClick={() => handleSelectResult(result)}
-                  className="px-4 py-3 text-left hover:bg-gray-700 flex items-center gap-3 border-b border-gray-700/50 last:border-0 transition-colors"
-                >
-                  <span className="material-symbols-outlined text-gray-400">location_on</span>
-                  <div className="flex-col overflow-hidden">
-                    <span className="text-white text-sm font-bold block truncate">
-                      {result.display_name.split(',')[0]}
-                    </span>
-                    <span className="text-gray-500 text-[10px] block truncate">{result.display_name}</span>
-                  </div>
-                </button>
-              ))}
+      {activeTab === 'MAP' && (
+        <div className="flex items-center px-4 py-3 bg-[#0f141e]/80 backdrop-blur-md z-[9999] gap-3 relative">
+          {/* Search input (Soft rounded shape) */}
+          <div className="relative flex-1">
+            <div className="flex items-center bg-gray-800/60 border border-gray-700/50 rounded-full px-4 py-2.5 gap-2 shadow-inner">
+              <span className="material-symbols-outlined text-gray-400 text-lg">search</span>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search city or coordinates..."
+                className="bg-transparent text-sm text-white w-full outline-none placeholder-gray-500"
+              />
+              {isSearching && (
+                <span className="material-symbols-outlined text-blue-400 text-lg animate-spin">sync</span>
+              )}
             </div>
-          )}
+
+            {searchResults.length > 0 && (
+              <div className="absolute top-full mt-2 left-0 right-0 bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl overflow-hidden flex flex-col z-[5000]">
+                {searchResults.map((result, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleSelectResult(result)}
+                    className="px-4 py-3 text-left hover:bg-gray-700 flex items-center gap-3 border-b border-gray-700/50 last:border-0 transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-gray-400">location_on</span>
+                    <div className="flex-col overflow-hidden">
+                      <span className="text-white text-sm font-bold block truncate">
+                        {result.display_name.split(',')[0]}
+                      </span>
+                      <span className="text-gray-500 text-[10px] block truncate">{result.display_name}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <button
+            onClick={() => setOfflineMode((v) => !v)}
+            className={`flex items-center justify-center w-11 h-11 rounded-full transition-colors shadow-lg ${
+              offlineMode
+                ? 'bg-blue-500 text-white shadow-blue-900/30'
+                : 'bg-gray-800 border border-gray-700 text-gray-400'
+            }`}
+          >
+            <span className="material-symbols-outlined text-xl">{offlineMode ? 'cloud_off' : 'cloud_download'}</span>
+          </button>
         </div>
-        <button
-          onClick={() => setOfflineMode((v) => !v)}
-          className={`flex items-center justify-center w-11 h-11 rounded-full transition-colors shadow-lg ${
-            offlineMode
-              ? 'bg-blue-500 text-white shadow-blue-900/30'
-              : 'bg-gray-800 border border-gray-700 text-gray-400'
-          }`}
-        >
-          <span className="material-symbols-outlined text-xl">{offlineMode ? 'cloud_off' : 'cloud_download'}</span>
-        </button>
-      </div>
+      )}
 
       {/* Main Content */}
       <main className="flex-1 relative overflow-hidden">
