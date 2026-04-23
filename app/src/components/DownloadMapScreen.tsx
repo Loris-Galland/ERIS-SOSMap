@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
-import { createOfflineLayer, PRESET_REGIONS } from '../utils/MapUtils';
+import { createOfflineLayer, PRESET_REGIONS, MAP_STYLES } from '../utils/MapUtils';
 import OfflineMapViewer from './OfflineMapViewer';
 
 interface DownloadMapScreenProps {
@@ -24,6 +24,8 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
 
   const [viewingRegion, setViewingRegion] = useState<number | string | null>(null);
 
+  const [selectedStyles, setSelectedStyles] = useState<string[]>(['dark']);
+
   const selectionMapRef = useRef<L.Map | null>(null);
   const selectionContainerRef = useRef<HTMLDivElement>(null);
 
@@ -46,6 +48,12 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
       }
     }
   }, []);
+
+  const toggleStyle = (id: string) => {
+    if (selectedStyles.includes(id) && selectedStyles.length === 1) return;
+
+    setSelectedStyles((prev) => (prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]));
+  };
 
   //  Get bounds of regions
   const getBoundsForRegion = (id: number | string): L.LatLngBounds | undefined => {
@@ -129,11 +137,10 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
     const bounds = selectionMapRef.current.getBounds();
     const zoom = selectionMapRef.current.getZoom();
 
-    // On demande un nom à l'utilisateur
     const customName = window.prompt('Name this personnalized zone :', 'My Zone');
 
     if (customName && customName.trim() !== '') {
-      const customId = `custom_${Date.now()}`; // ID unique basé sur le temps
+      const customId = `custom_${Date.now()}`;
 
       const newCustomRegion = {
         id: customId,
@@ -205,12 +212,11 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
     const tempMap = L.map(tempDiv, { fadeAnimation: false, zoomAnimation: false, inertia: false });
     tempMap.fitBounds(bounds, { animate: false });
 
-    // 1. Création de la couche hors ligne
+    // --- LAYER CONFIGURATION ---
     const layer = createOfflineLayer().addTo(tempMap);
 
-    // 2. Configuration du contrôleur de sauvegarde (plugin leaflet.offline)
     const control = (L.control as any).savetiles(layer, {
-      zoomlevels: [12, 13, 14, 15, 16, 17], // Niveaux de zoom optimisés pour ERIS
+      zoomlevels: [12, 13, 14, 15, 16, 17],
       confirm: (offlineLayer: any, successCallback: () => void) => {
         const tilesToSave = offlineLayer._tilesforSave || [];
         const count = tilesToSave.length;
@@ -224,7 +230,7 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
         if (window.confirm(`Download ${count} tiles for ${name}?`)) {
           successCallback();
         } else {
-          cleanup(); // Reset si l'utilisateur annule
+          cleanup();
         }
       },
       confirmNoTiles: () => {
@@ -249,44 +255,97 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
     let totalTiles = 0;
     let savedTiles = 0;
 
-    // 3. Gestion des événements pour l'interface
-    layer.on('savestart', (e: any) => {
-      totalTiles = e.length || (e._tilesforSave ? e._tilesforSave.length : 0);
-    });
-
-    layer.on('savetileend', () => {
-      savedTiles++;
-      if (totalTiles > 0) {
-        const percent = Math.floor((savedTiles / totalTiles) * 100);
-        setProgress(percent);
+    const downloadStyleLayer = (styleIndex: number) => {
+      if (styleIndex >= selectedStyles.length) {
+        setProgress(100);
+        alert(`Success : The zone ${name} is available offline (${selectedStyles.length} layers).`);
+        saveRegionAsDownloaded(id);
+        cleanup();
+        return;
       }
-    });
 
-    layer.on('saveend', () => {
-      setProgress(100);
-      alert(`Success : The zone ${name} is available offline.`);
-      saveRegionAsDownloaded(id);
-      cleanup();
-    });
+      const styleKey = selectedStyles[styleIndex];
+      const styleConfig = MAP_STYLES[styleKey as keyof typeof MAP_STYLES];
 
-    layer.on('tilelayeroffline:saveerror', (err: any) => {
-      console.error('Downloading error:', err);
-      alert('Error during downloading. Check your connexion.');
-      cleanup();
-    });
+      const layer = createOfflineLayer(styleConfig.url).addTo(tempMap);
 
-    // 4. Lancement du téléchargement
-    tempMap.whenReady(() => {
-      setTimeout(() => {
-        try {
-          // On passe explicitement les bounds au plugin
-          control._saveTiles();
-        } catch (e) {
-          console.error('Erreur interne SaveTiles:', e);
-          cleanup();
+      const control = (L.control as any).savetiles(layer, {
+        zoomlevels: [12, 13, 14, 15],
+        confirm: (offlineLayer: any, successCallback: () => void) => {
+          const tilesToSave = offlineLayer._tilesforSave || [];
+          const count = tilesToSave.length;
+
+          if (count === 0) {
+            if (styleIndex === 0) alert('No tiles found for this area. Check your zoom levels.');
+            tempMap.removeLayer(layer);
+            downloadStyleLayer(styleIndex + 1);
+            return false;
+          }
+
+          if (styleIndex === 0) {
+            if (
+              window.confirm(
+                `Download ${count} tiles per layer for ${name} (${selectedStyles.length} layers selected)?`,
+              )
+            ) {
+              successCallback();
+            } else {
+              cleanup();
+            }
+          } else {
+            successCallback();
+          }
+        },
+        confirmNoTiles: () => {
+          if (styleIndex === 0) {
+            alert('This zone is already downloaded');
+            saveRegionAsDownloaded(id);
+            cleanup();
+          } else {
+            tempMap.removeLayer(layer);
+            downloadStyleLayer(styleIndex + 1);
+          }
+        },
+      });
+
+      control.addTo(tempMap);
+
+      layer.on('savestart', (e: any) => {
+        totalTiles += e.length || (e._tilesforSave ? e._tilesforSave.length : 0);
+      });
+
+      layer.on('savetileend', () => {
+        savedTiles++;
+        if (totalTiles > 0) {
+          const percent = Math.floor((savedTiles / totalTiles) * 100);
+          setProgress(Math.min(percent, 99));
         }
-      }, 500);
-    });
+      });
+
+      layer.on('saveend', () => {
+        tempMap.removeLayer(layer);
+        downloadStyleLayer(styleIndex + 1);
+      });
+
+      layer.on('tilelayeroffline:saveerror', (err: any) => {
+        console.error(`Downloading error on layer ${styleConfig.name}:`, err);
+        alert('Error during downloading. Check your connexion.');
+        cleanup();
+      });
+
+      tempMap.whenReady(() => {
+        setTimeout(() => {
+          try {
+            control._saveTiles();
+          } catch (e) {
+            console.error('Erreur interne SaveTiles:', e);
+            cleanup();
+          }
+        }, 500);
+      });
+    };
+
+    downloadStyleLayer(0);
   };
 
   const handleDelete = (id: number, name: string) => {
@@ -337,7 +396,7 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
               </button>
             </div>
 
-            {/* BARRE DE RECHERCHE INTERNE */}
+            {/* SEARCH BAR */}
             <div className="relative">
               <div className="flex items-center bg-gray-800/60 border border-gray-700/50 rounded-full px-4 py-2 gap-2">
                 <span className="material-symbols-outlined text-gray-400 text-sm">search</span>
@@ -353,7 +412,7 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
                 )}
               </div>
 
-              {/* RÉSULTATS DE RECHERCHE INTERNE */}
+              {/* SEARCH RESULTS */}
               {manualSearchResults.length > 0 && (
                 <div className="absolute top-full left-0 right-0 mt-2 bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl overflow-hidden flex flex-col z-[100]">
                   {manualSearchResults.map((result, idx) => (
@@ -378,7 +437,6 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
 
           <div className="flex-1 w-full relative bg-gray-900">
             <div className="absolute inset-0" ref={selectionContainerRef}></div>
-            {/* Viseur central */}
             <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-[10]">
               <div className="w-[85%] h-[65%] border-2 border-blue-500/40 rounded-3xl shadow-[0_0_0_9999px_rgba(15,20,30,0.5)]"></div>
             </div>
@@ -420,6 +478,44 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
             className="bg-transparent text-sm text-white w-full outline-none placeholder-gray-500"
           />
         </div>
+
+        <section>
+          <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3 px-2">Select Map Layers</h3>
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            {Object.values(MAP_STYLES).map((style) => {
+              const isSelected = selectedStyles.includes(style.id);
+              return (
+                <button
+                  key={style.id}
+                  onClick={() => toggleStyle(style.id)}
+                  disabled={downloadingId !== null}
+                  className={`relative flex flex-col items-center justify-center gap-2 p-3 rounded-2xl border transition-all active:scale-95 ${
+                    isSelected
+                      ? 'bg-blue-600/20 border-blue-500 text-blue-400'
+                      : 'bg-gray-800/40 border-gray-700 text-gray-500 hover:bg-gray-800'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-2xl">{style.icon}</span>
+                  <span className="text-xs font-bold">{style.name}</span>
+                  {isSelected && (
+                    <div className="absolute top-2 right-2 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                      <span className="material-symbols-outlined text-white text-[10px] font-bold">check</span>
+                    </div>
+                  )}
+                  {style.id === 'dark' && <span className="text-[8px] uppercase font-black mt-0.5">Default</span>}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-3 flex items-start gap-2">
+            <span className="material-symbols-outlined text-yellow-500 text-sm mt-0.5">database</span>
+            <p className="text-gray-400 text-[10px] leading-relaxed">
+              Selecting multiple layers increases storage usage.{' '}
+              <span className="text-gray-200 font-semibold">Satellite tiles</span> are ~2.5x larger.
+            </p>
+          </div>
+        </section>
 
         {/* ─── SUGGESTIONS LIST ─── */}
         <section>
@@ -474,7 +570,7 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
                         </button>
                       ) : isDownloaded ? (
                         <button
-                          onClick={() => handleDelete(region.id, region.name)}
+                          onClick={() => handleDelete(Number(region.id), region.name)}
                           className="w-10 h-10 rounded-full flex items-center justify-center bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all shrink-0"
                           title="Delete Zone"
                         >
@@ -494,7 +590,7 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
                 );
               })
             ) : (
-              <div className="text-center py-6 text-gray-500 text-sm">Aucune région trouvée pour "{searchQuery}"</div>
+              <div className="text-center py-6 text-gray-500 text-sm">No regions found for "{searchQuery}"</div>
             )}
           </div>
         </section>

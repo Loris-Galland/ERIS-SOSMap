@@ -1,6 +1,6 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
-import { createOfflineLayer } from '../utils/MapUtils';
+import { createOfflineLayer, MAP_STYLES } from '../utils/MapUtils';
 
 interface OfflineMapViewerProps {
   name: string;
@@ -11,19 +11,25 @@ interface OfflineMapViewerProps {
 export default function OfflineMapViewer({ name, bounds, onClose }: OfflineMapViewerProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
+  const baseLayerRef = useRef<any>(null); // Holds the tile layer to change its URL dynamically
+
+  // Layer Menu States
+  const [showLayerMenu, setShowLayerMenu] = useState(false);
+  const [currentMapStyle, setCurrentMapStyle] = useState<string>('dark');
 
   useEffect(() => {
     if (mapContainerRef.current && !mapInstanceRef.current) {
-      // 1. Initialisation de la carte
+      // 1. Map initialization
       mapInstanceRef.current = L.map(mapContainerRef.current, {
-        zoomControl: false, // On peut le désactiver pour un look plus "App"
+        zoomControl: false, // Disabled for a cleaner "App" look
         attributionControl: false,
       }).fitBounds(bounds);
 
-      // 2. Ajout de la couche hors-ligne
-      createOfflineLayer().addTo(mapInstanceRef.current);
+      // 2. Add offline layer and save reference
+      baseLayerRef.current = createOfflineLayer();
+      baseLayerRef.current.addTo(mapInstanceRef.current);
 
-      // 3. Correction du bug de rendu fréquent (blocs gris)
+      // 3. Fix frequent rendering bug (gray blocks)
       setTimeout(() => {
         mapInstanceRef.current?.invalidateSize();
       }, 250);
@@ -33,13 +39,24 @@ export default function OfflineMapViewer({ name, bounds, onClose }: OfflineMapVi
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
+        baseLayerRef.current = null;
       }
     };
   }, [bounds]);
 
+  // Handle Layer Swap
+  const changeMapStyle = (styleKey: string) => {
+    setCurrentMapStyle(styleKey);
+    if (baseLayerRef.current) {
+      // Switch the URL of the existing offline layer
+      baseLayerRef.current.setUrl(MAP_STYLES[styleKey as keyof typeof MAP_STYLES].url);
+    }
+    setShowLayerMenu(false);
+  };
+
   return (
     <div className="fixed inset-0 z-[6000] bg-[#0f141e] flex flex-col animate-in slide-in-from-bottom duration-300">
-      {/* Header interne à la vue Map */}
+      {/* Internal header for Map view */}
       <header className="flex justify-between items-center px-6 py-4 bg-[#0f141e]/90 backdrop-blur-md z-10">
         <div className="flex items-center gap-3">
           <button
@@ -50,19 +67,56 @@ export default function OfflineMapViewer({ name, bounds, onClose }: OfflineMapVi
           </button>
           <div>
             <h2 className="text-white font-bold">{name}</h2>
-            <p className="text-blue-400 text-[10px] font-bold uppercase tracking-tighter">Mode Hors-ligne</p>
+            <p className="text-blue-400 text-[10px] font-bold uppercase tracking-tighter">Offline Mode</p>
           </div>
         </div>
       </header>
 
-      {/* Le conteneur de la carte */}
-      <div ref={mapContainerRef} className="flex-1 w-full h-full" />
+      {/* Map container */}
+      <div className="relative flex-1 w-full h-full">
+        <div ref={mapContainerRef} className="absolute inset-0 z-0" />
 
-      {/* Petit indicateur flottant en bas */}
+        {/* ─── MAP CONTROLS (LAYERS) ─── */}
+        <div className="absolute top-4 right-4 z-[1000] flex flex-col gap-3">
+          <div className="relative">
+            <button
+              onClick={() => setShowLayerMenu(!showLayerMenu)}
+              className={`w-12 h-12 border border-gray-700/50 rounded-full flex items-center justify-center transition-colors shadow-lg active:scale-95 ${
+                showLayerMenu ? 'bg-gray-800 text-white' : 'bg-gray-900/90 text-gray-300 hover:bg-gray-800'
+              }`}
+            >
+              <span className="material-symbols-outlined text-xl">layers</span>
+            </button>
+
+            {/* Layers Dropdown */}
+            {showLayerMenu && (
+              <div className="absolute right-14 top-0 bg-gray-900/95 backdrop-blur-md border border-gray-700 rounded-2xl shadow-2xl overflow-hidden flex flex-col w-44 z-[1000] animate-in fade-in zoom-in duration-150">
+                <div className="px-3 py-2 bg-gray-800/50 border-b border-gray-700">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Map Type</span>
+                </div>
+                {Object.entries(MAP_STYLES).map(([key, style]) => (
+                  <button
+                    key={key}
+                    onClick={() => changeMapStyle(key)}
+                    className={`px-4 py-3 text-left text-xs font-bold flex items-center gap-3 border-b border-gray-800/50 last:border-0 transition-colors ${
+                      currentMapStyle === key ? 'text-blue-400 bg-gray-800/80' : 'text-gray-300 hover:bg-gray-800/40'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-base">{style.icon}</span>
+                    {style.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Small floating indicator at the bottom */}
       <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 bg-gray-900/80 backdrop-blur-md border border-gray-700 px-4 py-2 rounded-full shadow-2xl">
         <p className="text-white text-[11px] font-medium flex items-center gap-2">
           <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-          Visualisation des données locales
+          Viewing local data
         </p>
       </div>
     </div>
