@@ -113,7 +113,7 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
 
     const layer = createOfflineLayer().addTo(tempMap);
     const control = (L.control as any).savetiles(layer, {
-      zoomlevels: [12, 13, 14, 15],
+      zoomlevels: [12, 13, 14, 15, 16, 17],
       confirm: (_: any, success: () => void) => success(), // Auto-confirm pour l'update
     });
     control.addTo(tempMap);

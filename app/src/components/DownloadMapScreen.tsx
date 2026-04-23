@@ -210,7 +210,7 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
 
     // 2. Configuration du contrôleur de sauvegarde (plugin leaflet.offline)
     const control = (L.control as any).savetiles(layer, {
-      zoomlevels: [12, 13, 14, 15], // Niveaux de zoom optimisés pour ERIS
+      zoomlevels: [12, 13, 14, 15, 16, 17], // Niveaux de zoom optimisés pour ERIS
       confirm: (offlineLayer: any, successCallback: () => void) => {
         const tilesToSave = offlineLayer._tilesforSave || [];
         const count = tilesToSave.length;

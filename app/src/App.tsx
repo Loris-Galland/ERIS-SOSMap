@@ -92,7 +92,7 @@ export default function App() {
       .offline('https://a.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png', {
         attribution: 'ERIS Safety',
         minZoom: 12,
-        maxZoom: 15,
+        maxZoom: 17,
         crossOrigin: true,
       })
       .addTo(mapInstance.current);

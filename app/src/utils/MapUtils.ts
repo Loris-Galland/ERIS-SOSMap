@@ -8,7 +8,7 @@ export const createOfflineLayer = () => {
   return (L.tileLayer as any).offline(TILE_URL, {
     attribution: 'ERIS Safety',
     minZoom: 12,
-    maxZoom: 15,
+    maxZoom: 17,
     crossOrigin: true,
   });
 };
