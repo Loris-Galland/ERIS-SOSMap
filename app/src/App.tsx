@@ -242,8 +242,16 @@ export default function App() {
       [parseFloat(bbox[1]), parseFloat(bbox[3])],
     );
 
+    const exactLat = parseFloat(item.lat);
+    const exactLon = parseFloat(item.lon);
+
+    const targetZoom = Math.min(mapInstance.current.getBoundsZoom(bounds), 14);
+
     // Déplace la carte principale vers la zone recherchée avec une animation fluide
-    mapInstance.current.fitBounds(bounds, { animate: true, duration: 1.5 });
+    mapInstance.current.flyTo([exactLat, exactLon], targetZoom, {
+      animate: true,
+      duration: 1.5,
+    });
 
     setPreviewArea({
       id: item.place_id.toString(),
