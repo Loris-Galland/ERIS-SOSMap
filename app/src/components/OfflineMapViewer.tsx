@@ -1,26 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
-import { createOfflineLayer } from '../utils/MapUtils';
-
-// ─── MAP STYLES CONFIGURATION ───
-const MAP_STYLES = {
-  dark: {
-    name: 'Dark Mode',
-    url: 'https://a.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png',
-    icon: 'dark_mode',
-  },
-  light: {
-    name: 'Light Mode',
-    url: 'https://a.basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}.png',
-    icon: 'light_mode',
-  },
-  satellite: {
-    name: 'Satellite',
-    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    icon: 'satellite',
-  },
-  terrain: { name: 'Terrain', url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', icon: 'terrain' },
-};
+import { createOfflineLayer, MAP_STYLES } from '../utils/MapUtils';
 
 interface OfflineMapViewerProps {
   name: string;
