@@ -17,26 +17,6 @@ import logo from './assets/small_logo.png';
 import { PRESET_REGIONS } from './utils/MapUtils';
 import SetupProfileScreen from './components/SetupProfileScreen';
 
-// ─── MAP STYLES CONFIGURATION ───
-const MAP_STYLES = {
-  dark: {
-    name: 'Dark Mode',
-    url: 'https://a.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png',
-    icon: 'dark_mode',
-  },
-  light: {
-    name: 'Light Mode',
-    url: 'https://a.basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}.png',
-    icon: 'light_mode',
-  },
-  satellite: {
-    name: 'Satellite',
-    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    icon: 'satellite',
-  },
-  terrain: { name: 'Terrain', url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', icon: 'terrain' },
-};
-
 export default function App() {
   // Auth states
   const [session, setSession] = useState<any>(null);
@@ -46,7 +26,6 @@ export default function App() {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<L.Map | null>(null);
   const userMarker = useRef<L.Marker | null>(null);
-  const baseLayerRef = useRef<any>(null);
 
   const [userPosition, setUserPosition] = useState({ lat: 0, lng: 0, alt: 0 });
   const [gpsStatus, setGpsStatus] = useState('Locating...');
@@ -55,10 +34,6 @@ export default function App() {
   >('ALERTS');
   const [offlineMode, setOfflineMode] = useState(false);
   const [showHazardAlert, setShowHazardAlert] = useState(true);
-
-  // Layer Menu States
-  const [showLayerMenu, setShowLayerMenu] = useState(false);
-  const [currentMapStyle, setCurrentMapStyle] = useState<string>('dark');
 
   // Search states
   const [searchQuery, setSearchQuery] = useState('');
@@ -112,9 +87,9 @@ export default function App() {
       attributionControl: false,
     }).setView([48.8584, 2.2945], 13);
 
-    // Initialize map with default Dark style and save reference
-    baseLayerRef.current = (L.tileLayer as any)
-      .offline(MAP_STYLES.dark.url, {
+    // Modern dark map base layer (Voyager dark)
+    (L.tileLayer as any)
+      .offline('https://a.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png', {
         attribution: 'ERIS Safety',
         minZoom: 12,
         maxZoom: 15,
@@ -170,12 +145,12 @@ export default function App() {
       }
       mapInstance.current?.remove();
       mapInstance.current = null;
+
       userMarker.current = null;
-      baseLayerRef.current = null;
     };
   }, [session]);
 
-  // --- LOCAL DATA CHARGING ---
+  // --- LOCAL DATA CHARGING---
   useEffect(() => {
     if (activeTab !== 'MAP') return;
 
@@ -185,7 +160,7 @@ export default function App() {
 
     const formattedCustom = customRegs.map((r: any) => ({
       place_id: r.id,
-      display_name: `${r.name}, Custom Zone`,
+      display_name: `${r.name}, Zone personnalisée`,
       boundingbox: [r.bounds.southWest[0], r.bounds.northEast[0], r.bounds.southWest[1], r.bounds.northEast[1]],
       isOffline: true,
     }));
@@ -196,7 +171,7 @@ export default function App() {
 
     const downloadedPresets = PRESET_REGIONS.filter((pr) => downloadedIds.includes(pr.id)).map((pr) => ({
       place_id: pr.id.toString(),
-      display_name: `${pr.name}, Saved Zone`,
+      display_name: `${pr.name}, Zone enregistrée`,
       boundingbox: [
         pr.bounds.getSouthWest().lat,
         pr.bounds.getNorthEast().lat,
@@ -219,7 +194,7 @@ export default function App() {
       setIsSearching(true);
       const searchLower = searchQuery.toLowerCase();
 
-      // If offline: search local cache
+      // If offline: searcgh local cache
       if (offlineMode || !navigator.onLine) {
         const localResults = localSearchableRegions.filter((r) => r.display_name.toLowerCase().includes(searchLower));
         setSearchResults(localResults);
@@ -227,7 +202,7 @@ export default function App() {
         return;
       }
 
-      // If online: search on the internet via Nominatim
+      // If online: search on the internet
       try {
         const res = await fetch(
           `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=4`,
@@ -235,7 +210,7 @@ export default function App() {
         const data = await res.json();
         setSearchResults(data);
       } catch (e) {
-        // Security fallback: If API fails, search locally
+        // Fallback sécurité : Si l'API échoue, on cherche en local
         const localResults = localSearchableRegions.filter((r) => r.display_name.toLowerCase().includes(searchLower));
         setSearchResults(localResults);
       } finally {
@@ -246,33 +221,33 @@ export default function App() {
     return () => clearTimeout(delayDebounceFn);
   }, [searchQuery, offlineMode, localSearchableRegions]);
 
-  // --- ACTIONS ---
+  // Loading screen to prevent UI flash
+  if (isInitializing) {
+    return <div className="h-screen w-full bg-[#0f141e]"></div>;
+  }
 
-  // Handle Layer Swap
-  const changeMapStyle = (styleKey: string) => {
-    setCurrentMapStyle(styleKey);
-    if (baseLayerRef.current) {
-      baseLayerRef.current.setUrl(MAP_STYLES[styleKey as keyof typeof MAP_STYLES].url);
-    }
-    setShowLayerMenu(false);
-  };
+  // Show auth screen if not logged in
+  if (!session) {
+    return <AuthScreen />;
+  }
 
-  // Search result selection
+  // Search result
   const handleSelectResult = (item: any) => {
     if (!mapInstance.current) return;
 
-    // Get bounding box limits
+    // Récupération des limites de la zone (Bounding Box)
     const bbox = item.boundingbox;
     const bounds = L.latLngBounds(
       [parseFloat(bbox[0]), parseFloat(bbox[2])],
       [parseFloat(bbox[1]), parseFloat(bbox[3])],
     );
 
-    const exactLat = parseFloat(item.lat);
-    const exactLon = parseFloat(item.lon);
+    const exactLat = item.lat ? parseFloat(item.lat) : bounds.getCenter().lat;
+    const exactLon = item.lon ? parseFloat(item.lon) : bounds.getCenter().lng;
+
     const targetZoom = Math.min(mapInstance.current.getBoundsZoom(bounds), 14);
 
-    // Smoothly move main map to the searched area
+    // Déplace la carte principale vers la zone recherchée avec une animation fluide
     mapInstance.current.flyTo([exactLat, exactLon], targetZoom, {
       animate: true,
       duration: 1.5,
@@ -285,20 +260,10 @@ export default function App() {
       isOffline: item.isOffline,
     });
 
-    // Clear interface
+    // Nettoie l'interface
     setSearchQuery('');
     setSearchResults([]);
   };
-
-  // Loading screen to prevent UI flash
-  if (isInitializing) {
-    return <div className="h-screen w-full bg-[#0f141e]"></div>;
-  }
-
-  // Show auth screen if not logged in
-  if (!session) {
-    return <AuthScreen />;
-  }
 
   return (
     <div className="flex flex-col h-screen w-full bg-[#0f141e] text-white overflow-hidden font-sans">
@@ -392,41 +357,14 @@ export default function App() {
           </div>
         </div>
 
-        {/* ─── MAP CONTROLS ─── */}
+        {/* Map Controls */}
         <div className="absolute top-4 right-4 z-[1000] flex flex-col gap-3">
-          {/* Layers Menu Container */}
-          <div className="relative">
-            <button
-              onClick={() => setShowLayerMenu(!showLayerMenu)}
-              className={`w-12 h-12 border border-gray-700/50 rounded-full flex items-center justify-center transition-colors shadow-lg active:scale-95 ${
-                showLayerMenu ? 'bg-gray-800 text-white' : 'bg-gray-900/90 text-gray-300 hover:bg-gray-800'
-              }`}
-            >
-              <span className="material-symbols-outlined text-xl">layers</span>
-            </button>
-
-            {/* Layers Dropdown */}
-            {showLayerMenu && (
-              <div className="absolute right-14 top-0 bg-gray-900/95 backdrop-blur-md border border-gray-700 rounded-2xl shadow-2xl overflow-hidden flex flex-col w-44 z-[1000] animate-in fade-in zoom-in duration-150">
-                <div className="px-3 py-2 bg-gray-800/50 border-b border-gray-700">
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Map Type</span>
-                </div>
-                {Object.entries(MAP_STYLES).map(([key, style]) => (
-                  <button
-                    key={key}
-                    onClick={() => changeMapStyle(key)}
-                    className={`px-4 py-3 text-left text-xs font-bold flex items-center gap-3 border-b border-gray-800/50 last:border-0 transition-colors ${
-                      currentMapStyle === key ? 'text-blue-400 bg-gray-800/80' : 'text-gray-300 hover:bg-gray-800/40'
-                    }`}
-                  >
-                    <span className="material-symbols-outlined text-base">{style.icon}</span>
-                    {style.name}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
+          <button
+            onClick={() => mapInstance.current?.setZoom(mapInstance.current?.getZoom() ?? 13)}
+            className="w-12 h-12 bg-gray-900/90 border border-gray-700/50 rounded-full flex items-center justify-center text-gray-300 hover:bg-gray-800 transition-colors shadow-lg active:scale-95"
+          >
+            <span className="material-symbols-outlined text-xl">layers</span>
+          </button>
           <button
             onClick={() => {
               if (mapInstance.current && userPosition.lat !== 0) {
@@ -464,10 +402,7 @@ export default function App() {
 
         {/* ── MAIN SOS BUTTON (Bottom Right) ── */}
         <div className="absolute bottom-6 right-4 z-[1000]">
-          <button
-            onClick={() => setActiveTab('ALERTS')}
-            className="w-16 h-16 rounded-full bg-red-500 border-4 border-red-400/50 flex flex-col items-center justify-center shadow-[0_0_20px_rgba(239,68,68,0.4)] active:scale-95 transition-all"
-          >
+          <button className="w-16 h-16 rounded-full bg-red-500 border-4 border-red-400/50 flex flex-col items-center justify-center shadow-[0_0_20px_rgba(239,68,68,0.4)] active:scale-95 transition-all">
             <span className="material-symbols-outlined text-white text-3xl">sensors</span>
           </button>
         </div>
