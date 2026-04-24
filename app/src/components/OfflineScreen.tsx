@@ -17,7 +17,7 @@ function getRelativeTimeString(timestamp: number): string {
 
 interface OfflineScreenProps {
   onBack: () => void;
-  onNavigateDownload: () => void; // New prop for navigation
+  onNavigateDownload: () => void;
 }
 
 export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScreenProps) {
@@ -157,26 +157,6 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
     });
   };
 
-  // Mock data for regional maps
-  /*const [sectors] = useState([
-    {
-      id: '1',
-      name: 'Montpellier City Area',
-      status: 'Downloaded',
-      size: '124 MB',
-      isDownloaded: true,
-      lastUpdated: 'Updated 2 days ago',
-    },
-    {
-      id: '2',
-      name: 'Occitanie Region North',
-      status: 'Available',
-      size: '85 MB',
-      isDownloaded: false,
-      lastUpdated: 'Ready to install',
-    },
-  ]);*/
-
   return (
     <div className="flex flex-col h-full bg-[#0f141e] w-full overflow-y-auto font-sans relative pb-24">
       {viewingRegion !== null &&
@@ -224,7 +204,7 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
             ></div>
           </div>
 
-          {/* warning message for when the storage is almost full */}
+          {/* Warning message for when the storage is almost full */}
           {progressPercent > 90 && (
             <p className="text-red-400 text-[11px] font-medium mt-3 flex items-center gap-1">
               <span className="material-symbols-outlined text-sm">warning</span>

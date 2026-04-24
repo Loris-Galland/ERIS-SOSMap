@@ -19,17 +19,17 @@ export default function OfflineMapViewer({ name, bounds, onClose }: OfflineMapVi
 
   useEffect(() => {
     if (mapContainerRef.current && !mapInstanceRef.current) {
-      // 1. Map initialization
+      // Map initialization
       mapInstanceRef.current = L.map(mapContainerRef.current, {
-        zoomControl: false, // Disabled for a cleaner "App" look
+        zoomControl: false,
         attributionControl: false,
       }).fitBounds(bounds);
 
-      // 2. Add offline layer and save reference
+      // Add offline layer and save reference
       baseLayerRef.current = createOfflineLayer();
       baseLayerRef.current.addTo(mapInstanceRef.current);
 
-      // 3. Fix frequent rendering bug (gray blocks)
+      // Fix frequent rendering bug (gray blocks)
       setTimeout(() => {
         mapInstanceRef.current?.invalidateSize();
       }, 250);

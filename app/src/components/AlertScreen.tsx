@@ -125,42 +125,40 @@ export default function AlertScreen() {
     setStatusType(null);
 
     if (!userId) {
-      setStatusMessage('Authentication error. Please log in again.');
-      setStatusType('error');
-      setIsSending(false);
-      setTimeout(() => {
-        setStatusMessage(null);
-        setStatusType(null);
-      }, 4000);
-      return;
-    }
+      setStatusMessage('Authentication error. Please log in again.');
+      setStatusType('error');
+      setIsSending(false);
+      setTimeout(() => {
+        setStatusMessage(null);
+        setStatusType(null);
+      }, 4000);
+      return;
+    } // Fallback sync if local profile is missing but internet is available
 
-    // Fallback sync if local profile is missing but internet is available
-    if (navigator.onLine) {
-      try {
-        const localProfile = await db.userProfile.get(userId);
-        if (!localProfile) {
-          console.log('[ERIS] Local profile missing, fetching from Supabase...');
-          const { data } = await supabase.from('user_profiles').select('*').eq('id', userId).single();
-          if (data) {
-            await db.userProfile.put({
-              id: userId,
-              firstName: data.first_name || '',
-              lastName: data.last_name || '',
-              bloodType: data.blood_type || 'Unknown',
-              allergies: data.allergies || 'None',
-              medicalConditions: data.medical_conditions || 'None',
-              currentCondition: data.current_condition || 'Healthy',
-            });
-          }
-        }
-      } catch (e) {
-        console.warn('[ERIS] Could not fetch profile before dispatch', e);
-      }
-    }
+    if (navigator.onLine) {
+      try {
+        const localProfile = await db.userProfile.get(userId);
+        if (!localProfile) {
+          console.log('[ERIS] Local profile missing, fetching from Supabase...');
+          const { data } = await supabase.from('user_profiles').select('*').eq('id', userId).single();
+          if (data) {
+            await db.userProfile.put({
+              id: userId,
+              firstName: data.first_name || '',
+              lastName: data.last_name || '',
+              bloodType: data.blood_type || 'Unknown',
+              allergies: data.allergies || 'None',
+              medicalConditions: data.medical_conditions || 'None',
+              currentCondition: data.current_condition || 'Healthy',
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('[ERIS] Could not fetch profile before dispatch', e);
+      }
+    } // Call SOS service
 
-    // Call SOS service
-    const result = await dispatchSOS(userId, rawPosition, 100, notes);
+    const result = await dispatchSOS(userId, rawPosition, 100, notes);
 
     if (result.success) {
       // Store IDs and launch the grace period popup
@@ -296,7 +294,6 @@ export default function AlertScreen() {
             style={{
               width: 300,
               height: 300,
-              animation: 'spin-slow 12s linear infinite',
             }}
           />
 
@@ -322,15 +319,6 @@ export default function AlertScreen() {
               touchAction: 'none',
             }}
           >
-            {/* Scan line animation */}
-            <div
-              className="absolute left-0 w-full h-[2px] pointer-events-none opacity-50"
-              style={{
-                background: 'linear-gradient(to right, transparent, white, transparent)',
-                animation: 'scan 3s linear infinite',
-              }}
-            />
-
             {/* Hold progress fill */}
             {holding && (
               <div
@@ -465,12 +453,6 @@ export default function AlertScreen() {
         @keyframes spin-slow {
           from { transform: rotate(0deg); }
           to   { transform: rotate(360deg); }
-        }
-        @keyframes scan {
-          0%   { top: 0%; opacity: 0; }
-          10%  { opacity: 0.5; }
-          90%  { opacity: 0.5; }
-          100% { top: 100%; opacity: 0; }
         }
         @keyframes timer-bar {
           from { transform: scaleX(0); }

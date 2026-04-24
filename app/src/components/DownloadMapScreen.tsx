@@ -338,7 +338,7 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
           try {
             control._saveTiles();
           } catch (e) {
-            console.error('Erreur interne SaveTiles:', e);
+            console.error('Internal error SaveTiles:', e);
             cleanup();
           }
         }, 500);
@@ -404,7 +404,7 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
                   type="text"
                   value={manualSearchQuery}
                   onChange={(e) => setManualSearchQuery(e.target.value)}
-                  placeholder="Trouver une ville à sauvegarder..."
+                  placeholder="Find a place to download..."
                   className="bg-transparent text-xs text-white w-full outline-none"
                 />
                 {isManualSearching && (
