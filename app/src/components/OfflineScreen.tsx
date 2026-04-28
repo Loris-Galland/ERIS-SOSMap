@@ -2,17 +2,23 @@ import { useEffect, useState } from 'react';
 import L from 'leaflet';
 import { createOfflineLayer, PRESET_REGIONS } from '../utils/MapUtils';
 import OfflineMapViewer from './OfflineMapViewer';
+import { useTranslation } from 'react-i18next';
 
-function getRelativeTimeString(timestamp: number): string {
+function getRelativeTimeString(timestamp: number, t: any): string {
   const diff = Date.now() - timestamp;
   const minutes = Math.floor(diff / 60000);
   const hours = Math.floor(minutes / 60);
   const days = Math.floor(hours / 24);
 
-  if (days > 0) return `Updated ${days} day${days > 1 ? 's' : ''} ago`;
-  if (hours > 0) return `Updated ${hours}h ago`;
-  if (minutes > 0) return `Updated ${minutes} min ago`;
-  return 'Updated just now';
+  if (days > 0)
+    return t('offline.updatedDaysAgo', `Updated ${days} day${days > 1 ? 's' : ''} ago`).replace(
+      '${days}',
+      days.toString(),
+    );
+  if (hours > 0) return t('offline.updatedHoursAgo', `Updated ${hours}h ago`).replace('${hours}', hours.toString());
+  if (minutes > 0)
+    return t('offline.updatedMinsAgo', `Updated ${minutes} min ago`).replace('${minutes}', minutes.toString());
+  return t('offline.updatedJustNow', 'Updated just now');
 }
 
 interface OfflineScreenProps {
@@ -21,6 +27,8 @@ interface OfflineScreenProps {
 }
 
 export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScreenProps) {
+  const { t } = useTranslation();
+
   const [downloadedIds, setDownloadedIds] = useState<(number | string)[]>([]);
   const [customRegions, setCustomRegions] = useState<any[]>([]);
 
@@ -76,8 +84,8 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
     if (custom) {
       return {
         name: custom.name,
-        size: custom.size || 'Custom Size',
-        detail: 'Zone personnalisée',
+        size: custom.size || t('offline.customSize', 'Custom Size'),
+        detail: t('offline.customZone', 'Zone personnalisée'),
         bounds: L.latLngBounds(custom.bounds.southWest, custom.bounds.northEast),
         isCustom: true,
       };
@@ -87,7 +95,7 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
 
   // --- DELETION LOGIC ---
   const handleDelete = (id: number | string, name: string) => {
-    if (window.confirm(`Delete ${name} from offline storage?`)) {
+    if (window.confirm(t('offline.confirmDelete', `Delete ${name} from offline storage?`).replace('${name}', name))) {
       const updated = downloadedIds.filter((rid) => rid !== id);
       setDownloadedIds(updated);
       localStorage.setItem('eris_offline_regions', JSON.stringify(updated));
@@ -147,7 +155,7 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
       localStorage.setItem('eris_offline_metadata', JSON.stringify(currentMeta));
 
       setTimeout(() => {
-        alert(`${name} updated successfully.`);
+        alert(t('offline.updateSuccess', `${name} updated successfully.`).replace('${name}', name));
         cleanup();
       }, 500);
     });
@@ -179,7 +187,7 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
         >
           <span className="material-symbols-outlined">chevron_left</span>
         </button>
-        <h2 className="text-white text-xl font-bold tracking-wide">Offline Maps</h2>
+        <h2 className="text-white text-xl font-bold tracking-wide">{t('offline.title', 'Offline Maps')}</h2>
       </header>
 
       <div className="p-4 flex-1 flex flex-col gap-6">
@@ -189,12 +197,17 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
 
           <div className="flex justify-between items-end mb-4 relative z-10">
             <div>
-              <p className="text-gray-400 text-xs font-semibold uppercase tracking-wider mb-1">Local Storage</p>
+              <p className="text-gray-400 text-xs font-semibold uppercase tracking-wider mb-1">
+                {t('offline.localStorage', 'Local Storage')}
+              </p>
               <h3 className="text-white text-3xl font-bold">
-                {storageUsedMB} <span className="text-gray-400 text-sm font-normal">MB used</span>
+                {storageUsedMB}{' '}
+                <span className="text-gray-400 text-sm font-normal">{t('offline.mbUsed', 'MB used')}</span>
               </h3>
             </div>
-            <span className="text-gray-500 text-sm font-medium bg-gray-900/50 px-3 py-1 rounded-lg">1.0 GB Total</span>
+            <span className="text-gray-500 text-sm font-medium bg-gray-900/50 px-3 py-1 rounded-lg">
+              {t('offline.gbTotal', '1.0 GB Total')}
+            </span>
           </div>
 
           <div className="w-full h-3 bg-gray-900 rounded-full overflow-hidden border border-gray-700/50 relative z-10">
@@ -208,14 +221,16 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
           {progressPercent > 90 && (
             <p className="text-red-400 text-[11px] font-medium mt-3 flex items-center gap-1">
               <span className="material-symbols-outlined text-sm">warning</span>
-              Storage is almost full. Consider deleting old maps.
+              {t('offline.storageWarning', 'Storage is almost full. Consider deleting old maps.')}
             </p>
           )}
         </div>
 
         {/* ─── REGIONAL MAPS LIST ─── */}
         <section>
-          <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3 px-2">My Regions</h3>
+          <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3 px-2">
+            {t('offline.myRegions', 'My Regions')}
+          </h3>
 
           <div className="flex flex-col gap-3">
             {downloadedIds.length > 0 ? (
@@ -239,7 +254,10 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
                       <div>
                         <h4 className="text-white text-sm font-bold mb-0.5">{info.name}</h4>
                         <p className="text-gray-500 text-[11px] font-medium">
-                          {lastUpdate ? getRelativeTimeString(lastUpdate) : 'Date inconnue'} • {info.size}
+                          {lastUpdate
+                            ? getRelativeTimeString(lastUpdate, t)
+                            : t('offline.unknownDate', 'Date inconnue')}{' '}
+                          • {info.size}
                         </p>
                       </div>
                     </div>
@@ -266,7 +284,8 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
                             }}
                             className="w-full px-4 py-3 text-left text-xs font-bold text-blue-400 hover:bg-gray-800 flex items-center gap-2 border-b border-gray-800"
                           >
-                            <span className="material-symbols-outlined text-sm">update</span> Update
+                            <span className="material-symbols-outlined text-sm">update</span>{' '}
+                            {t('offline.update', 'Update')}
                           </button>
                           <button
                             onClick={(e) => {
@@ -275,7 +294,8 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
                             }}
                             className="w-full px-4 py-3 text-left text-xs font-bold text-red-400 hover:bg-gray-800 flex items-center gap-2"
                           >
-                            <span className="material-symbols-outlined text-sm">delete</span> Delete
+                            <span className="material-symbols-outlined text-sm">delete</span>{' '}
+                            {t('offline.delete', 'Delete')}
                           </button>
                         </div>
                       )}
@@ -287,8 +307,10 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
               /* If no map is downloaded */
               <div className="bg-gray-800/20 border border-dashed border-gray-700/50 rounded-3xl p-8 flex flex-col items-center justify-center text-center">
                 <span className="material-symbols-outlined text-gray-600 text-4xl mb-3">cloud_off</span>
-                <p className="text-gray-500 text-sm">No offline maps found.</p>
-                <p className="text-gray-600 text-[11px] mt-1">Download a region to use the app without internet.</p>
+                <p className="text-gray-500 text-sm">{t('offline.noMapsFound', 'No offline maps found.')}</p>
+                <p className="text-gray-600 text-[11px] mt-1">
+                  {t('offline.downloadPrompt', 'Download a region to use the app without internet.')}
+                </p>
               </div>
             )}
           </div>
@@ -301,12 +323,15 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
             className="w-full py-4 bg-blue-600 text-white rounded-3xl text-sm font-bold tracking-wide flex items-center justify-center gap-2 shadow-lg shadow-blue-900/30 hover:bg-blue-500 transition-all active:scale-95"
           >
             <span className="material-symbols-outlined">add_location</span>
-            Download New Region
+            {t('offline.downloadNewRegion', 'Download New Region')}
           </button>
         </div>
 
         <p className="text-gray-500 text-[11px] text-center mt-4 px-4 leading-relaxed">
-          Downloading maps allows you to navigate and use the ERIS emergency network even without internet access.
+          {t(
+            'offline.downloadInfo',
+            'Downloading maps allows you to navigate and use the ERIS emergency network even without internet access.',
+          )}
         </p>
       </div>
     </div>

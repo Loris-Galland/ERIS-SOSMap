@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import { createOfflineLayer, PRESET_REGIONS, MAP_STYLES } from '../utils/MapUtils';
 import OfflineMapViewer from './OfflineMapViewer';
+import { useTranslation } from 'react-i18next';
 
 interface DownloadMapScreenProps {
   onBack: () => void;
@@ -9,6 +10,8 @@ interface DownloadMapScreenProps {
 }
 
 export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
+  const { t } = useTranslation();
+
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [downloadingId, setDownloadingId] = useState<number | string | null>(null);
@@ -137,7 +140,10 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
     const bounds = selectionMapRef.current.getBounds();
     const zoom = selectionMapRef.current.getZoom();
 
-    const customName = window.prompt('Name this personnalized zone :', 'My Zone');
+    const customName = window.prompt(
+      t('download.promptName', 'Name this personnalized zone :'),
+      t('download.defaultName', 'My Zone'),
+    );
 
     if (customName && customName.trim() !== '') {
       const customId = `custom_${Date.now()}`;
@@ -222,19 +228,25 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
         const count = tilesToSave.length;
 
         if (count === 0) {
-          alert('No tiles found for this area. Check your zoom levels.');
+          alert(t('download.noTiles', 'No tiles found for this area. Check your zoom levels.'));
           cleanup();
           return false;
         }
 
-        if (window.confirm(`Download ${count} tiles for ${name}?`)) {
+        if (
+          window.confirm(
+            t('download.confirmDownload', `Download ${count} tiles for ${name}?`)
+              .replace('${count}', count.toString())
+              .replace('${name}', name),
+          )
+        ) {
           successCallback();
         } else {
           cleanup();
         }
       },
       confirmNoTiles: () => {
-        alert('This zone is already downloaded');
+        alert(t('download.alreadyDownloaded', 'This zone is already downloaded'));
         saveRegionAsDownloaded(id);
         cleanup();
       },
@@ -258,7 +270,14 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
     const downloadStyleLayer = (styleIndex: number) => {
       if (styleIndex >= selectedStyles.length) {
         setProgress(100);
-        alert(`Success : The zone ${name} is available offline (${selectedStyles.length} layers).`);
+        alert(
+          t(
+            'download.successMultiple',
+            `Success : The zone ${name} is available offline (${selectedStyles.length} layers).`,
+          )
+            .replace('${name}', name)
+            .replace('${selectedStyles.length}', selectedStyles.length.toString()),
+        );
         saveRegionAsDownloaded(id);
         cleanup();
         return;
@@ -276,7 +295,7 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
           const count = tilesToSave.length;
 
           if (count === 0) {
-            if (styleIndex === 0) alert('No tiles found for this area. Check your zoom levels.');
+            if (styleIndex === 0) alert(t('download.noTiles', 'No tiles found for this area. Check your zoom levels.'));
             tempMap.removeLayer(layer);
             downloadStyleLayer(styleIndex + 1);
             return false;
@@ -285,7 +304,13 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
           if (styleIndex === 0) {
             if (
               window.confirm(
-                `Download ${count} tiles per layer for ${name} (${selectedStyles.length} layers selected)?`,
+                t(
+                  'download.confirmMultiple',
+                  `Download ${count} tiles per layer for ${name} (${selectedStyles.length} layers selected)?`,
+                )
+                  .replace('${count}', count.toString())
+                  .replace('${name}', name)
+                  .replace('${selectedStyles.length}', selectedStyles.length.toString()),
               )
             ) {
               successCallback();
@@ -298,7 +323,7 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
         },
         confirmNoTiles: () => {
           if (styleIndex === 0) {
-            alert('This zone is already downloaded');
+            alert(t('download.alreadyDownloaded', 'This zone is already downloaded'));
             saveRegionAsDownloaded(id);
             cleanup();
           } else {
@@ -329,7 +354,7 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
 
       layer.on('tilelayeroffline:saveerror', (err: any) => {
         console.error(`Downloading error on layer ${styleConfig.name}:`, err);
-        alert('Error during downloading. Check your connexion.');
+        alert(t('download.errorDownloading', 'Error during downloading. Check your connexion.'));
         cleanup();
       });
 
@@ -349,9 +374,13 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
   };
 
   const handleDelete = (id: number, name: string) => {
-    if (window.confirm(`Are you sure you want to delete ${name} offline data?`)) {
+    if (
+      window.confirm(
+        t('download.confirmDelete', `Are you sure you want to delete ${name} offline data?`).replace('${name}', name),
+      )
+    ) {
       removeRegionFromDownloaded(id);
-      alert(`${name} removed from your offline maps.`);
+      alert(t('download.successDelete', `${name} removed from your offline maps.`).replace('${name}', name));
     }
   };
 
@@ -385,14 +414,16 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
                 <span className="material-symbols-outlined">close</span>
               </button>
               <div className="flex-1">
-                <h2 className="text-white text-sm font-bold">Manual saving</h2>
-                <p className="text-gray-400 text-[10px]">Search a place or move the map</p>
+                <h2 className="text-white text-sm font-bold">{t('download.manualSaving', 'Manual saving')}</h2>
+                <p className="text-gray-400 text-[10px]">
+                  {t('download.searchOrMove', 'Search a place or move the map')}
+                </p>
               </div>
               <button
                 onClick={handleConfirmManualArea}
                 className="bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg active:scale-95"
               >
-                Save this zone
+                {t('download.saveZone', 'Save this zone')}
               </button>
             </div>
 
@@ -404,7 +435,7 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
                   type="text"
                   value={manualSearchQuery}
                   onChange={(e) => setManualSearchQuery(e.target.value)}
-                  placeholder="Find a place to download..."
+                  placeholder={t('download.searchPlace', 'Find a place to download...')}
                   className="bg-transparent text-xs text-white w-full outline-none"
                 />
                 {isManualSearching && (
@@ -453,14 +484,14 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
           >
             <span className="material-symbols-outlined">chevron_left</span>
           </button>
-          <h2 className="text-white text-xl font-bold tracking-wide">Download Maps</h2>
+          <h2 className="text-white text-xl font-bold tracking-wide">{t('download.title', 'Download Maps')}</h2>
         </div>
 
         {/* Custom Area Map Button (Top Right) */}
         <button
           onClick={() => setIsManualSelecting(true)}
           className="text-blue-400 hover:text-blue-300 transition-colors flex items-center justify-center w-10 h-10 bg-blue-500/10 rounded-full active:scale-95"
-          title="Select Custom Area"
+          title={t('download.selectCustom', 'Select Custom Area')}
         >
           <span className="material-symbols-outlined text-xl">map</span>
         </button>
@@ -474,13 +505,15 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search city or region..."
+            placeholder={t('download.searchPlaceholder', 'Search city or region...')}
             className="bg-transparent text-sm text-white w-full outline-none placeholder-gray-500"
           />
         </div>
 
         <section>
-          <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3 px-2">Select Map Layers</h3>
+          <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3 px-2">
+            {t('download.selectLayers', 'Select Map Layers')}
+          </h3>
           <div className="grid grid-cols-2 gap-3 mb-3">
             {Object.values(MAP_STYLES).map((style) => {
               const isSelected = selectedStyles.includes(style.id);
@@ -502,7 +535,11 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
                       <span className="material-symbols-outlined text-white text-[10px] font-bold">check</span>
                     </div>
                   )}
-                  {style.id === 'dark' && <span className="text-[8px] uppercase font-black mt-0.5">Default</span>}
+                  {style.id === 'dark' && (
+                    <span className="text-[8px] uppercase font-black mt-0.5">
+                      {t('download.defaultStyle', 'Default')}
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -511,15 +548,18 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
           <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-3 flex items-start gap-2">
             <span className="material-symbols-outlined text-yellow-500 text-sm mt-0.5">database</span>
             <p className="text-gray-400 text-[10px] leading-relaxed">
-              Selecting multiple layers increases storage usage.{' '}
-              <span className="text-gray-200 font-semibold">Satellite tiles</span> are ~2.5x larger.
+              {t('download.storageWarning1', 'Selecting multiple layers increases storage usage.')}{' '}
+              <span className="text-gray-200 font-semibold">{t('download.satelliteTiles', 'Satellite tiles')}</span>{' '}
+              {t('download.storageWarning2', 'are ~2.5x larger.')}
             </p>
           </div>
         </section>
 
         {/* ─── SUGGESTIONS LIST ─── */}
         <section>
-          <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3 px-2">Suggested Regions</h3>
+          <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3 px-2">
+            {t('download.suggested', 'Suggested Regions')}
+          </h3>
 
           <div className="flex flex-col gap-3">
             {filteredRegions.length > 0 ? (
@@ -551,10 +591,10 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
                         <h4 className="text-white text-sm font-bold mb-0.5">{region.name}</h4>
                         <p className="text-gray-500 text-[11px] font-medium">
                           {isDownloadingThis
-                            ? `Downloading... ${progress}%`
+                            ? `${t('download.downloading', 'Downloading...')} ${progress}%`
                             : isDownloaded
-                              ? 'Available Offline'
-                              : `${region.size} • Map & Navigation Data`}
+                              ? t('download.available', 'Available Offline')
+                              : `${region.size} • ${t('download.mapData', 'Map & Navigation Data')}`}
                         </p>
                       </div>
                     </div>
@@ -590,7 +630,9 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
                 );
               })
             ) : (
-              <div className="text-center py-6 text-gray-500 text-sm">No regions found for "{searchQuery}"</div>
+              <div className="text-center py-6 text-gray-500 text-sm">
+                {t('download.noRegions', 'No regions found for')} "{searchQuery}"
+              </div>
             )}
           </div>
         </section>

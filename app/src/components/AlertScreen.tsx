@@ -4,6 +4,7 @@ import { dispatchSOS, flushRetryQueue, revokeSOS } from '../services/sosService'
 import { db } from '../db/localDb';
 import { useLiveQuery } from 'dexie-react-hooks';
 import SOSHistoryScreen from './SosHistoryScreen';
+import { useTranslation } from 'react-i18next';
 
 // Types
 interface Coords {
@@ -20,13 +21,13 @@ interface RawPosition {
 
 // Main Component
 export default function AlertScreen() {
+  const { t } = useTranslation();
   const [holding, setHolding] = useState<boolean>(false);
   const [sent, setSent] = useState<boolean>(false);
   const [progress, setProgress] = useState<number>(0);
   const [notes, setNotes] = useState<string>('');
   const [userId, setUserId] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState<boolean>(false);
-
 
   const [coords, setCoords] = useState<Coords>({
     lat: '0.0000° N',
@@ -112,7 +113,7 @@ export default function AlertScreen() {
     setIsGracePeriod(false);
     setSent(false);
     setLastAlertIds(null);
-    setStatusMessage('SOS Alert Cancelled');
+    setStatusMessage(t('alert.cancelMessage'));
     setStatusType('error');
 
     setTimeout(() => {
@@ -125,7 +126,7 @@ export default function AlertScreen() {
   const sendFallbackSMS = () => {
     const googleMapsLink = `https://maps.google.com/?q=${rawPosition.lat},${rawPosition.lng}`;
     const message = encodeURIComponent(
-      `🚨 URGENT: I need help! \nPosition: ${googleMapsLink}\nNotes: ${notes || 'None'}`,
+      `${t('alert.urgentHelp')} \n${t('alert.position')}: ${googleMapsLink}\n${t('alert.notes')}: ${notes || t('alert.none')}`,
     );
 
     // Detect iOS/Android because the SMS link separator differs based on the OS
@@ -139,11 +140,11 @@ export default function AlertScreen() {
   // Actual SOS dispatch
   const triggerSOS = useCallback(async () => {
     setIsSending(true);
-    setStatusMessage('Transmitting alert...');
+    setStatusMessage(t('alert.transmitting'));
     setStatusType(null);
 
     if (!userId) {
-      setStatusMessage('Authentication error. Please log in again.');
+      setStatusMessage(t('alert.authError'));
       setStatusType('error');
       setIsSending(false);
       setTimeout(() => {
@@ -185,9 +186,9 @@ export default function AlertScreen() {
       setSent(true);
 
       if (result.method === 'INTERNET') {
-        setStatusMessage('Alert received by the global network.');
+        setStatusMessage(t('alert.receivedGlobal'));
       } else {
-        setStatusMessage('Alert transmitted via local hardware fallback.');
+        setStatusMessage(t('alert.transmittedHardware'));
       }
       setStatusType('success');
 
@@ -205,7 +206,7 @@ export default function AlertScreen() {
       }, 5000);
     } else {
       // Offline fallback behavior
-      setStatusMessage('Offline: Alert saved and will be sent when network is restored.');
+      setStatusMessage(t('alert.offlineSaved'));
       setStatusType('warning');
       setSent(true);
 
@@ -219,7 +220,7 @@ export default function AlertScreen() {
     }
 
     setIsSending(false);
-  }, [rawPosition, userId, notes]);
+  }, [rawPosition, userId, notes, t]);
 
   // SOS hold start
   const startHold = useCallback(() => {
@@ -256,10 +257,9 @@ export default function AlertScreen() {
 
   return (
     <div className="flex flex-col h-full bg-[#0f141e] w-full overflow-y-auto font-sans relative pb-24 pt-4 px-4">
-
       {/* History screen overlay */}
       {showHistory && <SOSHistoryScreen onClose={() => setShowHistory(false)} />}
-      
+
       {/* ─── CANCELLATION POPUP (GRACE PERIOD) ─── */}
       {isGracePeriod && (
         <div className="fixed bottom-28 left-4 right-4 z-[9999] animate-in fade-in slide-in-from-bottom-4 duration-300">
@@ -269,9 +269,9 @@ export default function AlertScreen() {
                 <span className="material-symbols-outlined text-white text-lg">emergency</span>
               </div>
               <div>
-                <p className="text-white font-bold text-sm">Alert Sent!</p>
+                <p className="text-white font-bold text-sm">{t('alert.alertSent')}</p>
                 <p className="text-white/80 text-[10px] uppercase tracking-wider font-semibold">
-                  Cancel available (5s)
+                  {t('alert.cancelAvailable')}
                 </p>
               </div>
             </div>
@@ -279,7 +279,7 @@ export default function AlertScreen() {
               onClick={handleCancelAlert}
               className="bg-white text-red-600 font-black px-4 py-2 rounded-xl text-xs active:scale-95 transition-transform relative z-10"
             >
-              CANCEL
+              {t('alert.cancelBtn')}
             </button>
             {/* Timer Progress Bar */}
             <div
@@ -292,11 +292,11 @@ export default function AlertScreen() {
 
       {/* Header */}
       <header className="mb-8 mt-2 text-center">
-        <h2 className="text-white font-bold text-3xl tracking-tight mb-2">Trigger SOS Alert</h2>
+        <h2 className="text-white font-bold text-3xl tracking-tight mb-2">{t('alert.triggerTitle')}</h2>
         <div className="h-1 w-16 bg-red-500 mx-auto rounded-full mb-3" />
-        <p className="text-gray-400 font-medium text-xs">Notifies local emergency services immediately</p>
+        <p className="text-gray-400 font-medium text-xs">{t('alert.triggerSubtitle')}</p>
 
-         {/* History access button */}
+        {/* History access button */}
         <button
           onClick={() => setShowHistory(true)}
           className="absolute right-4 top-4 w-10 h-10 bg-gray-800/60 border border-gray-700/50 rounded-full flex items-center justify-center text-gray-400 hover:text-white active:scale-95 transition-all"
@@ -311,7 +311,7 @@ export default function AlertScreen() {
         <div className="mb-4 bg-yellow-500/10 border border-yellow-500/30 rounded-2xl p-3 flex items-center gap-2">
           <span className="material-symbols-outlined text-yellow-400 text-lg">schedule_send</span>
           <p className="text-yellow-300 text-xs font-medium">
-            {queuedCount} alert{(queuedCount ?? 0) > 1 ? 's' : ''} pending — will be sent when network is restored.
+            {queuedCount} {t('alert.pendingAlerts')}
           </p>
         </div>
       )}
@@ -373,7 +373,13 @@ export default function AlertScreen() {
             )}
 
             <span className="font-bold text-xl text-center px-4 leading-tight text-white relative z-10 whitespace-pre-line tracking-wide">
-              {isSending ? 'SENDING...' : sent ? 'ALERT\nSENT ✓' : holding ? 'HOLDING...' : 'HOLD TO\nSEND SOS'}
+              {isSending
+                ? t('alert.sending')
+                : sent
+                  ? t('alert.sentCheck')
+                  : holding
+                    ? t('alert.holding')
+                    : t('alert.holdBtn')}
             </span>
           </button>
         </div>
@@ -418,7 +424,7 @@ export default function AlertScreen() {
                 className="w-full mt-3 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-colors active:scale-95 shadow-lg"
               >
                 <span className="material-symbols-outlined text-sm">sms</span>
-                Send via Standard SMS
+                {t('alert.sendSmsBtn')}
               </button>
             )}
           </div>
@@ -427,7 +433,7 @@ export default function AlertScreen() {
         {/* Warning & Progress Bar */}
         <p className="font-semibold text-xs tracking-wider uppercase flex items-center gap-2 text-yellow-500 mb-4">
           <span className="material-symbols-outlined text-sm">warning</span>
-          3-second hold required
+          {t('alert.holdRequired')}
         </p>
 
         <div className="w-48 h-1.5 bg-gray-800 rounded-full overflow-hidden">
@@ -449,7 +455,7 @@ export default function AlertScreen() {
             className="block font-bold text-xs uppercase tracking-wider mb-2 text-gray-400 px-1"
             htmlFor="alert-notes"
           >
-            Emergency Details (Optional)
+            {t('alert.emergencyDetails')}
           </label>
           <textarea
             id="alert-notes"
@@ -458,7 +464,7 @@ export default function AlertScreen() {
             onChange={(e) => setNotes(e.target.value)}
             disabled={isSending || isGracePeriod}
             className="w-full bg-gray-900/50 border border-gray-700/50 rounded-2xl p-3 resize-none outline-none focus:ring-2 focus:ring-blue-500/50 text-white text-sm placeholder-gray-500 transition-all disabled:opacity-50"
-            placeholder="Describe your situation (e.g., medical, fire, trapped)..."
+            placeholder={t('alert.describeSituation')}
           />
         </div>
 
@@ -466,9 +472,9 @@ export default function AlertScreen() {
         <div className="bg-gray-800/40 border border-gray-700/50 rounded-3xl p-4 shadow-sm">
           <div className="grid grid-cols-3 gap-2 text-center">
             {[
-              { label: 'LATITUDE', value: coords.lat },
-              { label: 'LONGITUDE', value: coords.lon },
-              { label: 'ALTITUDE', value: coords.alt },
+              { label: t('alert.latitude'), value: coords.lat },
+              { label: t('alert.longitude'), value: coords.lon },
+              { label: t('alert.altitude'), value: coords.alt },
             ].map(({ label, value }) => (
               <div key={label} className="flex flex-col gap-1">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">{label}</span>
@@ -484,7 +490,7 @@ export default function AlertScreen() {
             className={`w-2 h-2 rounded-full ${navigator.onLine ? 'bg-green-500' : 'bg-amber-500 animate-pulse'}`}
           />
           <span className="text-gray-500 text-[11px] font-semibold uppercase tracking-wider">
-            {navigator.onLine ? 'Connected — ERIS Network Active' : 'Offline — Hardware Fallback Ready'}
+            {navigator.onLine ? t('alert.networkActive') : t('alert.networkOffline')}
           </span>
         </div>
       </section>
