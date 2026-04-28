@@ -88,6 +88,17 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
     fetchHardwareStatus();
   }, []);
 
+  // Auto-refresh data when the network is restored
+  useEffect(() => {
+    const handleOnline = () => {
+      console.log('[ERIS] Network restored! Reloading profile data...');
+      fetchInitialData();
+    };
+
+    window.addEventListener('online', handleOnline);
+    return () => window.removeEventListener('online', handleOnline);
+  }, []);
+
 // ─── HARDWARE FETCHING ───
   const fetchHardwareStatus = async () => {
     // 1. Fetch Real GPS Location using Capacitor
