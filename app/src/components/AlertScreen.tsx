@@ -3,6 +3,7 @@ import { supabase } from '../db/supabaseClient';
 import { dispatchSOS, flushRetryQueue, revokeSOS } from '../services/sosService'; // Added revokeSOS
 import { db } from '../db/localDb';
 import { useLiveQuery } from 'dexie-react-hooks';
+import SOSHistoryScreen from './SosHistoryScreen';
 
 // Types
 interface Coords {
@@ -24,6 +25,8 @@ export default function AlertScreen() {
   const [progress, setProgress] = useState<number>(0);
   const [notes, setNotes] = useState<string>('');
   const [userId, setUserId] = useState<string | null>(null);
+  const [showHistory, setShowHistory] = useState<boolean>(false);
+
 
   const [coords, setCoords] = useState<Coords>({
     lat: '0.0000° N',
@@ -116,6 +119,21 @@ export default function AlertScreen() {
       setStatusMessage(null);
       setStatusType(null);
     }, 3000);
+  };
+
+  // Fallback SMS function for offline mode
+  const sendFallbackSMS = () => {
+    const googleMapsLink = `https://maps.google.com/?q=${rawPosition.lat},${rawPosition.lng}`;
+    const message = encodeURIComponent(
+      `🚨 URGENT: I need help! \nPosition: ${googleMapsLink}\nNotes: ${notes || 'None'}`,
+    );
+
+    // Detect iOS/Android because the SMS link separator differs based on the OS
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const separator = isIOS ? '&' : '?';
+
+    // Open the native Message app with pre-filled text
+    window.open(`sms:${separator}body=${message}`, '_system');
   };
 
   // Actual SOS dispatch
@@ -238,6 +256,10 @@ export default function AlertScreen() {
 
   return (
     <div className="flex flex-col h-full bg-[#0f141e] w-full overflow-y-auto font-sans relative pb-24 pt-4 px-4">
+
+      {/* History screen overlay */}
+      {showHistory && <SOSHistoryScreen onClose={() => setShowHistory(false)} />}
+      
       {/* ─── CANCELLATION POPUP (GRACE PERIOD) ─── */}
       {isGracePeriod && (
         <div className="fixed bottom-28 left-4 right-4 z-[9999] animate-in fade-in slide-in-from-bottom-4 duration-300">
@@ -273,6 +295,15 @@ export default function AlertScreen() {
         <h2 className="text-white font-bold text-3xl tracking-tight mb-2">Trigger SOS Alert</h2>
         <div className="h-1 w-16 bg-red-500 mx-auto rounded-full mb-3" />
         <p className="text-gray-400 font-medium text-xs">Notifies local emergency services immediately</p>
+
+         {/* History access button */}
+        <button
+          onClick={() => setShowHistory(true)}
+          className="absolute right-4 top-4 w-10 h-10 bg-gray-800/60 border border-gray-700/50 rounded-full flex items-center justify-center text-gray-400 hover:text-white active:scale-95 transition-all"
+          title="SOS History"
+        >
+          <span className="material-symbols-outlined text-xl">history</span>
+        </button>
       </header>
 
       {/* Queued Banner */}
@@ -380,6 +411,16 @@ export default function AlertScreen() {
                     : 'sync'}
             </span>
             <p className="text-white text-xs font-medium leading-snug">{statusMessage}</p>
+            {/* ─── OFFLINE SMS FALLBACK BUTTON ─── */}
+            {statusType === 'warning' && (
+              <button
+                onClick={sendFallbackSMS}
+                className="w-full mt-3 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-colors active:scale-95 shadow-lg"
+              >
+                <span className="material-symbols-outlined text-sm">sms</span>
+                Send via Standard SMS
+              </button>
+            )}
           </div>
         )}
 
