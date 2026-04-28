@@ -1,6 +1,7 @@
 import { db } from '../db/localDb';
 import { supabase } from '../db/supabaseClient';
 import { CapacitorErisSosmap } from 'capacitor-eris-sosmap';
+import { Capacitor } from '@capacitor/core';
 
 // Background retry engine
 // This runs whenever dispatchSOS is called and flushes any previously queued alerts.
@@ -39,6 +40,33 @@ export const flushRetryQueue = async () => {
   }
 };
 
+// ==========================================
+// OFFLINE EMERGENCY NOTIFICATION (SMS)
+// ==========================================
+const triggerOfflineNotification = async (position: {lat: number, lng: number}, notes: string) => {
+  try {
+    const mapLink = `https://maps.google.com/?q=$${position.lat},${position.lng}`;
+    const message = `URGENT (ERIS) : J'ai déclenché un SOS. Ma position : ${mapLink}. Notes : ${notes}`;
+    
+    // Attempt to retrieve local emergency numbers if they are cached in Dexie
+    let phones = "";
+    if ((db as any).emergencyContacts) {
+      const contacts = await (db as any).emergencyContacts.toArray();
+      if (contacts && contacts.length > 0) {
+        phones = contacts.map((c: any) => c.phone_number).join(',');
+      }
+    }
+
+    // Handle the syntax difference between iOS and Android for SMS links
+    const separator = Capacitor.getPlatform() === 'ios' ? '&' : '?';
+    
+    // Open the native SMS application using the cellular fallback network
+    window.open(`sms:${phones}${separator}body=${encodeURIComponent(message)}`, '_system');
+  } catch (err) {
+    console.error("[ERIS] Failed to open the SMS application", err);
+  }
+};
+
 export const dispatchSOS = async (
   userId: string,
   position: { lat: number; lng: number; alt: number },
@@ -46,7 +74,8 @@ export const dispatchSOS = async (
   notes: string = '',
 ) => {
   // Try to flush any previously failed SOS alerts first
-  await flushRetryQueue();
+  // FIX: Do not use 'await' to avoid blocking the offline dispatch
+  flushRetryQueue().catch(e => console.warn('[ERIS] Background flush error:', e));
 
   // Use user input or a default message
   const finalNotes = notes.trim() !== '' ? notes : 'Manual SOS alert triggered';
@@ -115,11 +144,14 @@ export const dispatchSOS = async (
       // Return both Supabase and Local IDs to allow cancellation
       return { success: true, method: 'INTERNET', supabaseId: data[0].id, localId };
     } else {
-      // Handled by Native Wi-Fi Fallback
+      // Handled by Native Wi-Fi / LoRa Fallback
       // Store in local queue for history and sync
       dexiePayload.status = 'delivered_to_hardware';
       dexiePayload.transmission_method = nativeResult.transmissionMethod;
       const localId = await db.sosQueue.add(dexiePayload);
+
+      // FIX: Trigger the SMS fallback notification via cellular network
+      await triggerOfflineNotification(position, finalNotes);
 
       return { success: true, method: nativeResult.transmissionMethod, localId };
     }
@@ -130,6 +162,9 @@ export const dispatchSOS = async (
     dexiePayload.status = 'queued';
     dexiePayload.transmission_method = 'QUEUED_FOR_RETRY';
     const localId = await db.sosQueue.add(dexiePayload);
+
+    // FIX: Even in case of a complete failure, attempt to send the SMS
+    await triggerOfflineNotification(position, finalNotes);
 
     return { success: false, method: 'QUEUED_FOR_RETRY', localId };
   }
