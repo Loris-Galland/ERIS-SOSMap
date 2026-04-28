@@ -5,6 +5,7 @@ import { db } from '../db/localDb';
 import { useLiveQuery } from 'dexie-react-hooks';
 import SOSHistoryScreen from './SosHistoryScreen';
 import { Geolocation } from '@capacitor/geolocation';
+import { Device } from '@capacitor/device';
 
 // Types
 interface Coords {
@@ -198,7 +199,19 @@ export default function AlertScreen() {
       }
     } // Call SOS service
 
-    const result = await dispatchSOS(userId, rawPosition, 100, notes);
+    // Fetch current battery level natively before dispatching
+    let currentBattery = 100; 
+    try {
+      const info = await Device.getBatteryInfo();
+      if (info.batteryLevel !== undefined) {
+        currentBattery = Math.round(info.batteryLevel * 100);
+      }
+    } catch (e) {
+      console.warn('[ERIS] Could not fetch native battery info', e);
+    }
+
+    // Pass currentBattery instead of hardcoded 100
+    const result = await dispatchSOS(userId, rawPosition, currentBattery, notes);
 
     if (result.success) {
       // Store IDs and launch the grace period popup
