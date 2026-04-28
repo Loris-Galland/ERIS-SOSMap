@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import L from 'leaflet';
+import { useEffect, useRef, useState, useCallback } from 'react';
+import L, { map } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Geolocation } from '@capacitor/geolocation';
 
@@ -16,6 +16,23 @@ import DownloadMapScreen from './components/DownloadMapScreen';
 import logo from './assets/small_logo.png';
 import { PRESET_REGIONS, MAP_STYLES } from './utils/MapUtils';
 import SetupProfileScreen from './components/SetupProfileScreen';
+
+const getWeatherDetails = (code: number) => {
+  if (code === 0) return { condition: 'Clear', icon: 'sunny', color: 'text-yellow-400', bg: 'bg-yellow-400/20' };
+  if (code === 1 || code === 2)
+    return { condition: 'Partly Cloudy', icon: 'partly_cloudy_day', color: 'text-yellow-200', bg: 'bg-yellow-200/20' };
+  if (code === 3) return { condition: 'Cloudy', icon: 'cloud', color: 'text-gray-400', bg: 'bg-gray-400/20' };
+  if ([45, 48].includes(code)) return { condition: 'Fog', icon: 'foggy', color: 'text-gray-300', bg: 'bg-gray-300/20' };
+  if ([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82].includes(code))
+    return { condition: 'Rain', icon: 'rainy', color: 'text-blue-400', bg: 'bg-blue-400/20' };
+  if ([71, 73, 75, 85, 86].includes(code))
+    return { condition: 'Snow', icon: 'weather_snowy', color: 'text-white', bg: 'bg-white/20' };
+  if ([77].includes(code)) return { condition: 'Hail', icon: 'grain', color: 'text-cyan-300', bg: 'bg-cyan-300/20' };
+  if ([95, 96, 99].includes(code))
+    return { condition: 'Storm', icon: 'thunderstorm', color: 'text-purple-400', bg: 'bg-purple-400/20' };
+
+  return { condition: 'Unknown', icon: 'cloud', color: 'text-gray-400', bg: 'bg-gray-400/20' };
+};
 
 export default function App() {
   // Auth states
@@ -45,6 +62,16 @@ export default function App() {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [localSearchableRegions, setLocalSearchableRegions] = useState<any[]>([]);
+
+  // Weather states
+  const [currentWeather, setCurrentWeather] = useState({
+    temp: '--',
+    condition: 'Loading...',
+    icon: 'sync',
+    color: 'text-blue-400',
+    bg: 'bg-blue-400/20',
+  });
+  const [showWeatherReport, setShowWeatherReport] = useState(false);
 
   const [previewArea, setPreviewArea] = useState<{
     id: string;
@@ -81,16 +108,47 @@ export default function App() {
     }
   }, [session]);
 
+  // ─── WEATHER FETCHING LOGIC ───
+  const fetchWeather = useCallback(
+    async (lat: number, lng: number) => {
+      // If offline we don't fetch
+      if (offlineMode || !navigator.onLine) return;
+
+      try {
+        const res = await fetch(
+          `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current_weather=true`,
+        );
+        const data = await res.json();
+        if (data.current_weather) {
+          const { temperature, weathercode } = data.current_weather;
+          const details = getWeatherDetails(weathercode);
+          setCurrentWeather({
+            temp: Math.round(temperature).toString(),
+            condition: details.condition,
+            icon: details.icon,
+            color: details.color,
+            bg: details.bg,
+          });
+        }
+      } catch (e) {
+        console.error('Error weather forecast API:', e);
+      }
+    },
+    [offlineMode],
+  );
+
   // Initialize map and GPS tracking only if logged in
   useEffect(() => {
     if (!session || !mapRef.current || mapInstance.current) return;
 
     let watchId: string | null = null;
 
+    const defaultCoords: [number, number] = [48.8584, 2.2945];
+
     mapInstance.current = L.map(mapRef.current, {
       zoomControl: false,
       attributionControl: false,
-    }).setView([48.8584, 2.2945], 13);
+    }).setView(defaultCoords, 13);
 
     // Initialisation dynamique de la carte <-- Rétabli
     baseLayerRef.current = (L.tileLayer as any)
@@ -105,6 +163,15 @@ export default function App() {
     setTimeout(() => {
       mapInstance.current?.invalidateSize();
     }, 250);
+
+    fetchWeather(defaultCoords[0], defaultCoords[1]);
+
+    mapInstance.current.on('moveend', () => {
+      if (mapInstance.current) {
+        const center = mapInstance.current.getCenter();
+        fetchWeather(center.lat, center.lng);
+      }
+    });
 
     const startTracking = async () => {
       try {
@@ -226,7 +293,7 @@ export default function App() {
     return () => clearTimeout(delayDebounceFn);
   }, [searchQuery, offlineMode, localSearchableRegions]);
 
-  // Handle Layer Swap <-- Rétabli ici
+  // Handle Layer Swap
   const changeMapStyle = (styleKey: string) => {
     setCurrentMapStyle(styleKey);
     if (baseLayerRef.current) {
@@ -371,6 +438,37 @@ export default function App() {
           </div>
         </div>
 
+        {/* ─── WEATHER WIDGET ─── */}
+        <div className="absolute top-[120px] left-4 z-[1000] flex flex-col gap-2">
+          <div className="bg-gray-900/80 backdrop-blur-md border border-gray-700/50 rounded-2xl p-2.5 shadow-xl flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center ${currentWeather.bg} ${currentWeather.color}`}
+              >
+                <span
+                  className={`material-symbols-outlined text-lg ${currentWeather.icon === 'sync' ? 'animate-spin' : ''}`}
+                >
+                  {currentWeather.icon}
+                </span>
+              </div>
+              <div>
+                <div className="text-white font-bold text-sm leading-none">{currentWeather.temp}°C</div>
+                <div className="text-gray-400 text-[9px] uppercase tracking-wider mt-0.5">
+                  {currentWeather.condition}
+                </div>
+              </div>
+            </div>
+            <div className="w-px h-6 bg-gray-700/50"></div>
+            <button
+              onClick={() => setShowWeatherReport(true)}
+              className="w-8 h-8 rounded-full bg-gray-800/80 flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700 transition-colors active:scale-95"
+              title="Report Weather"
+            >
+              <span className="material-symbols-outlined text-sm">edit_location_alt</span>
+            </button>
+          </div>
+        </div>
+
         {/* ─── MAP CONTROLS & LAYERS MENU ─── */}
         <div className="absolute top-4 right-4 z-[1000] flex flex-col gap-3">
           {/* Layers Menu Container */}
@@ -482,6 +580,65 @@ export default function App() {
         {activeTab === 'SETTINGS' && (
           <div className="absolute inset-0 z-[3000] bg-[#0f141e]">
             <SettingsScreen onBack={() => setActiveTab('USER')} />
+          </div>
+        )}
+
+        {/* ─── WEATHER REPORTING MODAL ─── */}
+        {showWeatherReport && (
+          <div className="absolute inset-0 z-[6000] bg-[#0f141e]/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+            <div className="bg-gray-900 border border-gray-700/50 rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-in zoom-in-95 duration-200">
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="text-white text-lg font-bold">Report Weather</h3>
+                <button
+                  onClick={() => setShowWeatherReport(false)}
+                  className="w-8 h-8 flex items-center justify-center bg-gray-800 rounded-full text-gray-400 hover:text-white active:scale-95"
+                >
+                  <span className="material-symbols-outlined text-sm">close</span>
+                </button>
+              </div>
+
+              <p className="text-gray-400 text-xs mb-5 leading-relaxed">
+                Help others by reporting the current weather conditions at your exact location.
+              </p>
+
+              <div className="grid grid-cols-3 gap-3 mb-2">
+                {[
+                  { condition: 'Clear', icon: 'sunny', color: 'text-yellow-400', bg: 'bg-yellow-400/20' },
+                  {
+                    condition: 'Partly Cloudy',
+                    icon: 'partly_cloudy_day',
+                    color: 'text-yellow-200',
+                    bg: 'bg-yellow-200/20',
+                  },
+                  { condition: 'Cloudy', icon: 'cloud', color: 'text-gray-400', bg: 'bg-gray-400/20' },
+                  { condition: 'Windy', icon: 'air', color: 'text-teal-400', bg: 'bg-teal-400/20' },
+                  { condition: 'Rain', icon: 'rainy', color: 'text-blue-400', bg: 'bg-blue-400/20' },
+                  { condition: 'Storm', icon: 'thunderstorm', color: 'text-purple-400', bg: 'bg-purple-400/20' },
+                  { condition: 'Hail', icon: 'grain', color: 'text-cyan-300', bg: 'bg-cyan-300/20' },
+                  { condition: 'Snow', icon: 'weather_snowy', color: 'text-white', bg: 'bg-white/20' },
+                  { condition: 'Fog', icon: 'foggy', color: 'text-gray-300', bg: 'bg-gray-300/20' },
+                ].map((w) => (
+                  <button
+                    key={w.condition}
+                    onClick={() => {
+                      // Update of the state (maybe sent to supabase later)
+                      setCurrentWeather({
+                        temp: currentWeather.temp,
+                        condition: w.condition,
+                        icon: w.icon,
+                        color: w.color,
+                        bg: w.bg,
+                      });
+                      setShowWeatherReport(false);
+                    }}
+                    className="flex flex-col items-center justify-center gap-2 bg-gray-800/40 border border-gray-700/50 hover:bg-gray-700 hover:border-blue-500 rounded-2xl p-3 transition-all active:scale-95"
+                  >
+                    <span className={`material-symbols-outlined text-2xl ${w.color}`}>{w.icon}</span>
+                    <span className="text-gray-300 text-[10px] font-bold uppercase tracking-wider">{w.condition}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         )}
       </main>
