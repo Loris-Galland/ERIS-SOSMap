@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '../db/supabaseClient';
 import { useTranslation } from 'react-i18next';
+import AlertModal, { type AlertType } from './AlertModalProps';
 
 interface SettingsScreenProps {
   onBack: () => void;
@@ -18,6 +19,168 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
     anonymousAnalytics: true,
     autoRetrySos: true,
   });
+
+  const [cacheSize, setCacheSize] = useState('Calculating...');
+
+  const defaultDialogState = {
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'info' as AlertType,
+    isConfirm: false,
+    isPrompt: false,
+    defaultValue: '',
+    confirmText: '',
+    onConfirm: (val?: string) => {},
+    onCancel: () => {},
+  };
+
+  const [dialog, setDialog] = useState(defaultDialogState);
+
+  const closeDialog = () => setDialog((prev) => ({ ...prev, isOpen: false }));
+
+  const openDialog = (options: Partial<typeof defaultDialogState>) => {
+    setDialog({
+      ...defaultDialogState,
+      ...options,
+      isOpen: true,
+    });
+  };
+
+  const showAlert = (title: string, message: string, type: AlertType = 'info') => {
+    openDialog({
+      title,
+      message,
+      type,
+      confirmText: 'OK',
+      onConfirm: () => closeDialog(),
+      onCancel: () => closeDialog(),
+    });
+  };
+
+  const fetchSystemEstimate = async () => {
+    if (navigator.storage && navigator.storage.estimate) {
+      try {
+        const estimate = await navigator.storage.estimate();
+        if (estimate.usage !== undefined) {
+          const sizeInMB = (estimate.usage / (1024 * 1024)).toFixed(2);
+          setCacheSize(`${sizeInMB} MB`);
+        }
+      } catch (e) {
+        console.error("Erreur d'estimation", e);
+      }
+    }
+  };
+
+  const calculateStorageSize = () => {
+    try {
+      const request = window.indexedDB.open('leaflet.offline');
+
+      request.onsuccess = (event: any) => {
+        const db = event.target.result;
+        const storeNames = Array.from(db.objectStoreNames) as string[];
+
+        // If there are not tables then it's empty
+        if (storeNames.length === 0) {
+          setCacheSize('0.00 MB');
+          db.close();
+          return;
+        }
+
+        // Else we calculate the number of tiles in the table
+        const transaction = db.transaction(storeNames, 'readonly');
+        let totalItems = 0;
+        let tablesChecked = 0;
+
+        storeNames.forEach((storeName) => {
+          const countRequest = transaction.objectStore(storeName).count();
+
+          countRequest.onsuccess = () => {
+            totalItems += countRequest.result;
+            tablesChecked++;
+
+            if (tablesChecked === storeNames.length) {
+              db.close();
+              if (totalItems === 0) {
+                // It's empty so we force the view to display 0
+                setCacheSize('0.00 MB');
+              } else {
+                // If there are data we ask the browser for the size in MB
+                fetchSystemEstimate();
+              }
+            }
+          };
+        });
+      };
+
+      request.onerror = () => {
+        // If there is an error we assume it's empty
+        setCacheSize('0.00 MB');
+      };
+    } catch (error) {
+      console.error('IndexedDB verification error :', error);
+      fetchSystemEstimate(); // Fallback
+    }
+  };
+
+  useEffect(() => {
+    calculateStorageSize();
+  }, []);
+
+  const clearMapCache = () => {
+    openDialog({
+      title: 'Clear Cache',
+      message: 'Are you sure you want to clear the offline map cache?',
+      type: 'danger',
+      isConfirm: true,
+      confirmText: 'Clear',
+      onCancel: () => closeDialog(),
+      onConfirm: () => {
+        closeDialog();
+
+        try {
+          const request = window.indexedDB.open('leaflet.offline');
+
+          request.onsuccess = (event: any) => {
+            const db = event.target.result;
+            const storeNames = Array.from(db.objectStoreNames) as string[];
+
+            if (storeNames.length === 0) {
+              db.close();
+              setCacheSize('0.00 MB');
+              return;
+            }
+
+            const transaction = db.transaction(storeNames, 'readwrite');
+
+            storeNames.forEach((storeName) => {
+              transaction.objectStore(storeName).clear();
+            });
+
+            // When the deletion is confirmed we refresh the view to 0
+            transaction.oncomplete = () => {
+              db.close();
+              setCacheSize('0.00 MB');
+              showAlert('Success', 'The map cache has been successfully cleared.', 'success');
+            };
+
+            transaction.onerror = () => {
+              console.error('Error during cleanup transaction');
+              showAlert('Error', 'Error clearing cache.', 'danger');
+            };
+          };
+
+          request.onerror = (event) => {
+            console.error('Error opening IndexedDB', event);
+            showAlert('Access Denied', 'Unable to access local cache.', 'danger');
+          };
+        } catch (error) {
+          console.error('Unexpected error :', error);
+          showAlert('Error', 'An unexpected error has occurred.', 'danger');
+        }
+      },
+    });
+  };
 
   // Type-safe toggle function for boolean settings
   const toggle = (key: keyof typeof settings) => {
@@ -65,6 +228,19 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
 
   return (
     <div className="flex flex-col h-full bg-[#0f141e] w-full overflow-y-auto font-sans relative pb-10">
+      <AlertModal
+        isOpen={dialog.isOpen}
+        title={dialog.title}
+        message={dialog.message}
+        type={dialog.type}
+        isConfirm={dialog.isConfirm}
+        isPrompt={dialog.isPrompt}
+        defaultValue={dialog.defaultValue}
+        confirmText={dialog.confirmText}
+        onConfirm={dialog.onConfirm}
+        onCancel={dialog.onCancel}
+      />
+
       {/* ─── HEADER ─── */}
       <header className="flex items-center px-6 py-4 sticky top-0 z-50 bg-[#0f141e]/90 backdrop-blur-md">
         <button
@@ -77,6 +253,7 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
       </header>
 
       <div className="px-4 flex flex-col gap-6 mt-2">
+        {/* ─── DISPLAY & LANGUAGE ─── */}
         <section>
           <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3 px-2">
             {t('settings.displayLanguage', 'Display & Language')}
@@ -94,14 +271,17 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
                     {languages.find((l) => l.code === i18n.language)?.name || 'English (US)'}
                   </p>
                 </div>
-                <span
-                  className={`material-symbols-outlined text-gray-500 transition-transform duration-200 ${isLanguageMenuOpen ? 'rotate-180' : ''}`}
-                >
-                  expand_more
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-gray-500 text-lg">translate</span>
+                  <span
+                    className={`material-symbols-outlined text-gray-500 transition-transform duration-200 ${isLanguageMenuOpen ? 'rotate-180' : ''}`}
+                  >
+                    expand_more
+                  </span>
+                </div>
               </button>
 
-              {/* Languages List - This now pushes content down so you can scroll the whole page */}
+              {/* Languages List - Collapsible */}
               {isLanguageMenuOpen && (
                 <div className="bg-gray-900/40 border-t border-gray-700/20 animate-in fade-in slide-in-from-top-1 duration-200">
                   {languages.map((lang) => (
@@ -210,9 +390,19 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
             <div className="flex items-center justify-between p-4">
               <div>
                 <p className="text-white text-sm font-medium">{t('settings.offlineCache', 'Offline Map Cache')}</p>
-                <p className="text-gray-500 text-[11px]">{t('settings.offlineCacheDesc', 'Currently using 124 MB')}</p>
+                <p className="text-gray-500 text-[11px]">
+                  {t('settings.offlineCacheDesc', 'Currently using {{size}}', { size: cacheSize })}
+                </p>
               </div>
-              <button className="text-blue-400 text-xs font-bold bg-blue-500/10 px-4 py-2 rounded-full hover:bg-blue-500/20 active:scale-95 transition-all">
+              <button
+                onClick={clearMapCache}
+                disabled={cacheSize === '0.00 MB' || cacheSize === 'Calcul en cours...'}
+                className={`text-xs font-bold px-4 py-2 rounded-full transition-all ${
+                  cacheSize === '0.00 MB' || cacheSize === 'Calcul en cours...'
+                    ? 'text-gray-500 bg-gray-700/30 cursor-not-allowed'
+                    : 'text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 active:scale-95'
+                }`}
+              >
                 {t('settings.clearCache', 'Clear Cache')}
               </button>
             </div>

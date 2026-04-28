@@ -299,7 +299,7 @@ export default function AlertScreen() {
         {/* History access button */}
         <button
           onClick={() => setShowHistory(true)}
-          className="absolute right-4 top-4 w-10 h-10 bg-gray-800/60 border border-gray-700/50 rounded-full flex items-center justify-center text-gray-400 hover:text-white active:scale-95 transition-all"
+          className="absolute right-2 top-6 w-10 h-10 bg-gray-800/60 border border-gray-700/50 rounded-full flex items-center justify-center text-gray-400 hover:text-white active:scale-95 transition-all"
           title="SOS History"
         >
           <span className="material-symbols-outlined text-xl">history</span>

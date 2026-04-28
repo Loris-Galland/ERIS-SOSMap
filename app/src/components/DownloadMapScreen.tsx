@@ -3,6 +3,26 @@ import L from 'leaflet';
 import { createOfflineLayer, PRESET_REGIONS, MAP_STYLES } from '../utils/MapUtils';
 import OfflineMapViewer from './OfflineMapViewer';
 import { useTranslation } from 'react-i18next';
+import AlertModal, { type AlertType } from './AlertModalProps';
+
+const lonToX = (lon: number, z: number) => Math.floor(((lon + 180) / 360) * Math.pow(2, z));
+const latToY = (lat: number, z: number) => {
+  const latRad = (lat * Math.PI) / 180;
+  return Math.floor(((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * Math.pow(2, z));
+};
+
+const isTileInZone = (url: string, bounds: L.LatLngBounds) => {
+  const match = url.match(/\/(\d+)\/(\d+)\/(\d+)(?:\.\w+)?$/);
+  if (!match) return false;
+  const z = parseInt(match[1], 10);
+  const x = parseInt(match[2], 10);
+  const y = parseInt(match[3], 10);
+  const minX = lonToX(bounds.getWest(), z);
+  const maxX = lonToX(bounds.getEast(), z);
+  const minY = latToY(bounds.getNorth(), z);
+  const maxY = latToY(bounds.getSouth(), z);
+  return x >= minX && x <= maxX && y >= minY && y <= maxY;
+};
 
 interface DownloadMapScreenProps {
   onBack: () => void;
@@ -15,6 +35,7 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [downloadingId, setDownloadingId] = useState<number | string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [progress, setProgress] = useState(0);
   const [downloadedRegions, setDownloadedRegions] = useState<(number | string)[]>([]);
 
@@ -31,6 +52,42 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
 
   const selectionMapRef = useRef<L.Map | null>(null);
   const selectionContainerRef = useRef<HTMLDivElement>(null);
+
+  const defaultDialogState = {
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'info' as AlertType,
+    isConfirm: false,
+    isPrompt: false,
+    defaultValue: '',
+    confirmText: '',
+    onConfirm: (val?: string) => {},
+    onCancel: () => {},
+  };
+
+  const [dialog, setDialog] = useState(defaultDialogState);
+
+  const closeDialog = () => setDialog((prev) => ({ ...prev, isOpen: false }));
+
+  const openDialog = (options: Partial<typeof defaultDialogState>) => {
+    setDialog({
+      ...defaultDialogState,
+      ...options,
+      isOpen: true,
+    });
+  };
+
+  const showAlert = (title: string, message: string, type: AlertType = 'info') => {
+    openDialog({
+      title,
+      message,
+      type,
+      confirmText: 'OK',
+      onConfirm: () => closeDialog(),
+      onCancel: () => closeDialog(),
+    });
+  };
 
   useEffect(() => {
     const saved = localStorage.getItem('eris_offline_regions');
@@ -61,7 +118,8 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
   //  Get bounds of regions
   const getBoundsForRegion = (id: number | string): L.LatLngBounds | undefined => {
     if (typeof id === 'number' || (typeof id === 'string' && !id.startsWith('custom_'))) {
-      return PRESET_REGIONS.find((r) => r.id === Number(id))?.bounds;
+      const preset = PRESET_REGIONS.find((r) => r.id === Number(id));
+      return preset ? L.latLngBounds(preset.bounds as any) : undefined;
     } else {
       const customReg = customRegions.find((r) => r.id === id);
       if (customReg) {
@@ -138,33 +196,35 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
     if (!selectionMapRef.current) return;
 
     const bounds = selectionMapRef.current.getBounds();
-    const zoom = selectionMapRef.current.getZoom();
-
-    const customName = window.prompt(
-      t('download.promptName', 'Name this personnalized zone :'),
-      t('download.defaultName', 'My Zone'),
-    );
-
-    if (customName && customName.trim() !== '') {
-      const customId = `custom_${Date.now()}`;
-
-      const newCustomRegion = {
-        id: customId,
-        name: customName,
-        size: 'Custom Area',
-        bounds: {
-          southWest: [bounds.getSouthWest().lat, bounds.getSouthWest().lng],
-          northEast: [bounds.getNorthEast().lat, bounds.getNorthEast().lng],
-        },
-      };
-
-      const updatedCustomRegions = [newCustomRegion, ...customRegions];
-      setCustomRegions(updatedCustomRegions);
-      localStorage.setItem('eris_custom_regions', JSON.stringify(updatedCustomRegions));
-
-      setIsManualSelecting(false);
-      handleDownload(customId, customName, bounds);
-    }
+    openDialog({
+      title: t('download.promptTitle', 'Name your area'),
+      message: t('download.promptName', 'Choose a name for this personalized zone:'),
+      type: 'info',
+      isPrompt: true,
+      defaultValue: t('download.defaultName', 'My Zone'),
+      confirmText: t('common.save', 'Save'),
+      onCancel: () => closeDialog(),
+      onConfirm: (customName) => {
+        closeDialog();
+        if (customName && customName.trim() !== '') {
+          const customId = `custom_${Date.now()}`;
+          const newCustomRegion = {
+            id: customId,
+            name: customName.trim(),
+            size: 'Custom Area',
+            bounds: {
+              southWest: [bounds.getSouthWest().lat, bounds.getSouthWest().lng],
+              northEast: [bounds.getNorthEast().lat, bounds.getNorthEast().lng],
+            },
+          };
+          const updatedCustomRegions = [newCustomRegion, ...customRegions];
+          setCustomRegions(updatedCustomRegions);
+          localStorage.setItem('eris_custom_regions', JSON.stringify(updatedCustomRegions));
+          setIsManualSelecting(false);
+          handleDownload(customId, customName.trim(), bounds);
+        }
+      },
+    });
   };
 
   const saveRegionAsDownloaded = (id: number | string) => {
@@ -185,10 +245,18 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
 
   const removeRegionFromDownloaded = (id: number | string) => {
     setDownloadedRegions((prev) => {
-      const updated = prev.filter((regionId) => regionId !== id);
+      const updated = prev.filter((regionId) => String(regionId) !== String(id));
       localStorage.setItem('eris_offline_regions', JSON.stringify(updated));
       return updated;
     });
+    const savedMetadata = localStorage.getItem('eris_offline_metadata');
+    if (savedMetadata) {
+      try {
+        const metadata = JSON.parse(savedMetadata);
+        delete metadata[id];
+        localStorage.setItem('eris_offline_metadata', JSON.stringify(metadata));
+      } catch (e) {}
+    }
   };
 
   // Downloading fonction linked to the ID of the region
@@ -228,25 +296,38 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
         const count = tilesToSave.length;
 
         if (count === 0) {
-          alert(t('download.noTiles', 'No tiles found for this area. Check your zoom levels.'));
+          showAlert(
+            t('common.noData', 'No Data'),
+            t('download.noTiles', 'No tiles found for this area. Check your zoom levels.'),
+            'danger',
+          );
           cleanup();
           return false;
         }
-
-        if (
-          window.confirm(
-            t('download.confirmDownload', `Download ${count} tiles for ${name}?`)
-              .replace('${count}', count.toString())
-              .replace('${name}', name),
-          )
-        ) {
-          successCallback();
-        } else {
-          cleanup();
-        }
+        openDialog({
+          title: t('download.downloadStarted', 'Download Started'),
+          message: t('download.confirmDownload', `Download ${count} tiles for ${name}?`)
+            .replace('${count}', count.toString())
+            .replace('${name}', name),
+          type: 'info',
+          isConfirm: true,
+          confirmText: t('download.confirmBtn', 'Download'),
+          onCancel: () => {
+            closeDialog();
+            cleanup();
+          },
+          onConfirm: () => {
+            closeDialog();
+            successCallback();
+          },
+        });
       },
       confirmNoTiles: () => {
-        alert(t('download.alreadyDownloaded', 'This zone is already downloaded'));
+        showAlert(
+          t('download.alreadySavedTitle', 'Already Saved'),
+          t('download.alreadyDownloaded', 'This zone is already downloaded.'),
+          'success',
+        );
         saveRegionAsDownloaded(id);
         cleanup();
       },
@@ -270,13 +351,15 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
     const downloadStyleLayer = (styleIndex: number) => {
       if (styleIndex >= selectedStyles.length) {
         setProgress(100);
-        alert(
+        showAlert(
+          t('common.success', 'Success'),
           t(
             'download.successMultiple',
             `Success : The zone ${name} is available offline (${selectedStyles.length} layers).`,
           )
             .replace('${name}', name)
             .replace('${selectedStyles.length}', selectedStyles.length.toString()),
+          'success',
         );
         saveRegionAsDownloaded(id);
         cleanup();
@@ -295,35 +378,51 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
           const count = tilesToSave.length;
 
           if (count === 0) {
-            if (styleIndex === 0) alert(t('download.noTiles', 'No tiles found for this area. Check your zoom levels.'));
+            if (styleIndex === 0) {
+              showAlert(
+                t('common.noData', 'No Data'),
+                t('download.noTiles', 'No tiles found for this area. Check your zoom levels.'),
+                'danger',
+              );
+            }
             tempMap.removeLayer(layer);
             downloadStyleLayer(styleIndex + 1);
             return false;
           }
 
           if (styleIndex === 0) {
-            if (
-              window.confirm(
-                t(
-                  'download.confirmMultiple',
-                  `Download ${count} tiles per layer for ${name} (${selectedStyles.length} layers selected)?`,
-                )
-                  .replace('${count}', count.toString())
-                  .replace('${name}', name)
-                  .replace('${selectedStyles.length}', selectedStyles.length.toString()),
+            openDialog({
+              title: t('download.multiLayerTitle', 'Multi-layer Download'),
+              message: t(
+                'download.confirmMultiple',
+                `Download ${count} tiles per layer for ${name} (${selectedStyles.length} layers selected)?`,
               )
-            ) {
-              successCallback();
-            } else {
-              cleanup();
-            }
+                .replace('${count}', count.toString())
+                .replace('${name}', name)
+                .replace('${selectedStyles.length}', selectedStyles.length.toString()),
+              type: 'info',
+              isConfirm: true,
+              confirmText: t('download.confirmBtn', 'Download All'),
+              onCancel: () => {
+                closeDialog();
+                cleanup();
+              },
+              onConfirm: () => {
+                closeDialog();
+                successCallback();
+              },
+            });
           } else {
             successCallback();
           }
         },
         confirmNoTiles: () => {
           if (styleIndex === 0) {
-            alert(t('download.alreadyDownloaded', 'This zone is already downloaded'));
+            showAlert(
+              t('download.alreadySavedTitle', 'Already Saved'),
+              t('download.alreadyDownloaded', 'This zone is already downloaded.'),
+              'success',
+            );
             saveRegionAsDownloaded(id);
             cleanup();
           } else {
@@ -354,7 +453,11 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
 
       layer.on('tilelayeroffline:saveerror', (err: any) => {
         console.error(`Downloading error on layer ${styleConfig.name}:`, err);
-        alert(t('download.errorDownloading', 'Error during downloading. Check your connexion.'));
+        showAlert(
+          t('common.error', 'Error'),
+          t('download.errorDownloading', 'Error during downloading. Check your connexion.'),
+          'danger',
+        );
         cleanup();
       });
 
@@ -373,15 +476,145 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
     downloadStyleLayer(0);
   };
 
-  const handleDelete = (id: number, name: string) => {
-    if (
-      window.confirm(
-        t('download.confirmDelete', `Are you sure you want to delete ${name} offline data?`).replace('${name}', name),
-      )
-    ) {
-      removeRegionFromDownloaded(id);
-      alert(t('download.successDelete', `${name} removed from your offline maps.`).replace('${name}', name));
-    }
+  const handleDelete = (id: number | string, name: string) => {
+    openDialog({
+      title: t('offline.confirmDeleteTitle', 'Delete Zone'),
+      message: t('download.confirmDelete', `Are you sure you want to delete ${name} offline data?`).replace(
+        '${name}',
+        name,
+      ),
+      type: 'danger',
+      isConfirm: true,
+      confirmText: t('offline.delete', 'Delete'),
+      onCancel: () => closeDialog(),
+      onConfirm: () => {
+        closeDialog();
+
+        // To make the interface fast we remove the place from the list
+        removeRegionFromDownloaded(id);
+
+        const bounds = getBoundsForRegion(id);
+
+        // If there are no coordinates we stop there with a success
+        if (!bounds) {
+          showAlert(
+            t('common.success', 'Success'),
+            t('download.successDelete', `${name} removed from your offline maps.`).replace('${name}', name),
+            'success',
+          );
+          return;
+        }
+
+        // If there are coordinates we clean up IndexedDB
+        setIsDeleting(true);
+
+        try {
+          const request = window.indexedDB.open('leaflet.offline');
+
+          request.onblocked = () => {
+            setIsDeleting(false);
+            showAlert(
+              t('offline.uiUpdatedTitle', 'UI Updated'),
+              t('offline.storageLocked', `${name} removed from list, but storage is locked by the map viewer.`).replace(
+                '${name}',
+                name,
+              ),
+              'info',
+            );
+          };
+
+          request.onsuccess = (event: any) => {
+            const db = event.target.result;
+
+            if (!db.objectStoreNames.contains('tiles')) {
+              db.close();
+              setIsDeleting(false);
+              showAlert(
+                t('common.success', 'Success'),
+                t('download.successDelete', `${name} removed from your offline maps.`).replace('${name}', name),
+                'success',
+              );
+              return;
+            }
+
+            const transaction = db.transaction(['tiles'], 'readwrite');
+            const store = transaction.objectStore('tiles');
+            const cursorRequest = store.openCursor();
+
+            let deletedTilesCount = 0;
+
+            cursorRequest.onsuccess = (e: any) => {
+              const cursor = e.target.result;
+              if (cursor) {
+                const url = cursor.key as string;
+                if (isTileInZone(url, bounds)) {
+                  cursor.delete();
+                  deletedTilesCount++;
+                }
+                cursor.continue();
+              }
+            };
+
+            transaction.oncomplete = () => {
+              db.close();
+              setIsDeleting(false);
+
+              if (deletedTilesCount > 0) {
+                openDialog({
+                  title: t('offline.storageOptimizedTitle', 'Storage Optimized'),
+                  message: t(
+                    'offline.deleteSuccessDetailed',
+                    `${name} deleted (${deletedTilesCount} tiles removed).\n\nReboot app to instantly free up physical space?`,
+                  )
+                    .replace('${name}', name)
+                    .replace('${count}', deletedTilesCount.toString()),
+                  type: 'success',
+                  isConfirm: true,
+                  confirmText: t('offline.reboot', 'Reboot'),
+                  onCancel: () => closeDialog(),
+                  onConfirm: () => {
+                    closeDialog();
+                    window.location.reload();
+                  },
+                });
+              } else {
+                showAlert(
+                  t('common.success', 'Success'),
+                  t('download.successDelete', `${name} removed from your offline maps.`).replace('${name}', name),
+                  'success',
+                );
+              }
+            };
+
+            transaction.onerror = () => {
+              setIsDeleting(false);
+              showAlert(
+                t('common.warning', 'Warning'),
+                t('offline.deletePartialError', 'List updated, but some map data could not be cleared.'),
+                'danger',
+              );
+            };
+          };
+
+          request.onerror = () => {
+            setIsDeleting(false);
+            showAlert(
+              t('common.warning', 'Warning'),
+              t('offline.dbError', 'List updated, but could not access local database.'),
+              'danger',
+            );
+          };
+        } catch (error) {
+          console.error('Unexpected error during deletion:', error);
+          setIsDeleting(false);
+          showAlert(
+            t('common.error', 'Error'),
+            t('offline.deleteSpaceError', 'List updated, but an error occurred while clearing space.'),
+            'danger',
+          );
+        }
+      },
+    });
   };
 
   const displayRegions = [...customRegions, ...PRESET_REGIONS];
@@ -392,6 +625,19 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
 
   return (
     <div className="flex flex-col h-full bg-[#0f141e] w-full overflow-y-auto font-sans relative pb-20">
+      <AlertModal
+        isOpen={dialog.isOpen}
+        title={dialog.title}
+        message={dialog.message}
+        type={dialog.type}
+        isConfirm={dialog.isConfirm}
+        isPrompt={dialog.isPrompt}
+        defaultValue={dialog.defaultValue}
+        confirmText={dialog.confirmText}
+        onConfirm={dialog.onConfirm}
+        onCancel={dialog.onCancel}
+      />
+
       {viewingRegion !== null &&
         (() => {
           const bounds = getBoundsForRegion(viewingRegion);
@@ -564,8 +810,10 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
           <div className="flex flex-col gap-3">
             {filteredRegions.length > 0 ? (
               filteredRegions.map((region) => {
-                const isDownloaded = downloadedRegions.includes(region.id);
-                const isDownloadingThis = downloadingId === region.id;
+                //const isDownloaded = downloadedRegions.includes(region.id);
+                //const isDownloadingThis = downloadingId === region.id;
+                const isDownloaded = downloadedRegions.some((r) => String(r) === String(region.id));
+                const isDownloadingThis = String(downloadingId) === String(region.id);
                 const isCustom = typeof region.id === 'string' && region.id.startsWith('custom');
 
                 return (
@@ -610,7 +858,7 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
                         </button>
                       ) : isDownloaded ? (
                         <button
-                          onClick={() => handleDelete(Number(region.id), region.name)}
+                          onClick={() => handleDelete(region.id, region.name)}
                           className="w-10 h-10 rounded-full flex items-center justify-center bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all shrink-0"
                           title="Delete Zone"
                         >

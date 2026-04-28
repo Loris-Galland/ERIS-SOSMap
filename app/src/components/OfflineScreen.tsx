@@ -3,6 +3,7 @@ import L from 'leaflet';
 import { createOfflineLayer, PRESET_REGIONS } from '../utils/MapUtils';
 import OfflineMapViewer from './OfflineMapViewer';
 import { useTranslation } from 'react-i18next';
+import AlertModal, { type AlertType } from './AlertModalProps';
 
 function getRelativeTimeString(timestamp: number, t: any): string {
   const diff = Date.now() - timestamp;
@@ -38,6 +39,18 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
   const [progress, setProgress] = useState(0);
   const [viewingRegion, setViewingRegion] = useState<number | string | null>(null);
   const [storageUsedMB, setStorageUsedMB] = useState(0);
+
+  const [dialog, setDialog] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'info' as AlertType,
+    isConfirm: false,
+    confirmText: '',
+    onConfirm: () => {},
+  });
+
+  const closeDialog = () => setDialog((prev) => ({ ...prev, isOpen: false }));
 
   const MAX_STORAGE_MB = 1024;
 
@@ -95,12 +108,28 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
 
   // --- DELETION LOGIC ---
   const handleDelete = (id: number | string, name: string) => {
-    if (window.confirm(t('offline.confirmDelete', `Delete ${name} from offline storage?`).replace('${name}', name))) {
-      const updated = downloadedIds.filter((rid) => rid !== id);
-      setDownloadedIds(updated);
-      localStorage.setItem('eris_offline_regions', JSON.stringify(updated));
-      setActiveMenu(null);
-    }
+    setDialog({
+      isOpen: true,
+      title: t('offline.confirmDeleteTitle', 'Delete Offline Map'),
+      message: t('offline.confirmDelete', `Are you sure you want to delete ${name}?`).replace('${name}', name),
+      type: 'danger',
+      isConfirm: true,
+      confirmText: t('offline.delete', 'Delete'),
+      onConfirm: () => {
+        closeDialog();
+        const updated = downloadedIds.filter((rid) => rid !== id);
+        setDownloadedIds(updated);
+        localStorage.setItem('eris_offline_regions', JSON.stringify(updated));
+
+        // Keep metadata logic from develop branch
+        const newMeta = { ...metadata };
+        delete newMeta[id];
+        setMetadata(newMeta);
+        localStorage.setItem('eris_offline_metadata', JSON.stringify(newMeta));
+
+        setActiveMenu(null);
+      },
+    });
   };
 
   // --- UPDATING LOGIC ---
@@ -155,7 +184,17 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
       localStorage.setItem('eris_offline_metadata', JSON.stringify(currentMeta));
 
       setTimeout(() => {
-        alert(t('offline.updateSuccess', `${name} updated successfully.`).replace('${name}', name));
+        setDialog({
+          isOpen: true,
+          title: t('common.success', 'Success'),
+          message: t('offline.updateSuccess', `${name} updated successfully.`).replace('${name}', name),
+          type: 'success',
+          isConfirm: false,
+          confirmText: t('common.great', 'Great !'),
+          onConfirm: () => {
+            closeDialog();
+          },
+        });
         cleanup();
       }, 500);
     });
@@ -167,6 +206,17 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
 
   return (
     <div className="flex flex-col h-full bg-[#0f141e] w-full overflow-y-auto font-sans relative pb-24">
+      <AlertModal
+        isOpen={dialog.isOpen}
+        title={dialog.title}
+        message={dialog.message}
+        type={dialog.type}
+        isConfirm={dialog.isConfirm}
+        confirmText={dialog.confirmText}
+        onConfirm={dialog.onConfirm}
+        onCancel={closeDialog}
+      />
+
       {viewingRegion !== null &&
         (() => {
           const regionInfo = getRegionInfo(viewingRegion);
@@ -180,7 +230,7 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
           );
         })()}
       {/* ─── HEADER ─── */}
-      <header className="flex items-center px-6 py-4 bg-[#0f141e]/90 backdrop-blur-md sticky top-0 z-50">
+      <header className="flex items-center px-6 py-4 bg-[#0f141e]/90 backdrop-blur-md sticky top-[-2px] z-50">
         <button
           onClick={onBack}
           className="text-gray-400 hover:text-white transition-colors mr-4 active:scale-95 flex items-center justify-center w-10 h-10 bg-gray-800/50 rounded-full"
@@ -317,7 +367,7 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
         </section>
 
         {/* ─── DOWNLOAD NEW MAP BUTTON ─── */}
-        <div className="mt-2">
+        <div className="sticky bottom-[-97px] pt-4 pb-2 bg-[#0f141e]/90 backdrop-blur-md border-t border-gray-800/50 mt-auto z-40 -mx-4 px-4">
           <button
             onClick={onNavigateDownload}
             className="w-full py-4 bg-blue-600 text-white rounded-3xl text-sm font-bold tracking-wide flex items-center justify-center gap-2 shadow-lg shadow-blue-900/30 hover:bg-blue-500 transition-all active:scale-95"

@@ -4,6 +4,7 @@ import { Geolocation } from '@capacitor/geolocation';
 import { Device } from '@capacitor/device';
 import { db } from '../db/localDb';
 import { useTranslation } from 'react-i18next';
+import AlertModal, { type AlertType } from './AlertModalProps';
 
 interface ProfileScreenProps {
   onOpenSettings: () => void;
@@ -26,6 +27,43 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
   const [isAddingContact, setIsAddingContact] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editingContactId, setEditingContactId] = useState<string | null>(null);
+
+  // ─── ALERT ───
+  const defaultDialogState = {
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'info' as AlertType,
+    isConfirm: false,
+    isPrompt: false,
+    defaultValue: '',
+    confirmText: '',
+    onConfirm: (val?: string) => {},
+    onCancel: () => {},
+  };
+
+  const [dialog, setDialog] = useState(defaultDialogState);
+
+  const closeDialog = () => setDialog((prev) => ({ ...prev, isOpen: false }));
+
+  const openDialog = (options: Partial<typeof defaultDialogState>) => {
+    setDialog({
+      ...defaultDialogState,
+      ...options,
+      isOpen: true,
+    });
+  };
+
+  const showAlert = (title: string, message: string, type: AlertType = 'info') => {
+    openDialog({
+      title,
+      message,
+      type,
+      confirmText: 'OK',
+      onConfirm: () => closeDialog(),
+      onCancel: () => closeDialog(),
+    });
+  };
 
   // ─── FORM STATES ───
   const [medicalForm, setMedicalForm] = useState({
@@ -148,7 +186,11 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
 
       setIsEditingMedical(false);
     } catch (err) {
-      alert(t('profile.saveError', 'Error saving medical info'));
+      showAlert(
+        t('common.error', 'Error'),
+        t('profile.saveError', 'An error occurred while saving medical info.'),
+        'danger',
+      );
     } finally {
       setIsSaving(false);
     }
@@ -170,7 +212,11 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
       setNewContact({ name: '', relation: '', phone_number: '' });
       setIsAddingContact(false);
     } catch (err) {
-      alert(t('profile.addContactError', 'Error adding contact'));
+      showAlert(
+        t('common.error', 'Error'),
+        t('profile.addContactError', 'An error occurred while adding the contact.'),
+        'danger',
+      );
     } finally {
       setIsSaving(false);
     }
@@ -188,7 +234,11 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
       setContacts(contacts.filter((c) => c.id !== contactId));
     } catch (err) {
       console.error(err);
-      alert(t('profile.deleteContactError', 'Error deleting contact'));
+      showAlert(
+        t('common.error', 'Error'),
+        t('profile.deleteContactError', 'An error occurred while deleting the contact.'),
+        'danger',
+      );
     } finally {
       setIsSaving(false);
     }
@@ -208,7 +258,11 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
 
       setEditingContactId(null);
     } catch (err) {
-      alert(t('profile.updateContactError', 'Error updating contact'));
+      showAlert(
+        t('common.error', 'Error'),
+        t('profile.updateContactError', 'An error occurred while updating the contact.'),
+        'danger',
+      );
     } finally {
       setIsSaving(false);
     }
@@ -230,7 +284,7 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
   return (
     <div className="flex flex-col h-full bg-[#0f141e] w-full overflow-y-auto font-sans relative pb-20">
       {/* ─── HEADER ─── */}
-      <header className="flex justify-between items-center px-6 py-4 sticky top-0 z-50 bg-[#0f141e]/90 backdrop-blur-md">
+      <header className="flex justify-between items-center px-6 py-4 sticky top-[-2px] z-50 bg-[#0f141e]/90 backdrop-blur-md">
         <h2 className="text-white text-xl font-bold tracking-wide">{t('profile.title', 'My Profile')}</h2>
         <button
           onClick={onOpenSettings}
