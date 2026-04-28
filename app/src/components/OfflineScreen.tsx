@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import L from 'leaflet';
 import { createOfflineLayer, PRESET_REGIONS } from '../utils/MapUtils';
 import OfflineMapViewer from './OfflineMapViewer';
+import AlertModal, { type AlertType } from './AlertModalProps';
 
 function getRelativeTimeString(timestamp: number): string {
   const diff = Date.now() - timestamp;
@@ -30,6 +31,18 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
   const [progress, setProgress] = useState(0);
   const [viewingRegion, setViewingRegion] = useState<number | string | null>(null);
   const [storageUsedMB, setStorageUsedMB] = useState(0);
+
+  const [dialog, setDialog] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'info' as AlertType,
+    isConfirm: false,
+    confirmText: '',
+    onConfirm: () => {},
+  });
+
+  const closeDialog = () => setDialog((prev) => ({ ...prev, isOpen: false }));
 
   const MAX_STORAGE_MB = 1024;
 
@@ -87,12 +100,27 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
 
   // --- DELETION LOGIC ---
   const handleDelete = (id: number | string, name: string) => {
-    if (window.confirm(`Delete ${name} from offline storage?`)) {
-      const updated = downloadedIds.filter((rid) => rid !== id);
-      setDownloadedIds(updated);
-      localStorage.setItem('eris_offline_regions', JSON.stringify(updated));
-      setActiveMenu(null);
-    }
+    setDialog({
+      isOpen: true,
+      title: 'Delete Offline Map',
+      message: `Are you sure you want to delete ${name}?`,
+      type: 'danger',
+      isConfirm: true,
+      confirmText: 'Delete',
+      onConfirm: () => {
+        closeDialog();
+        const updated = downloadedIds.filter((rid) => rid !== id);
+        setDownloadedIds(updated);
+        localStorage.setItem('eris_offline_regions', JSON.stringify(updated));
+
+        const newMeta = { ...metadata };
+        delete newMeta[id];
+        setMetadata(newMeta);
+        localStorage.setItem('eris_offline_metadata', JSON.stringify(newMeta));
+
+        setActiveMenu(null);
+      },
+    });
   };
 
   // --- UPDATING LOGIC ---
@@ -147,7 +175,17 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
       localStorage.setItem('eris_offline_metadata', JSON.stringify(currentMeta));
 
       setTimeout(() => {
-        alert(`${name} updated successfully.`);
+        setDialog({
+          isOpen: true,
+          title: 'Success',
+          message: `${name} updated successfully.`,
+          type: 'success',
+          isConfirm: false,
+          confirmText: 'Great !',
+          onConfirm: () => {
+            closeDialog();
+          },
+        });
         cleanup();
       }, 500);
     });
@@ -159,6 +197,17 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
 
   return (
     <div className="flex flex-col h-full bg-[#0f141e] w-full overflow-y-auto font-sans relative pb-24">
+      <AlertModal
+        isOpen={dialog.isOpen}
+        title={dialog.title}
+        message={dialog.message}
+        type={dialog.type}
+        isConfirm={dialog.isConfirm}
+        confirmText={dialog.confirmText}
+        onConfirm={dialog.onConfirm}
+        onCancel={closeDialog}
+      />
+
       {viewingRegion !== null &&
         (() => {
           const regionInfo = getRegionInfo(viewingRegion);
