@@ -118,6 +118,21 @@ export default function AlertScreen() {
     }, 3000);
   };
 
+  // Fallback SMS function for offline mode
+  const sendFallbackSMS = () => {
+    const googleMapsLink = `https://maps.google.com/?q=${rawPosition.lat},${rawPosition.lng}`;
+    const message = encodeURIComponent(
+      `🚨 URGENT: I need help! \nPosition: ${googleMapsLink}\nNotes: ${notes || 'None'}`,
+    );
+
+    // Detect iOS/Android because the SMS link separator differs based on the OS
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const separator = isIOS ? '&' : '?';
+
+    // Open the native Message app with pre-filled text
+    window.open(`sms:${separator}body=${message}`, '_system');
+  };
+
   // Actual SOS dispatch
   const triggerSOS = useCallback(async () => {
     setIsSending(true);
@@ -380,6 +395,16 @@ export default function AlertScreen() {
                     : 'sync'}
             </span>
             <p className="text-white text-xs font-medium leading-snug">{statusMessage}</p>
+            {/* ─── OFFLINE SMS FALLBACK BUTTON ─── */}
+            {statusType === 'warning' && (
+              <button
+                onClick={sendFallbackSMS}
+                className="w-full mt-3 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-colors active:scale-95 shadow-lg"
+              >
+                <span className="material-symbols-outlined text-sm">sms</span>
+                Send via Standard SMS
+              </button>
+            )}
           </div>
         )}
 
