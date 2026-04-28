@@ -88,30 +88,42 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
     fetchHardwareStatus();
   }, []);
 
-  // ─── HARDWARE FETCHING ───
+// ─── HARDWARE FETCHING ───
   const fetchHardwareStatus = async () => {
     // 1. Fetch Real GPS Location using Capacitor
     try {
-      const coordinates = await Geolocation.getCurrentPosition();
-      setLocation({
-        lat: coordinates.coords.latitude.toFixed(4),
-        lng: coordinates.coords.longitude.toFixed(4),
-      });
+      // Demander la permission d'abord
+      let permStatus = await Geolocation.checkPermissions();
+      if (permStatus.location !== 'granted') {
+        permStatus = await Geolocation.requestPermissions();
+      }
+
+      if (permStatus.location === 'granted') {
+        const coordinates = await Geolocation.getCurrentPosition({
+          enableHighAccuracy: true,
+          timeout: 10000 // Évite le chargement infini (10 sec max)
+        });
+        setLocation({
+          lat: coordinates.coords.latitude.toFixed(4),
+          lng: coordinates.coords.longitude.toFixed(4),
+        });
+      } else {
+        setLocation({ lat: 'Denied', lng: 'Denied' });
+      }
     } catch (error) {
       console.error('Error getting location:', error);
-      setLocation({ lat: 'Unknown', lng: 'Unknown' });
+      setLocation({ lat: 'Error', lng: 'Error' });
     }
 
-    // 2. Fetch NATIVE Battery Level using Capacitor Device Plugin
+    // 2. Fetch NATIVE Battery Level 
     try {
       const info = await Device.getBatteryInfo();
-      // Le plugin renvoie un chiffre entre 0.0 et 1.0 (ex: 0.81 pour 81%)
       if (info.batteryLevel !== undefined) {
         setBatteryLevel(Math.round(info.batteryLevel * 100));
       }
     } catch (error) {
       console.error('Error getting native battery:', error);
-      setBatteryLevel(null); // Affichera '--%' en cas d'erreur
+      setBatteryLevel(null); 
     }
   };
 

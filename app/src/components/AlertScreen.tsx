@@ -4,6 +4,7 @@ import { dispatchSOS, flushRetryQueue, revokeSOS } from '../services/sosService'
 import { db } from '../db/localDb';
 import { useLiveQuery } from 'dexie-react-hooks';
 import SOSHistoryScreen from './SosHistoryScreen';
+import { Geolocation } from '@capacitor/geolocation';
 
 // Types
 interface Coords {
@@ -53,27 +54,48 @@ export default function AlertScreen() {
   // Live count of queued offline alerts from Dexie
   const queuedCount = useLiveQuery(() => db.sosQueue.where('status').equals('queued').count(), [], 0);
 
-  // Simulate GPS updates
+// Native Capacitor GPS Watcher
   useEffect(() => {
-    const watchId = navigator.geolocation.watchPosition(
-      (pos: GeolocationPosition) => {
-        setCoords({
-          lat: `${pos.coords.latitude.toFixed(4)}° N`,
-          lon: `${pos.coords.longitude.toFixed(4)}° E`,
-          alt: `${Math.round(pos.coords.altitude ?? 0)} m`,
-        });
-        // Save raw numbers for Supabase
-        setRawPosition({
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-          alt: pos.coords.altitude ?? 0,
-        });
-      },
-      (error) => console.error(error),
-      { enableHighAccuracy: true },
-    );
+    let watchId: string;
 
-    return () => navigator.geolocation.clearWatch(watchId);
+    const startWatch = async () => {
+      // Check and request permissions first
+      let permStatus = await Geolocation.checkPermissions();
+      if (permStatus.location !== 'granted') {
+        permStatus = await Geolocation.requestPermissions();
+      }
+
+      // Start native watcher if authorized
+      if (permStatus.location === 'granted') {
+        watchId = await Geolocation.watchPosition(
+          { enableHighAccuracy: true, timeout: 10000 },
+          (pos, err) => {
+            if (pos) {
+              setCoords({
+                lat: `${pos.coords.latitude.toFixed(4)}° N`,
+                lon: `${pos.coords.longitude.toFixed(4)}° E`,
+                alt: `${Math.round(pos.coords.altitude ?? 0)} m`,
+              });
+              setRawPosition({
+                lat: pos.coords.latitude,
+                lng: pos.coords.longitude,
+                alt: pos.coords.altitude ?? 0,
+              });
+            }
+            if (err) console.error("GPS Watch Error:", err);
+          }
+        );
+      }
+    };
+
+    startWatch();
+
+    // Cleanup on unmount
+    return () => {
+      if (watchId) {
+        Geolocation.clearWatch({ id: watchId });
+      }
+    };
   }, []);
 
   // Fetch user ID once from local session to avoid network requests when offline
