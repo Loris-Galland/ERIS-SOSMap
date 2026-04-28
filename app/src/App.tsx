@@ -16,8 +16,12 @@ import DownloadMapScreen from './components/DownloadMapScreen';
 import logo from './assets/small_logo.png';
 import { PRESET_REGIONS, MAP_STYLES } from './utils/MapUtils';
 import SetupProfileScreen from './components/SetupProfileScreen';
+import { useTranslation } from 'react-i18next';
 
 export default function App() {
+  // Internationalisation
+  const { t } = useTranslation();
+
   // Auth states
   const [session, setSession] = useState<any>(null);
   const [isInitializing, setIsInitializing] = useState(true);
@@ -92,7 +96,7 @@ export default function App() {
       attributionControl: false,
     }).setView([48.8584, 2.2945], 13);
 
-    // Initialisation dynamique de la carte <-- Rétabli
+    // Initialisation dynamique de la carte
     baseLayerRef.current = (L.tileLayer as any)
       .offline(MAP_STYLES.dark.url, {
         attribution: 'ERIS Safety',
@@ -151,11 +155,11 @@ export default function App() {
       mapInstance.current?.remove();
       mapInstance.current = null;
       userMarker.current = null;
-      baseLayerRef.current = null; // Nettoyage de la réf
+      baseLayerRef.current = null;
     };
   }, [session]);
 
-  // --- LOCAL DATA CHARGING---
+  // --- LOCAL DATA CHARGING ---
   useEffect(() => {
     if (activeTab !== 'MAP') return;
 
@@ -199,7 +203,7 @@ export default function App() {
       setIsSearching(true);
       const searchLower = searchQuery.toLowerCase();
 
-      // If offline: searcgh local cache
+      // If offline: search local cache
       if (offlineMode || !navigator.onLine) {
         const localResults = localSearchableRegions.filter((r) => r.display_name.toLowerCase().includes(searchLower));
         setSearchResults(localResults);
@@ -215,7 +219,7 @@ export default function App() {
         const data = await res.json();
         setSearchResults(data);
       } catch (e) {
-        // Fallback sécurité : Si l'API échoue, on cherche en local
+        // Fallback security: if API fails, search local cache
         const localResults = localSearchableRegions.filter((r) => r.display_name.toLowerCase().includes(searchLower));
         setSearchResults(localResults);
       } finally {
@@ -226,7 +230,7 @@ export default function App() {
     return () => clearTimeout(delayDebounceFn);
   }, [searchQuery, offlineMode, localSearchableRegions]);
 
-  // Handle Layer Swap <-- Rétabli ici
+  // Handle Layer Swap
   const changeMapStyle = (styleKey: string) => {
     setCurrentMapStyle(styleKey);
     if (baseLayerRef.current) {
@@ -249,7 +253,7 @@ export default function App() {
   const handleSelectResult = (item: any) => {
     if (!mapInstance.current) return;
 
-    // Récupération des limites de la zone (Bounding Box)
+    // fetch bounding box and calculate center
     const bbox = item.boundingbox;
     const bounds = L.latLngBounds(
       [parseFloat(bbox[0]), parseFloat(bbox[2])],
@@ -261,7 +265,7 @@ export default function App() {
 
     const targetZoom = Math.min(mapInstance.current.getBoundsZoom(bounds), 14);
 
-    // Déplace la carte principale vers la zone recherchée avec une animation fluide
+    // move map to the selected location
     mapInstance.current.flyTo([exactLat, exactLon], targetZoom, {
       animate: true,
       duration: 1.5,
@@ -274,7 +278,6 @@ export default function App() {
       isOffline: item.isOffline,
     });
 
-    // Nettoie l'interface
     setSearchQuery('');
     setSearchResults([]);
   };
@@ -287,12 +290,15 @@ export default function App() {
           <img src={logo} alt="ERIS-SOSMap" className="h-7 w-auto object-contain" />
         </div>
         <h1 className="flex-1 text-center text-white text-lg font-bold tracking-wide">ERIS Safety</h1>
-        <button className="bg-red-500 hover:bg-red-600 text-white text-xs font-bold uppercase tracking-wider px-4 py-1.5 rounded-full transition-colors shadow-lg shadow-red-900/20 active:scale-95">
+        <button
+          className="bg-red-500 hover:bg-red-600 text-white text-xs font-bold uppercase tracking-wider px-4 py-1.5 rounded-full transition-colors shadow-lg shadow-red-900/20 active:scale-95"
+          onClick={() => setActiveTab('ALERTS')}
+        >
           SOS
         </button>
       </header>
 
-      {/* ─── SEARCH & OFFLINE BAR ─── */}
+      {/* --- SEARCH & OFFLINE BAR --- */}
       {activeTab === 'MAP' && (
         <div className="flex items-center px-4 py-3 bg-[#0f141e]/80 backdrop-blur-md z-[9999] gap-3 relative">
           {/* Search input (Soft rounded shape) */}
@@ -303,7 +309,7 @@ export default function App() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search city or coordinates..."
+                placeholder={t('download.searchPlaceholder', 'Search city or coordinates...')}
                 className="bg-transparent text-sm text-white w-full outline-none placeholder-gray-500"
               />
               {isSearching && (
@@ -363,15 +369,17 @@ export default function App() {
                 <div className="text-white text-sm font-mono font-medium">
                   {userPosition.lat.toFixed(4)}° N, {userPosition.lng.toFixed(4)}° E
                 </div>
-                <div className="text-gray-500 text-[11px] mt-1">Altitude: {userPosition.alt.toFixed(0)}m</div>
+                <div className="text-gray-500 text-[11px] mt-1">
+                  {t('alert.altitude', 'Altitude')}: {userPosition.alt.toFixed(0)}m
+                </div>
               </>
             ) : (
-              <div className="text-gray-400 text-sm">Acquiring position...</div>
+              <div className="text-gray-400 text-sm">{t('profile.locating', 'Acquiring position...')}</div>
             )}
           </div>
         </div>
 
-        {/* ─── MAP CONTROLS & LAYERS MENU ─── */}
+        {/* --- MAP CONTROLS & LAYERS MENU --- */}
         <div className="absolute top-4 right-4 z-[1000] flex flex-col gap-3">
           {/* Layers Menu Container */}
           <div className="relative">
@@ -388,7 +396,9 @@ export default function App() {
             {showLayerMenu && (
               <div className="absolute right-14 top-0 bg-gray-900/95 backdrop-blur-md border border-gray-700 rounded-2xl shadow-2xl overflow-hidden flex flex-col w-44 z-[1000] animate-in fade-in zoom-in duration-150">
                 <div className="px-3 py-2 bg-gray-800/50 border-b border-gray-700">
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Map Type</span>
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                    {t('offlineViewer.mapType', 'Map Type')}
+                  </span>
                 </div>
                 {Object.entries(MAP_STYLES).map(([key, style]) => (
                   <button
@@ -399,7 +409,7 @@ export default function App() {
                     }`}
                   >
                     <span className="material-symbols-outlined text-base">{style.icon}</span>
-                    {style.name}
+                    {t(`mapStyles.${key}`, style.name)}
                   </button>
                 ))}
               </div>
@@ -441,9 +451,12 @@ export default function App() {
           </div>
         )}
 
-        {/* ── MAIN SOS BUTTON (Bottom Right) ── */}
+        {/* --- MAIN SOS BUTTON (Bottom Right) --- */}
         <div className="absolute bottom-6 right-4 z-[1000]">
-          <button className="w-16 h-16 rounded-full bg-red-500 border-4 border-red-400/50 flex flex-col items-center justify-center shadow-[0_0_20px_rgba(239,68,68,0.4)] active:scale-95 transition-all">
+          <button
+            className="w-16 h-16 rounded-full bg-red-500 border-4 border-red-400/50 flex flex-col items-center justify-center shadow-[0_0_20px_rgba(239,68,68,0.4)] active:scale-95 transition-all"
+            onClick={() => setActiveTab('ALERTS')}
+          >
             <span className="material-symbols-outlined text-white text-3xl">sensors</span>
           </button>
         </div>
@@ -490,10 +503,10 @@ export default function App() {
       <nav className="flex items-center justify-around h-20 bg-[#0f141e]/95 backdrop-blur-md border-t border-gray-800/50 pb-safe z-[1000]">
         {(
           [
-            { id: 'ALERTS', icon: 'notifications', label: 'Alerts' },
-            { id: 'MAP', icon: 'map', label: 'Map' },
-            { id: 'OFFLINE', icon: 'cloud_download', label: 'Offline' },
-            { id: 'USER', icon: 'person', label: 'Profile' },
+            { id: 'ALERTS', icon: 'notifications', label: t('nav.alerts', 'Alerts') },
+            { id: 'MAP', icon: 'map', label: t('nav.map', 'Map') },
+            { id: 'OFFLINE', icon: 'cloud_download', label: t('nav.offline', 'Offline') },
+            { id: 'USER', icon: 'person', label: t('nav.profile', 'Profile') },
           ] as const
         ).map(({ id, icon, label }) => {
           const isActive = activeTab === id;
