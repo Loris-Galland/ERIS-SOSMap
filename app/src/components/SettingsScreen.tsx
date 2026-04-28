@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../db/supabaseClient';
+import AlertModal, { type AlertType } from './AlertModalProps';
 
 interface SettingsScreenProps {
   onBack: () => void;
@@ -18,6 +19,42 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
   });
 
   const [cacheSize, setCacheSize] = useState('Calculating...');
+
+  const defaultDialogState = {
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'info' as AlertType,
+    isConfirm: false,
+    isPrompt: false,
+    defaultValue: '',
+    confirmText: '',
+    onConfirm: (val?: string) => {},
+    onCancel: () => {},
+  };
+
+  const [dialog, setDialog] = useState(defaultDialogState);
+
+  const closeDialog = () => setDialog((prev) => ({ ...prev, isOpen: false }));
+
+  const openDialog = (options: Partial<typeof defaultDialogState>) => {
+    setDialog({
+      ...defaultDialogState,
+      ...options,
+      isOpen: true,
+    });
+  };
+
+  const showAlert = (title: string, message: string, type: AlertType = 'info') => {
+    openDialog({
+      title,
+      message,
+      type,
+      confirmText: 'OK',
+      onConfirm: () => closeDialog(),
+      onCancel: () => closeDialog(),
+    });
+  };
 
   const fetchSystemEstimate = async () => {
     if (navigator.storage && navigator.storage.estimate) {
@@ -89,49 +126,58 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
   }, []);
 
   const clearMapCache = () => {
-    if (window.confirm('Are you sure you want to clear the offline map cache ?')) {
-      try {
-        const request = window.indexedDB.open('leaflet.offline');
+    openDialog({
+      title: 'Clear Cache',
+      message: 'Are you sure you want to clear the offline map cache?',
+      type: 'danger',
+      isConfirm: true,
+      confirmText: 'Clear',
+      onCancel: () => closeDialog(),
+      onConfirm: () => {
+        closeDialog();
 
-        request.onsuccess = (event: any) => {
-          const db = event.target.result;
+        try {
+          const request = window.indexedDB.open('leaflet.offline');
 
-          const storeNames = Array.from(db.objectStoreNames) as string[];
+          request.onsuccess = (event: any) => {
+            const db = event.target.result;
+            const storeNames = Array.from(db.objectStoreNames) as string[];
 
-          if (storeNames.length === 0) {
-            db.close();
-            setCacheSize('0.00 MB');
-            return;
-          }
+            if (storeNames.length === 0) {
+              db.close();
+              setCacheSize('0.00 MB');
+              return;
+            }
 
-          const transaction = db.transaction(storeNames, 'readwrite');
+            const transaction = db.transaction(storeNames, 'readwrite');
 
-          storeNames.forEach((storeName) => {
-            transaction.objectStore(storeName).clear();
-          });
+            storeNames.forEach((storeName) => {
+              transaction.objectStore(storeName).clear();
+            });
 
-          // When the deletion is confirmed we refresh the view to 0
-          transaction.oncomplete = () => {
-            db.close();
-            setCacheSize('0.00 MB');
-            alert('The card cache has been successfully cleared.');
+            // When the deletion is confirmed we refresh the view to 0
+            transaction.oncomplete = () => {
+              db.close();
+              setCacheSize('0.00 MB');
+              showAlert('Success', 'The map cache has been successfully cleared.', 'success');
+            };
+
+            transaction.onerror = () => {
+              console.error('Error during cleanup transaction');
+              showAlert('Error', 'Error clearing cache.', 'danger');
+            };
           };
 
-          transaction.onerror = () => {
-            console.error('Error during cleanup transaction');
-            alert('Error clearing cache.');
+          request.onerror = (event) => {
+            console.error('Error opening IndexedDB', event);
+            showAlert('Access Denied', 'Unable to access local cache.', 'danger');
           };
-        };
-
-        request.onerror = (event) => {
-          console.error('Error opening IndexedDB', event);
-          alert('Unable to access local cache.');
-        };
-      } catch (error) {
-        console.error('Unexpected error :', error);
-        alert('An error has occurred.');
-      }
-    }
+        } catch (error) {
+          console.error('Unexpected error :', error);
+          showAlert('Error', 'An unexpected error has occurred.', 'danger');
+        }
+      },
+    });
   };
 
   // Type-safe toggle function for boolean settings
@@ -164,6 +210,19 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
 
   return (
     <div className="flex flex-col h-full bg-[#0f141e] w-full overflow-y-auto font-sans relative pb-10">
+      <AlertModal
+        isOpen={dialog.isOpen}
+        title={dialog.title}
+        message={dialog.message}
+        type={dialog.type}
+        isConfirm={dialog.isConfirm}
+        isPrompt={dialog.isPrompt}
+        defaultValue={dialog.defaultValue}
+        confirmText={dialog.confirmText}
+        onConfirm={dialog.onConfirm}
+        onCancel={dialog.onCancel}
+      />
+
       {/* ─── HEADER ─── */}
       <header className="flex items-center px-6 py-4 sticky top-0 z-50 bg-[#0f141e]/90 backdrop-blur-md">
         <button

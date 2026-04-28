@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../db/supabaseClient';
 import { Geolocation } from '@capacitor/geolocation';
 import { Device } from '@capacitor/device';
-import { db } from "../db/localDb";
+import { db } from '../db/localDb';
+import AlertModal, { type AlertType } from './AlertModalProps';
 
 interface ProfileScreenProps {
   onOpenSettings: () => void;
@@ -23,6 +24,43 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
   const [isAddingContact, setIsAddingContact] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editingContactId, setEditingContactId] = useState<string | null>(null);
+
+  // ─── ALERT ───
+  const defaultDialogState = {
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'info' as AlertType,
+    isConfirm: false,
+    isPrompt: false,
+    defaultValue: '',
+    confirmText: '',
+    onConfirm: (val?: string) => {},
+    onCancel: () => {},
+  };
+
+  const [dialog, setDialog] = useState(defaultDialogState);
+
+  const closeDialog = () => setDialog((prev) => ({ ...prev, isOpen: false }));
+
+  const openDialog = (options: Partial<typeof defaultDialogState>) => {
+    setDialog({
+      ...defaultDialogState,
+      ...options,
+      isOpen: true,
+    });
+  };
+
+  const showAlert = (title: string, message: string, type: AlertType = 'info') => {
+    openDialog({
+      title,
+      message,
+      type,
+      confirmText: 'OK',
+      onConfirm: () => closeDialog(),
+      onCancel: () => closeDialog(),
+    });
+  };
 
   // ─── FORM STATES ───
   const [medicalForm, setMedicalForm] = useState({
@@ -129,10 +167,10 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
     try {
       const { error } = await supabase.from('user_profiles').update(medicalForm).eq('id', userId);
       if (error) throw error;
-      
+
       const updatedProfile = { ...profileData, ...medicalForm };
       setProfileData(updatedProfile);
-      
+
       // Sync medical updates to local offline database
       await db.userProfile.put({
         id: userId,
@@ -146,7 +184,7 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
 
       setIsEditingMedical(false);
     } catch (err) {
-      alert('Error saving medical info');
+      showAlert('Error', 'An error occurred while saving medical info.', 'danger');
     } finally {
       setIsSaving(false);
     }
@@ -168,7 +206,7 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
       setNewContact({ name: '', relation: '', phone_number: '' });
       setIsAddingContact(false);
     } catch (err) {
-      alert('Error adding contact');
+      showAlert('Error', 'An error occurred while adding the contact.', 'danger');
     } finally {
       setIsSaving(false);
     }
@@ -186,7 +224,7 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
       setContacts(contacts.filter((c) => c.id !== contactId));
     } catch (err) {
       console.error(err);
-      alert('Error deleting contact');
+      showAlert('Error', 'An error occurred while deleting the contact.', 'danger');
     } finally {
       setIsSaving(false);
     }
@@ -206,7 +244,7 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
 
       setEditingContactId(null);
     } catch (err) {
-      alert('Error updating contact');
+      showAlert('Error', 'An error occurred while updating the contact.', 'danger');
     } finally {
       setIsSaving(false);
     }
