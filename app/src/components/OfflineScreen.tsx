@@ -221,7 +221,7 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
           );
         })()}
       {/* ─── HEADER ─── */}
-      <header className="flex items-center px-6 py-4 bg-[#0f141e]/90 backdrop-blur-md sticky top-0 z-50">
+      <header className="flex items-center px-6 py-4 bg-[#0f141e]/90 backdrop-blur-md sticky top-[-2px] z-50">
         <button
           onClick={onBack}
           className="text-gray-400 hover:text-white transition-colors mr-4 active:scale-95 flex items-center justify-center w-10 h-10 bg-gray-800/50 rounded-full"
@@ -344,7 +344,7 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
         </section>
 
         {/* ─── DOWNLOAD NEW MAP BUTTON ─── */}
-        <div className="mt-2">
+        <div className="sticky bottom-[-97px] pt-4 pb-2 bg-[#0f141e]/90 backdrop-blur-md border-t border-gray-800/50 mt-auto z-40 -mx-4 px-4">
           <button
             onClick={onNavigateDownload}
             className="w-full py-4 bg-blue-600 text-white rounded-3xl text-sm font-bold tracking-wide flex items-center justify-center gap-2 shadow-lg shadow-blue-900/30 hover:bg-blue-500 transition-all active:scale-95"

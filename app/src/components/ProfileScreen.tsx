@@ -266,7 +266,7 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
   return (
     <div className="flex flex-col h-full bg-[#0f141e] w-full overflow-y-auto font-sans relative pb-20">
       {/* ─── HEADER ─── */}
-      <header className="flex justify-between items-center px-6 py-4 sticky top-0 z-50 bg-[#0f141e]/90 backdrop-blur-md">
+      <header className="flex justify-between items-center px-6 py-4 sticky top-[-2px] z-50 bg-[#0f141e]/90 backdrop-blur-md">
         <h2 className="text-white text-xl font-bold tracking-wide">My Profile</h2>
         <button
           onClick={onOpenSettings}
