@@ -218,5 +218,18 @@
     "satellite": "卫星",
     "topo": "地形",
     "streets": "街道"
+  },
+  "weather": {
+    "reportWeather": "报告天气",
+    "reportHelp": "通过报告您所在位置的天气状况来帮助他人。",
+    "clear": "晴",
+    "partlyCloudy": "局部多云",
+    "cloudy": "多云",
+    "fog": "雾",
+    "rain": "雨",
+    "storm": "暴风雨",
+    "snow": "雪",
+    "windy": "有风",
+    "hail": "冰雹"
   }
 }

@@ -218,5 +218,18 @@
     "satellite": "Satellite",
     "topo": "Topographic",
     "streets": "Streets"
+  },
+  "weather": {
+    "reportWeather": "Report Weather",
+    "reportHelp": "Help others by reporting the current weather conditions at your exact location.",
+    "clear": "Cloudy",
+    "partlyCloudy": "Partly Cloudy",
+    "cloudy": "Cloudy",
+    "fog": "Fog",
+    "rain": "Rain",
+    "storm": "Storm",
+    "snow": "Snow",
+    "windy": "Windy",
+    "hail": "Hail"
   }
 }
