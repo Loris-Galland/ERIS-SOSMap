@@ -34,6 +34,7 @@ export interface LocalUserProfile {
 export class ErisLocalDB extends Dexie {
   sosQueue!: Table<PendingSOS>;
   userProfile!: Table<LocalUserProfile>;
+  emergencyContacts!: Table<any, string>;
 
   constructor() {
     super('ErisLocalDB');
@@ -42,6 +43,7 @@ export class ErisLocalDB extends Dexie {
     this.version(3).stores({
       sosQueue: '++id, status, timestamp, user_id',
       userProfile: 'id',
+      emergencyContacts: 'id, user_id'
     });
   }
 }
