@@ -174,13 +174,26 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
   };
 
   const fetchContacts = async (uid: string) => {
-    const { data, error } = await supabase
-      .from('emergency_contacts')
-      .select('*')
-      .eq('user_id', uid)
-      .order('id', { ascending: true });
+    if (navigator.onLine) {
+      // If there is wifi, we download it from Supabase
+      const { data, error } = await supabase
+        .from('emergency_contacts')
+        .select('*')
+        .eq('user_id', uid)
+        .order('id', { ascending: true });
 
-    if (!error && data) setContacts(data);
+      if (!error && data) {
+        setContacts(data);
+        if (db.emergencyContacts) {
+          await db.emergencyContacts.bulkPut(data);
+        }
+      }
+    } else {
+      if (db.emergencyContacts) {
+        const localContacts = await db.emergencyContacts.where('user_id').equals(uid).toArray();
+        setContacts(localContacts);
+      }
+    }
   };
 
   // ─── MEDICAL ACTIONS ───
@@ -218,17 +231,47 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
     e.preventDefault();
     if (!userId) return;
     setIsSaving(true);
-    try {
-      const { data, error } = await supabase
-        .from('emergency_contacts')
-        .insert([{ ...newContact, user_id: userId }])
-        .select();
 
-      if (error) throw error;
-      setContacts([...contacts, ...data]);
+    // Prepare a temporary ID in case we are offline
+    const tempId = `local_${Date.now()}`;
+    const contactToSave = { id: tempId, ...newContact, user_id: userId };
+
+    try {
+      if (navigator.onLine) {
+        // Online Normal save to Supabase
+        const { data, error } = await supabase
+          .from('emergency_contacts')
+          .insert([{ ...newContact, user_id: userId }])
+          .select();
+
+        if (error) throw error;
+        
+        // Add the real data returned by Supabase to the state
+        setContacts([...contacts, ...data]);
+        
+        // Save a local copy in Dexie as well
+        if (db.emergencyContacts) {
+          await db.emergencyContacts.put(data[0]);
+        }
+        
+      } else {
+        // Offline: Save only locally with a pending status
+        console.log('[ERIS] Offline mode: Saving contact locally.');
+        
+        if (db.emergencyContacts) {
+          await db.emergencyContacts.put({ ...contactToSave, sync_status: 'pending' });
+        }
+        
+        // Update the UI immediately
+        setContacts([...contacts, contactToSave]);
+        showAlert('Offline Mode', 'Contact saved locally. It will be synced when the network is restored.', 'info');
+      }
+
+      // Clear the form
       setNewContact({ name: '', relation: '', phone_number: '' });
       setIsAddingContact(false);
     } catch (err) {
+      console.error(err);
       showAlert('Error', 'An error occurred while adding the contact.', 'danger');
     } finally {
       setIsSaving(false);
