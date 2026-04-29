@@ -218,5 +218,18 @@
     "satellite": "Vệ tinh",
     "topo": "Địa hình",
     "streets": "Đường phố"
+  },
+  "weather": {
+    "reportWeather": "Báo cáo thời tiết",
+    "reportHelp": "Giúp đỡ người khác bằng cách báo cáo điều kiện thời tiết tại vị trí của bạn.",
+    "clear": "Quang đãng",
+    "partlyCloudy": "Có mây rải rác",
+    "cloudy": "Nhiều mây",
+    "fog": "Sương mù",
+    "rain": "Mưa",
+    "storm": "Bão",
+    "snow": "Tuyết",
+    "windy": "Có gió",
+    "hail": "Mưa đá"
   }
 }

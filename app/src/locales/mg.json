@@ -218,5 +218,18 @@
     "satellite": "Zanabolana",
     "topo": "Tany",
     "streets": "Làlana"
+  },
+  "weather": {
+    "reportWeather": "Ilazao ny toetr'andro",
+    "reportHelp": "Ampio ny hafa amin'ny fampahafantarana ny toetr'andro eo amin'ny toerana misy anao.",
+    "clear": "Mazava",
+    "partlyCloudy": "Manjombona kely",
+    "cloudy": "Manjombona",
+    "fog": "Zavona",
+    "rain": "Orana",
+    "storm": "Oram-baratra",
+    "snow": "Oram-panala",
+    "windy": "Mandrivotra",
+    "hail": "Havandra"
   }
 }
