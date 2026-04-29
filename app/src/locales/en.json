@@ -222,7 +222,7 @@
   "weather": {
     "reportWeather": "Report Weather",
     "reportHelp": "Help others by reporting the current weather conditions at your exact location.",
-    "clear": "Cloudy",
+    "clear": "Clear",
     "partlyCloudy": "Partly Cloudy",
     "cloudy": "Cloudy",
     "fog": "Fog",

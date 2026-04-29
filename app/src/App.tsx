@@ -28,7 +28,7 @@ const getWeatherDetails = (code: number) => {
       color: 'text-yellow-200',
       bg: 'bg-yellow-200/20',
     };
-  if (code === 3) return { condition: 'weather.ploudy', icon: 'cloud', color: 'text-gray-400', bg: 'bg-gray-400/20' };
+  if (code === 3) return { condition: 'weather.cloudy', icon: 'cloud', color: 'text-gray-400', bg: 'bg-gray-400/20' };
   if ([45, 48].includes(code))
     return { condition: 'weather.fog', icon: 'foggy', color: 'text-gray-300', bg: 'bg-gray-300/20' };
   if ([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82].includes(code))
