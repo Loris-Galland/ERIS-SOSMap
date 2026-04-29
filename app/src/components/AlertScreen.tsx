@@ -7,6 +7,7 @@ import SOSHistoryScreen from './SosHistoryScreen';
 import { Geolocation } from '@capacitor/geolocation';
 import { Device } from '@capacitor/device';
 import { useTranslation } from 'react-i18next';
+import DistressSignalScreen from './DistressSignalScreen';
 
 // Types
 interface Coords {
@@ -30,6 +31,7 @@ export default function AlertScreen() {
   const [notes, setNotes] = useState<string>('');
   const [userId, setUserId] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState<boolean>(false);
+  const [showBeacon, setShowBeacon] = useState<boolean>(false);
 
   const [coords, setCoords] = useState<Coords>({
     lat: '0.0000° N',
@@ -295,6 +297,9 @@ export default function AlertScreen() {
       {/* History screen overlay */}
       {showHistory && <SOSHistoryScreen onClose={() => setShowHistory(false)} />}
 
+      {/* Beacon screen overlay */}
+      {showBeacon && <DistressSignalScreen onClose={() => setShowBeacon(false)} />}
+
       {/* ─── CANCELLATION POPUP (GRACE PERIOD) ─── */}
       {isGracePeriod && (
         <div className="fixed bottom-28 left-4 right-4 z-[9999] animate-in fade-in slide-in-from-bottom-4 duration-300">
@@ -331,7 +336,16 @@ export default function AlertScreen() {
         <div className="h-1 w-16 bg-red-500 mx-auto rounded-full mb-3" />
         <p className="text-gray-400 font-medium text-xs">{t('alert.triggerSubtitle')}</p>
 
-        {/* History access button */}
+        {/* Flashlight */}
+        <button
+          onClick={() => setShowBeacon(true)}
+          className="absolute left-2 top-6 w-10 h-10 bg-red-500/10 border border-red-500/30 rounded-full flex items-center justify-center text-red-400 hover:bg-red-500/20 hover:text-red-300 active:scale-95 transition-all"
+          title="Distress Beacon"
+        >
+          <span className="material-symbols-outlined text-xl">flashlight_on</span>
+        </button>
+
+        {/* History */}
         <button
           onClick={() => setShowHistory(true)}
           className="absolute right-2 top-6 w-10 h-10 bg-gray-800/60 border border-gray-700/50 rounded-full flex items-center justify-center text-gray-400 hover:text-white active:scale-95 transition-all"

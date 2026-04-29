@@ -85,24 +85,29 @@ export default function DistressSignalScreen({ onClose }: DistressSignalScreenPr
     }
   }, []);
 
-  // Hardware Volume Buttons Listener
+ // Hardware Volume Buttons Listener
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'VolumeUp' || event.key === 'VolumeDown') {
+      if (
+        event.key === 'VolumeUp' || 
+        event.key === 'VolumeDown' || 
+        event.key === 'AudioVolumeUp' || 
+        event.key === 'AudioVolumeDown'
+      ) {
         event.preventDefault(); 
         toggleBeacon();
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('keydown', handleKeyDown);
     
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('keydown', handleKeyDown);
     };
   }, [toggleBeacon]);
 
   return (
-    <div className={`flex flex-col h-full w-full overflow-y-auto font-sans relative pb-24 pt-4 px-4 transition-colors duration-300 ${isActive ? 'bg-red-700 animate-pulse' : 'bg-[#0f141e]'}`}>
+    <div className={`fixed inset-0 z-[9999] flex flex-col h-full w-full overflow-y-auto font-sans pb-12 pt-12 px-4 transition-colors duration-300 ${isActive ? 'bg-red-700 animate-pulse' : 'bg-[#0f141e]'}`}>
       
       {/* Header */}
       <header className="mb-8 mt-2 flex items-center justify-between">
