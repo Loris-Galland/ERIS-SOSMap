@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import L, { map } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Geolocation } from '@capacitor/geolocation';
+import { Capacitor } from '@capacitor/core';
 
 // Auth imports
 import { supabase } from './db/supabaseClient';
@@ -17,6 +18,7 @@ import logo from './assets/small_logo.png';
 import { PRESET_REGIONS, MAP_STYLES } from './utils/MapUtils';
 import SetupProfileScreen from './components/SetupProfileScreen';
 import { useTranslation } from 'react-i18next';
+import { reportHazard, fetchHazards } from './services/hazardService';
 
 const getWeatherDetails = (code: number) => {
   if (code === 0)
@@ -44,6 +46,10 @@ const getWeatherDetails = (code: number) => {
 };
 
 export default function App() {
+  const [showHazardReportModal, setShowHazardReportModal] = useState(false);
+  const [hazardsList, setHazardsList] = useState<any[]>([]);
+  const hazardLayerGroup = useRef<L.LayerGroup | null>(null);
+
   // Internationalisation
   const { t } = useTranslation();
 
@@ -185,38 +191,60 @@ export default function App() {
       }
     });
 
+    // ─── GPS TRACKING (CROSS-PLATFORM FIX) ───
     const startTracking = async () => {
       try {
-        watchId = await Geolocation.watchPosition({ enableHighAccuracy: true, timeout: 10000 }, (position) => {
-          if (position) {
-            const { latitude, longitude, altitude } = position.coords;
+        // Request permissions on native devices before starting
+        if (Capacitor.isNativePlatform()) {
+          const permissions = await Geolocation.checkPermissions();
+          if (permissions.location !== 'granted') {
+            await Geolocation.requestPermissions();
+          }
+        }
 
-            setUserPosition({ lat: latitude, lng: longitude, alt: altitude || 0 });
-            setGpsStatus('Connected');
+        watchId = await Geolocation.watchPosition(
+          {
+            // High accuracy for real GPS on mobile, standard accuracy for web
+            enableHighAccuracy: Capacitor.isNativePlatform(),
+            timeout: 10000,
+            maximumAge: 0,
+          },
+          (position, err) => {
+            if (err) {
+              console.warn('[GPS] Error:', err);
+              return;
+            }
+            if (position) {
+              const { latitude, longitude, altitude } = position.coords;
 
-            if (mapInstance.current) {
-              if (userMarker.current) {
-                userMarker.current.setLatLng([latitude, longitude]);
-              } else {
-                const icon = L.divIcon({
-                  className: '',
-                  html: `<div style="
+              setUserPosition({ lat: latitude, lng: longitude, alt: altitude || 0 });
+              setGpsStatus('Connected');
+
+              if (mapInstance.current) {
+                if (userMarker.current) {
+                  userMarker.current.setLatLng([latitude, longitude]);
+                } else {
+                  const icon = L.divIcon({
+                    className: '',
+                    html: `<div style="
                       width:18px; height:18px;
                       background:#3b82f6;
                       border:3px solid #ffffff;
                       border-radius:50%;
                       box-shadow: 0 0 15px rgba(59, 130, 246, 0.6);
                     "></div>`,
-                  iconSize: [18, 18],
-                  iconAnchor: [9, 9],
-                });
-                userMarker.current = L.marker([latitude, longitude], { icon }).addTo(mapInstance.current);
-                mapInstance.current.setView([latitude, longitude], 15);
+                    iconSize: [18, 18],
+                    iconAnchor: [9, 9],
+                  });
+                  userMarker.current = L.marker([latitude, longitude], { icon }).addTo(mapInstance.current);
+                  mapInstance.current.setView([latitude, longitude], 15);
+                }
               }
             }
-          }
-        });
-      } catch {
+          },
+        );
+      } catch (error) {
+        console.error('GPS Init Error:', error);
         setGpsStatus('GPS Unavailable');
       }
     };
@@ -313,6 +341,72 @@ export default function App() {
     }
     setShowLayerMenu(false);
   };
+
+  // Load and display hazards on the map
+  useEffect(() => {
+    if (!mapInstance.current) return;
+
+    // Create the hazard layer group if it doesn't exist
+    if (!hazardLayerGroup.current) {
+      hazardLayerGroup.current = L.layerGroup().addTo(mapInstance.current);
+    }
+
+    const loadHazards = async () => {
+      const hazards = await fetchHazards();
+      setHazardsList(hazards);
+
+      // Clear old markers before drawing new ones
+      hazardLayerGroup.current?.clearLayers();
+
+      hazards.forEach((hazard) => {
+        let iconHtml = '';
+        let color = '';
+
+        switch (hazard.type) {
+          case 'fire':
+            iconHtml = 'local_fire_department';
+            color = '#ef4444';
+            break; // Red
+          case 'flood':
+            iconHtml = 'water_drop';
+            color = '#3b82f6';
+            break; // Blue
+          case 'road_blocked':
+            iconHtml = 'block';
+            color = '#f97316';
+            break; // Orange
+          case 'landslide':
+            iconHtml = 'landslide';
+            color = '#8b5cf6';
+            break; // Purple
+        }
+
+        const icon = L.divIcon({
+          className: '',
+          html: `<div style="
+            width: 32px; height: 32px;
+            background: ${color};
+            border: 2px solid white;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+          "><span class="material-symbols-outlined" style="color: white; font-size: 18px;">${iconHtml}</span></div>`,
+          iconSize: [32, 32],
+          iconAnchor: [16, 16],
+        });
+
+        if (hazardLayerGroup.current) {
+          L.marker([hazard.lat, hazard.lon], { icon }).addTo(hazardLayerGroup.current);
+        }
+      });
+    };
+
+    loadHazards();
+
+    // Refresh hazards every 30 seconds
+    const interval = setInterval(loadHazards, 30000);
+    return () => clearInterval(interval);
+  }, [activeTab]); // Triggers when the map tab becomes active
 
   // Loading screen to prevent UI flash
   if (isInitializing) {
@@ -485,37 +579,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* ─── MAP CONTROLS & LAYERS MENU ─── */}
-        <div className="absolute top-[120px] left-4 z-[1000] flex flex-col gap-2">
-          <div className="bg-gray-900/80 backdrop-blur-md border border-gray-700/50 rounded-2xl p-2.5 shadow-xl flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center ${currentWeather.bg} ${currentWeather.color}`}
-              >
-                <span
-                  className={`material-symbols-outlined text-lg ${currentWeather.icon === 'sync' ? 'animate-spin' : ''}`}
-                >
-                  {currentWeather.icon}
-                </span>
-              </div>
-              <div>
-                <div className="text-white font-bold text-sm leading-none">{currentWeather.temp}°C</div>
-                <div className="text-gray-400 text-[9px] uppercase tracking-wider mt-0.5">
-                  {t(currentWeather.condition)}
-                </div>
-              </div>
-            </div>
-            <div className="w-px h-6 bg-gray-700/50"></div>
-            <button
-              onClick={() => setShowWeatherReport(true)}
-              className="w-8 h-8 rounded-full bg-gray-800/80 flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700 transition-colors active:scale-95"
-              title="Report Weather"
-            >
-              <span className="material-symbols-outlined text-sm">edit_location_alt</span>
-            </button>
-          </div>
-        </div>
-
         {/* --- MAP CONTROLS & LAYERS MENU --- */}
         <div className="absolute top-4 right-4 z-[1000] flex flex-col gap-3">
           {/* Layers Menu Container */}
@@ -553,6 +616,15 @@ export default function App() {
             )}
           </div>
 
+          {/* HAZARD REPORT BUTTON ADDED HERE */}
+          <button
+            onClick={() => setShowHazardReportModal(true)}
+            className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center text-white hover:bg-orange-400 transition-colors shadow-lg shadow-orange-900/30 active:scale-95"
+            title="Report Hazard"
+          >
+            <span className="material-symbols-outlined text-xl">warning</span>
+          </button>
+
           <button
             onClick={() => {
               if (mapInstance.current && userPosition.lat !== 0) {
@@ -565,7 +637,7 @@ export default function App() {
           </button>
         </div>
 
-        {/* Hazard Alert */}
+        {/* Hazard Alert Notification */}
         {showHazardAlert && (
           <div className="absolute bottom-24 left-4 right-20 z-[1000] animate-fade-in">
             <div className="bg-red-500/90 backdrop-blur-md rounded-2xl p-4 flex items-start gap-3 shadow-[0_8px_30px_rgba(239,68,68,0.3)] border border-red-400/30">
@@ -697,6 +769,74 @@ export default function App() {
                     <span className="text-gray-300 text-[10px] font-bold uppercase tracking-wider">
                       {t(w.condition)}
                     </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ─── HAZARD REPORTING MODAL ADDED HERE ─── */}
+        {showHazardReportModal && (
+          <div className="absolute inset-0 z-[6000] bg-[#0f141e]/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+            <div className="bg-gray-900 border border-gray-700/50 rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-in zoom-in-95 duration-200">
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="text-white text-lg font-bold">Report a Hazard</h3>
+                <button
+                  onClick={() => setShowHazardReportModal(false)}
+                  className="w-8 h-8 flex items-center justify-center bg-gray-800 rounded-full text-gray-400 hover:text-white active:scale-95"
+                >
+                  <span className="material-symbols-outlined text-sm">close</span>
+                </button>
+              </div>
+
+              <p className="text-gray-400 text-xs mb-5 leading-relaxed">
+                Warn other ERIS users about immediate dangers at your current location.
+              </p>
+
+              <div className="grid grid-cols-2 gap-3 mb-2">
+                {[
+                  {
+                    type: 'fire',
+                    icon: 'local_fire_department',
+                    label: 'Wildfire',
+                    color: 'text-red-400',
+                    bg: 'bg-red-400/20',
+                  },
+                  { type: 'flood', icon: 'water_drop', label: 'Flood', color: 'text-blue-400', bg: 'bg-blue-400/20' },
+                  {
+                    type: 'road_blocked',
+                    icon: 'block',
+                    label: 'Road Blocked',
+                    color: 'text-orange-400',
+                    bg: 'bg-orange-400/20',
+                  },
+                  {
+                    type: 'landslide',
+                    icon: 'landslide',
+                    label: 'Landslide',
+                    color: 'text-purple-400',
+                    bg: 'bg-purple-400/20',
+                  },
+                ].map((hazard) => (
+                  <button
+                    key={hazard.type}
+                    onClick={async () => {
+                      if (userPosition.lat !== 0) {
+                        await reportHazard(session.user.id, hazard.type as any, userPosition.lat, userPosition.lng);
+                        setShowHazardReportModal(false);
+                        // Force a quick refresh of the map tab to show the new marker instantly
+                        setActiveTab('MAP');
+                      }
+                    }}
+                    className="flex flex-col items-center justify-center gap-2 bg-gray-800/40 border border-gray-700/50 hover:bg-gray-700 hover:border-orange-500 rounded-2xl p-4 transition-all active:scale-95"
+                  >
+                    <div
+                      className={`w-10 h-10 rounded-full flex items-center justify-center ${hazard.bg} ${hazard.color}`}
+                    >
+                      <span className="material-symbols-outlined text-2xl">{hazard.icon}</span>
+                    </div>
+                    <span className="text-gray-300 text-xs font-bold">{hazard.label}</span>
                   </button>
                 ))}
               </div>
