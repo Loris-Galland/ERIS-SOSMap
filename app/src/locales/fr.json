@@ -218,5 +218,18 @@
     "satellite": "Satellite",
     "topo": "Topographique",
     "streets": "Rues"
+  },
+  "weather": {
+    "reportWeather": "Signaler la météo",
+    "reportHelp": "Aidez les autres en signalant les conditions météo à votre position exacte.",
+    "clear": "Dégagé",
+    "partlyCloudy": "Éclaircies",
+    "cloudy": "Nuageux",
+    "fog": "Brouillard",
+    "rain": "Pluie",
+    "storm": "Orage",
+    "snow": "Neige",
+    "windy": "Venteux",
+    "hail": "Grêle"
   }
 }
