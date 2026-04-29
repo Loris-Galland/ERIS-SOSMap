@@ -2,7 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Optionnel : Assurer que le body prend bien tout l'écran */
 body,
 html {
   margin: 0;

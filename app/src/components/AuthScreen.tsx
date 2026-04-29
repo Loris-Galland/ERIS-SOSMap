@@ -1,97 +1,120 @@
 import { useState } from 'react';
 import { supabase } from '../db/supabaseClient';
+import { useTranslation } from 'react-i18next';
 
 export default function AuthScreen() {
-  const [isLogin, setIsLogin] = useState(true);
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
 
-  // Handle the authentication flow via Supabase
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    setError(null);
-
+    setLoading(true);
     try {
-      if (isLogin) {
-        // Sign in existing user
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-      } else {
-        // Register new user
+      if (isSignUp) {
         const { error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
+        alert('Check your email for the login link!');
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
       }
-    } catch (err: any) {
-      setError(err.message === 'Invalid login credentials' ? 'Incorrect email or password.' : err.message);
+    } catch (error: any) {
+      alert(error.message);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-[#0f141e] items-center justify-center font-sans px-6 overflow-hidden">
-      
-      {/* --- HEADER LOGO --- */}
-      <div className="flex flex-col items-center mb-10 w-full max-w-sm text-center">
-        <div className="w-20 h-20 bg-blue-500/10 rounded-3xl flex items-center justify-center border border-blue-500/20 mb-6 shadow-lg shadow-blue-500/10">
-          <span className="material-symbols-outlined text-blue-500 text-4xl" style={{ fontVariationSettings: "'FILL' 1" }}>
-            satellite_alt
-          </span>
+    <div className="min-h-screen bg-[#0f141e] flex flex-col items-center justify-center p-6 relative overflow-hidden font-sans">
+      {/* Decorative blurred background elements */}
+      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-600/20 rounded-full blur-[100px] pointer-events-none"></div>
+      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-red-600/10 rounded-full blur-[100px] pointer-events-none"></div>
+
+      <div className="w-full max-w-sm z-10 flex flex-col items-center">
+        {/* Header / Logo Area */}
+        <div className="mb-10 text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="w-20 h-20 bg-gray-800/80 rounded-3xl mx-auto mb-6 flex items-center justify-center shadow-2xl border border-gray-700/50 backdrop-blur-sm">
+            <span className="material-symbols-outlined text-4xl text-blue-500">shield_lock</span>
+          </div>
+          <h1 className="text-3xl font-black text-white tracking-tight mb-2">ERIS</h1>
+          <p className="text-gray-400 text-sm font-medium">Emergency Response & Info System</p>
         </div>
-        <h1 className="text-white text-3xl font-black tracking-widest uppercase mb-1">ERIS</h1>
-        <p className="text-gray-400 text-xs font-bold uppercase tracking-widest opacity-60">Safety Network</p>
+
+        {/* Auth Card */}
+        <div className="w-full bg-gray-800/40 backdrop-blur-xl border border-gray-700/50 p-6 rounded-3xl shadow-2xl animate-in fade-in slide-in-from-bottom-6 duration-700">
+          <h2 className="text-xl font-bold text-white mb-1">{t('auth.title')}</h2>
+          <p className="text-gray-500 text-xs mb-6">{t('auth.subtitle')}</p>
+
+          <form onSubmit={handleAuth} className="space-y-4">
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">
+                {t('auth.email')}
+              </label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-gray-500 text-lg">
+                  mail
+                </span>
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full bg-gray-900/50 border border-gray-700 text-white rounded-2xl py-3 pl-12 pr-4 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-sm"
+                  placeholder="name@example.com"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">
+                {t('auth.password')}
+              </label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-gray-500 text-lg">
+                  lock
+                </span>
+                <input
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full bg-gray-900/50 border border-gray-700 text-white rounded-2xl py-3 pl-12 pr-4 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-sm"
+                  placeholder="••••••••"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 rounded-2xl mt-4 transition-all active:scale-[0.98] disabled:opacity-70 flex justify-center items-center shadow-lg shadow-blue-900/20"
+            >
+              {loading ? (
+                <span className="material-symbols-outlined animate-spin">sync</span>
+              ) : isSignUp ? (
+                t('auth.createAccount')
+              ) : (
+                t('auth.signIn')
+              )}
+            </button>
+          </form>
+
+          <div className="mt-6 text-center">
+            <button
+              type="button"
+              onClick={() => setIsSignUp(!isSignUp)}
+              className="text-xs text-gray-400 hover:text-white transition-colors"
+            >
+              {isSignUp ? t('auth.hasAccount') : t('auth.noAccount')}{' '}
+              <span className="text-blue-400 font-bold">{isSignUp ? t('auth.signIn') : t('auth.signUp')}</span>
+            </button>
+          </div>
+        </div>
       </div>
-
-      {/* --- AUTHENTICATION FORM --- */}
-      <form onSubmit={handleAuth} className="w-full max-w-sm flex flex-col gap-4">
-        
-        {/* Error Display */}
-        {error && (
-          <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-[11px] p-3 rounded-2xl text-center font-bold">
-            {error}
-          </div>
-        )}
-
-        {/* MODIFICATION ICI : flex flex-col gap-1 pour rapprocher le label de l'input */}
-        <div className="flex flex-col gap-1">
-          <label className="text-gray-500 text-[10px] font-black uppercase tracking-widest ml-2">Email Address</label>
-          {/* MODIFICATION ICI : w-full sur la div englobante */}
-          <div className="flex items-center bg-gray-800/40 border border-gray-700/50 rounded-2xl px-4 py-3 focus-within:border-blue-500/50 transition-colors w-full">
-             <span className="material-symbols-outlined text-gray-500 mr-3">mail</span>
-             <input 
-               type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
-               className="w-full bg-transparent text-white text-sm outline-none placeholder-gray-600"
-               placeholder="name@email.com"
-             />
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-1">
-          <label className="text-gray-500 text-[10px] font-black uppercase tracking-widest ml-2">Password</label>
-          <div className="flex items-center bg-gray-800/40 border border-gray-700/50 rounded-2xl px-4 py-3 focus-within:border-blue-500/50 transition-colors w-full">
-            <span className="material-symbols-outlined text-gray-500 mr-3">lock</span>
-            <input 
-              type="password" required value={password} onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-transparent text-white text-sm outline-none placeholder-gray-600"
-              placeholder="••••••••"
-            />
-          </div>
-        </div>
-
-        <button 
-          disabled={isLoading}
-          className="w-full bg-blue-600 text-white rounded-2xl py-4 text-sm font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-blue-900/30 active:scale-95 transition-all disabled:opacity-50 mt-2"
-        >
-          {isLoading ? 'Processing...' : isLogin ? 'Secure Login' : 'Create Account'}
-        </button>
-
-        <button type="button" onClick={() => setIsLogin(!isLogin)} className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mt-2 hover:text-white transition-colors">
-          {isLogin ? "Need an account? Sign Up" : "Have an account? Log In"}
-        </button>
-      </form>
     </div>
   );
 }
