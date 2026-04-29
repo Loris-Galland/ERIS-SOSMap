@@ -168,7 +168,6 @@ export default function App() {
       attributionControl: false,
     }).setView(defaultCoords, 13);
 
-    // Initialisation dynamique de la carte
     baseLayerRef.current = (L.tileLayer as any)
       .offline(MAP_STYLES.dark.url, {
         attribution: 'ERIS Safety',
@@ -341,7 +340,6 @@ export default function App() {
     }
     setShowLayerMenu(false);
   };
-
   // Load and display hazards on the map
   useEffect(() => {
     if (!mapInstance.current) return;
@@ -403,10 +401,18 @@ export default function App() {
 
     loadHazards();
 
-    // Refresh hazards every 30 seconds
-    const interval = setInterval(loadHazards, 30000);
-    return () => clearInterval(interval);
-  }, [activeTab]); // Triggers when the map tab becomes active
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'hazards' }, (payload) => {
+        console.log('[HAZARD] Nouvelle alerte reçue en temps réel !', payload);
+        loadHazards();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [activeTab]);
 
   // Loading screen to prevent UI flash
   if (isInitializing) {
