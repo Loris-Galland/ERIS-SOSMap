@@ -3,6 +3,7 @@ import { supabase } from '../db/supabaseClient';
 import { Geolocation } from '@capacitor/geolocation';
 import { Device } from '@capacitor/device';
 import { db } from '../db/localDb';
+import { useTranslation } from 'react-i18next';
 import AlertModal, { type AlertType } from './AlertModalProps';
 
 interface ProfileScreenProps {
@@ -10,6 +11,8 @@ interface ProfileScreenProps {
 }
 
 export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
+  const { t } = useTranslation();
+
   // ─── DATA STATES ───
   const [profileData, setProfileData] = useState<any>(null);
   const [contacts, setContacts] = useState<any[]>([]);
@@ -105,13 +108,12 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
     // 2. Fetch NATIVE Battery Level using Capacitor Device Plugin
     try {
       const info = await Device.getBatteryInfo();
-      // Le plugin renvoie un chiffre entre 0.0 et 1.0 (ex: 0.81 pour 81%)
       if (info.batteryLevel !== undefined) {
         setBatteryLevel(Math.round(info.batteryLevel * 100));
       }
     } catch (error) {
       console.error('Error getting native battery:', error);
-      setBatteryLevel(null); // Affichera '--%' en cas d'erreur
+      setBatteryLevel(null);
     }
   };
 
@@ -184,7 +186,11 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
 
       setIsEditingMedical(false);
     } catch (err) {
-      showAlert('Error', 'An error occurred while saving medical info.', 'danger');
+      showAlert(
+        t('common.error', 'Error'),
+        t('profile.saveError', 'An error occurred while saving medical info.'),
+        'danger',
+      );
     } finally {
       setIsSaving(false);
     }
@@ -206,14 +212,18 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
       setNewContact({ name: '', relation: '', phone_number: '' });
       setIsAddingContact(false);
     } catch (err) {
-      showAlert('Error', 'An error occurred while adding the contact.', 'danger');
+      showAlert(
+        t('common.error', 'Error'),
+        t('profile.addContactError', 'An error occurred while adding the contact.'),
+        'danger',
+      );
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleDeleteContact = async (contactId: string) => {
-    const confirmDelete = window.confirm('Are you sure you want to delete this contact?');
+    const confirmDelete = window.confirm(t('profile.confirmDelete', 'Are you sure you want to delete this contact?'));
     if (!confirmDelete) return;
 
     setIsSaving(true);
@@ -224,7 +234,11 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
       setContacts(contacts.filter((c) => c.id !== contactId));
     } catch (err) {
       console.error(err);
-      showAlert('Error', 'An error occurred while deleting the contact.', 'danger');
+      showAlert(
+        t('common.error', 'Error'),
+        t('profile.deleteContactError', 'An error occurred while deleting the contact.'),
+        'danger',
+      );
     } finally {
       setIsSaving(false);
     }
@@ -244,7 +258,11 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
 
       setEditingContactId(null);
     } catch (err) {
-      showAlert('Error', 'An error occurred while updating the contact.', 'danger');
+      showAlert(
+        t('common.error', 'Error'),
+        t('profile.updateContactError', 'An error occurred while updating the contact.'),
+        'danger',
+      );
     } finally {
       setIsSaving(false);
     }
@@ -267,7 +285,7 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
     <div className="flex flex-col h-full bg-[#0f141e] w-full overflow-y-auto font-sans relative pb-20">
       {/* ─── HEADER ─── */}
       <header className="flex justify-between items-center px-6 py-4 sticky top-[-2px] z-50 bg-[#0f141e]/90 backdrop-blur-md">
-        <h2 className="text-white text-xl font-bold tracking-wide">My Profile</h2>
+        <h2 className="text-white text-xl font-bold tracking-wide">{t('profile.title', 'My Profile')}</h2>
         <button
           onClick={onOpenSettings}
           className="text-gray-400 w-10 h-10 bg-gray-800/50 rounded-full flex items-center justify-center"
@@ -277,22 +295,23 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
       </header>
 
       <div className="px-4 flex flex-col gap-5">
-        {/* ─── REAL-TIME STATUS BAR: GPS & BATTERY ─── */}
+        {/* ─── REAL-TIME STATUS BAR ─── */}
         <div className="flex items-center gap-3">
           <div className="flex-1 bg-gray-800/60 rounded-2xl p-3 flex items-center gap-3 border border-gray-700/50">
             <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400">
               <span className="material-symbols-outlined text-lg">location_on</span>
             </div>
             <div>
-              <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wider mb-0.5">Current Position</p>
+              <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wider mb-0.5">
+                {t('profile.currentPosition', 'Current Position')}
+              </p>
               <p className="text-white text-xs font-mono">
-                {location ? `${location.lat}° N, ${location.lng}° E` : 'Locating...'}
+                {location ? `${location.lat}° N, ${location.lng}° E` : t('profile.locating', 'Locating...')}
               </p>
             </div>
           </div>
 
           <div className="bg-gray-800/60 rounded-2xl p-3 flex items-center justify-center gap-2 border border-gray-700/50 min-w-[80px]">
-            {/* Change battery icon based on level */}
             <span
               className={`material-symbols-outlined text-lg ${batteryLevel && batteryLevel > 20 ? 'text-green-400' : 'text-red-500'}`}
             >
@@ -313,13 +332,13 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
           </div>
           <div>
             <h3 className="text-white text-xl font-bold">
-              {profileData ? `${profileData.first_name} ${profileData.last_name}` : 'Loading...'}
+              {profileData ? `${profileData.first_name} ${profileData.last_name}` : t('profile.loading', 'Loading...')}
             </h3>
             <p className="text-blue-300/70 text-xs font-mono mt-0.5 mb-2">ERIS-ID: {userId?.slice(0, 8)}</p>
             <div className="flex items-center gap-1.5 bg-green-500/10 w-fit px-2 py-1 rounded-md">
               <span className="w-1.5 h-1.5 bg-green-400 rounded-full"></span>
               <span className="text-green-400 text-[10px] font-semibold uppercase tracking-wider">
-                Verified Account
+                {t('profile.verified', 'Verified Account')}
               </span>
             </div>
           </div>
@@ -328,18 +347,24 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
         {/* ─── MEDICAL INFO ─── */}
         <section>
           <div className="flex justify-between items-center mb-3 px-1">
-            <h3 className="text-gray-400 text-xs font-bold uppercase tracking-wider">Medical Information</h3>
+            <h3 className="text-gray-400 text-xs font-bold uppercase tracking-wider">
+              {t('profile.medicalSection', 'Medical Information')}
+            </h3>
             <button
               onClick={() => (isEditingMedical ? handleSaveMedical() : setIsEditingMedical(true))}
               className="text-blue-400 text-xs font-semibold"
             >
-              {isEditingMedical ? (isSaving ? 'Saving...' : 'Save') : 'Edit'}
+              {isEditingMedical
+                ? isSaving
+                  ? t('profile.saving', 'Saving...')
+                  : t('profile.save', 'Save')
+                : t('profile.edit', 'Edit')}
             </button>
           </div>
 
           <div className="bg-gray-800/50 border border-gray-700/50 rounded-3xl p-5 flex flex-col gap-4">
             <div className="flex justify-between items-center border-b border-gray-700/50 pb-3">
-              <span className="text-gray-400 text-sm">Blood Type :</span>
+              <span className="text-gray-400 text-sm">{t('profile.bloodTypeLabel', 'Blood Type :')}</span>
               {isEditingMedical ? (
                 <select
                   value={medicalForm.blood_type}
@@ -361,9 +386,9 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
             </div>
 
             {[
-              { label: 'Allergies', key: 'allergies' },
-              { label: 'Conditions', key: 'medical_conditions' },
-              { label: 'Medications', key: 'current_medications' },
+              { label: t('profile.allergiesLabel', 'Allergies'), key: 'allergies' },
+              { label: t('profile.conditionsLabel', 'Conditions'), key: 'medical_conditions' },
+              { label: t('profile.medicationsLabel', 'Medications'), key: 'current_medications' },
             ].map((field) => (
               <div
                 key={field.key}
@@ -377,7 +402,9 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
                     className="bg-gray-900/60 border border-gray-700 rounded-lg p-2 text-white text-xs outline-none h-12"
                   />
                 ) : (
-                  <span className="text-white font-medium text-sm">{(profileData as any)?.[field.key] || 'None'}</span>
+                  <span className="text-white font-medium text-sm">
+                    {(profileData as any)?.[field.key] || t('profile.none', 'None')}
+                  </span>
                 )}
               </div>
             ))}
@@ -387,7 +414,9 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
         {/* ─── EMERGENCY CONTACTS ─── */}
         <section className="mb-6">
           <div className="flex justify-between items-center mb-3 px-1">
-            <h3 className="text-gray-400 text-xs font-bold uppercase tracking-wider">Emergency Contacts</h3>
+            <h3 className="text-gray-400 text-xs font-bold uppercase tracking-wider">
+              {t('profile.contactsSection', 'Emergency Contacts')}
+            </h3>
             <button
               onClick={() => {
                 setIsAddingContact(!isAddingContact);
@@ -396,7 +425,7 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
               className="flex items-center gap-1 text-blue-400 text-xs font-semibold bg-blue-500/10 px-3 py-1.5 rounded-full"
             >
               <span className="material-symbols-outlined text-sm">{isAddingContact ? 'close' : 'add'}</span>
-              {isAddingContact ? 'Cancel' : 'Add New'}
+              {isAddingContact ? t('profile.cancel', 'Cancel') : t('profile.addNew', 'Add New')}
             </button>
           </div>
 
@@ -406,7 +435,7 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
               className="bg-gray-800/80 border border-blue-500/30 rounded-3xl p-5 mb-4 flex flex-col gap-3 animate-in fade-in slide-in-from-top-2"
             >
               <input
-                placeholder="Full Name"
+                placeholder={t('profile.fullNamePlaceholder', 'Full Name')}
                 required
                 value={newContact.name}
                 onChange={(e) => setNewContact({ ...newContact, name: e.target.value })}
@@ -414,14 +443,14 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
               />
               <div className="flex gap-2">
                 <input
-                  placeholder="Relation (e.g. Mom)"
+                  placeholder={t('profile.relationPlaceholder', 'Relation (e.g. Mom)')}
                   required
                   value={newContact.relation}
                   onChange={(e) => setNewContact({ ...newContact, relation: e.target.value })}
                   className="flex-1 bg-gray-900 border border-gray-700 rounded-xl p-3 text-white text-sm outline-none"
                 />
                 <input
-                  placeholder="Phone"
+                  placeholder={t('profile.phonePlaceholder', 'Phone')}
                   type="tel"
                   required
                   value={newContact.phone_number}
@@ -433,14 +462,16 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
                 disabled={isSaving}
                 className="bg-blue-600 text-white font-bold py-3 rounded-xl active:scale-95 transition-all"
               >
-                {isSaving ? 'Adding...' : 'Save Contact'}
+                {isSaving ? t('profile.adding', 'Adding...') : t('profile.saveContact', 'Save Contact')}
               </button>
             </form>
           )}
 
           <div className="bg-gray-800/50 border border-gray-700/50 rounded-3xl overflow-hidden flex flex-col">
             {contacts.length === 0 && !isAddingContact && (
-              <p className="text-gray-500 text-xs text-center py-8 italic">No contacts added yet.</p>
+              <p className="text-gray-500 text-xs text-center py-8 italic">
+                {t('profile.noContacts', 'No contacts added yet.')}
+              </p>
             )}
 
             {contacts.map((contact, index) => (
@@ -451,7 +482,7 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
                 {editingContactId === contact.id ? (
                   <form onSubmit={handleUpdateContact} className="flex flex-col gap-3 animate-in fade-in">
                     <input
-                      placeholder="Full Name"
+                      placeholder={t('profile.fullNamePlaceholder', 'Full Name')}
                       required
                       value={editContactForm.name}
                       onChange={(e) => setEditContactForm({ ...editContactForm, name: e.target.value })}
@@ -459,14 +490,14 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
                     />
                     <div className="flex gap-2">
                       <input
-                        placeholder="Relation"
+                        placeholder={t('profile.relationPlaceholder', 'Relation')}
                         required
                         value={editContactForm.relation}
                         onChange={(e) => setEditContactForm({ ...editContactForm, relation: e.target.value })}
                         className="flex-1 bg-gray-900 border border-gray-700 rounded-xl p-3 text-white text-sm outline-none"
                       />
                       <input
-                        placeholder="Phone"
+                        placeholder={t('profile.phonePlaceholder', 'Phone')}
                         type="tel"
                         required
                         value={editContactForm.phone_number}
@@ -480,14 +511,14 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
                         onClick={() => setEditingContactId(null)}
                         className="px-4 py-2 text-gray-400 text-xs font-bold rounded-lg hover:bg-gray-700/50"
                       >
-                        Cancel
+                        {t('profile.cancel', 'Cancel')}
                       </button>
                       <button
                         type="submit"
                         disabled={isSaving}
                         className="px-4 py-2 bg-green-500/20 text-green-400 text-xs font-bold rounded-lg"
                       >
-                        {isSaving ? 'Saving...' : 'Save'}
+                        {isSaving ? t('profile.saving', 'Saving...') : t('profile.save', 'Save')}
                       </button>
                     </div>
                   </form>
@@ -536,7 +567,7 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
 
         <p className="text-gray-500 text-[10px] text-center mb-4 flex items-center justify-center gap-1">
           <span className="material-symbols-outlined text-xs">lock</span>
-          Data is encrypted and shared only during emergency alerts.
+          {t('profile.securityNote', 'Data is encrypted and shared only during emergency alerts.')}
         </p>
       </div>
 
@@ -545,7 +576,7 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
           onClick={handleLogout}
           className="w-full flex items-center justify-center gap-2 py-3.5 bg-red-500/10 text-red-500 font-semibold rounded-2xl border border-red-500/20 active:scale-95"
         >
-          <span className="material-symbols-outlined text-xl">logout</span> Sign Out
+          <span className="material-symbols-outlined text-xl">logout</span> {t('profile.logout', 'Sign Out')}
         </button>
       </div>
     </div>

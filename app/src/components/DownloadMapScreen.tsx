@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import { createOfflineLayer, PRESET_REGIONS, MAP_STYLES } from '../utils/MapUtils';
 import OfflineMapViewer from './OfflineMapViewer';
+import { useTranslation } from 'react-i18next';
 import AlertModal, { type AlertType } from './AlertModalProps';
 
 const lonToX = (lon: number, z: number) => Math.floor(((lon + 180) / 360) * Math.pow(2, z));
@@ -29,6 +30,8 @@ interface DownloadMapScreenProps {
 }
 
 export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
+  const { t } = useTranslation();
+
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [downloadingId, setDownloadingId] = useState<number | string | null>(null);
@@ -193,14 +196,13 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
     if (!selectionMapRef.current) return;
 
     const bounds = selectionMapRef.current.getBounds();
-
     openDialog({
-      title: 'Name your area',
-      message: 'Choose a name for this personalized zone:',
+      title: t('download.promptTitle', 'Name your area'),
+      message: t('download.promptName', 'Choose a name for this personalized zone:'),
       type: 'info',
       isPrompt: true,
-      defaultValue: 'My Zone',
-      confirmText: 'Save',
+      defaultValue: t('download.defaultName', 'My Zone'),
+      confirmText: t('common.save', 'Save'),
       onCancel: () => closeDialog(),
       onConfirm: (customName) => {
         closeDialog();
@@ -294,17 +296,22 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
         const count = tilesToSave.length;
 
         if (count === 0) {
-          showAlert('No Data', 'No tiles found for this area. Check your zoom levels.', 'danger');
+          showAlert(
+            t('common.noData', 'No Data'),
+            t('download.noTiles', 'No tiles found for this area. Check your zoom levels.'),
+            'danger',
+          );
           cleanup();
           return false;
         }
-
         openDialog({
-          title: 'Download Started',
-          message: `Download ${count} tiles for ${name}?`,
+          title: t('download.downloadStarted', 'Download Started'),
+          message: t('download.confirmDownload', `Download ${count} tiles for ${name}?`)
+            .replace('${count}', count.toString())
+            .replace('${name}', name),
           type: 'info',
           isConfirm: true,
-          confirmText: 'Download',
+          confirmText: t('download.confirmBtn', 'Download'),
           onCancel: () => {
             closeDialog();
             cleanup();
@@ -316,7 +323,11 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
         });
       },
       confirmNoTiles: () => {
-        showAlert('Already Saved', 'This zone is already downloaded.', 'success');
+        showAlert(
+          t('download.alreadySavedTitle', 'Already Saved'),
+          t('download.alreadyDownloaded', 'This zone is already downloaded.'),
+          'success',
+        );
         saveRegionAsDownloaded(id);
         cleanup();
       },
@@ -340,7 +351,16 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
     const downloadStyleLayer = (styleIndex: number) => {
       if (styleIndex >= selectedStyles.length) {
         setProgress(100);
-        showAlert('Success', `The zone ${name} is available offline (${selectedStyles.length} layers).`, 'success');
+        showAlert(
+          t('common.success', 'Success'),
+          t(
+            'download.successMultiple',
+            `Success : The zone ${name} is available offline (${selectedStyles.length} layers).`,
+          )
+            .replace('${name}', name)
+            .replace('${selectedStyles.length}', selectedStyles.length.toString()),
+          'success',
+        );
         saveRegionAsDownloaded(id);
         cleanup();
         return;
@@ -358,8 +378,13 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
           const count = tilesToSave.length;
 
           if (count === 0) {
-            if (styleIndex === 0)
-              showAlert('No Data', 'No tiles found for this area. Check your zoom levels.', 'danger');
+            if (styleIndex === 0) {
+              showAlert(
+                t('common.noData', 'No Data'),
+                t('download.noTiles', 'No tiles found for this area. Check your zoom levels.'),
+                'danger',
+              );
+            }
             tempMap.removeLayer(layer);
             downloadStyleLayer(styleIndex + 1);
             return false;
@@ -367,11 +392,17 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
 
           if (styleIndex === 0) {
             openDialog({
-              title: 'Multi-layer Download',
-              message: `Download ${count} tiles per layer for ${name} (${selectedStyles.length} layers selected)?`,
+              title: t('download.multiLayerTitle', 'Multi-layer Download'),
+              message: t(
+                'download.confirmMultiple',
+                `Download ${count} tiles per layer for ${name} (${selectedStyles.length} layers selected)?`,
+              )
+                .replace('${count}', count.toString())
+                .replace('${name}', name)
+                .replace('${selectedStyles.length}', selectedStyles.length.toString()),
               type: 'info',
               isConfirm: true,
-              confirmText: 'Download All',
+              confirmText: t('download.confirmBtn', 'Download All'),
               onCancel: () => {
                 closeDialog();
                 cleanup();
@@ -387,7 +418,11 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
         },
         confirmNoTiles: () => {
           if (styleIndex === 0) {
-            showAlert('Already Saved', 'This zone is already downloaded.', 'success');
+            showAlert(
+              t('download.alreadySavedTitle', 'Already Saved'),
+              t('download.alreadyDownloaded', 'This zone is already downloaded.'),
+              'success',
+            );
             saveRegionAsDownloaded(id);
             cleanup();
           } else {
@@ -418,7 +453,11 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
 
       layer.on('tilelayeroffline:saveerror', (err: any) => {
         console.error(`Downloading error on layer ${styleConfig.name}:`, err);
-        showAlert('Error', 'Error during downloading. Check your connexion.', 'danger');
+        showAlert(
+          t('common.error', 'Error'),
+          t('download.errorDownloading', 'Error during downloading. Check your connexion.'),
+          'danger',
+        );
         cleanup();
       });
 
@@ -439,11 +478,14 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
 
   const handleDelete = (id: number | string, name: string) => {
     openDialog({
-      title: 'Delete Zone',
-      message: `Are you sure you want to delete ${name} offline data?`,
+      title: t('offline.confirmDeleteTitle', 'Delete Zone'),
+      message: t('download.confirmDelete', `Are you sure you want to delete ${name} offline data?`).replace(
+        '${name}',
+        name,
+      ),
       type: 'danger',
       isConfirm: true,
-      confirmText: 'Delete',
+      confirmText: t('offline.delete', 'Delete'),
       onCancel: () => closeDialog(),
       onConfirm: () => {
         closeDialog();
@@ -453,9 +495,13 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
 
         const bounds = getBoundsForRegion(id);
 
-        // If there are non coordinates we stop there with a success
+        // If there are no coordinates we stop there with a success
         if (!bounds) {
-          showAlert('Deleted', `${name} removed from your offline maps.`, 'success');
+          showAlert(
+            t('common.success', 'Success'),
+            t('download.successDelete', `${name} removed from your offline maps.`).replace('${name}', name),
+            'success',
+          );
           return;
         }
 
@@ -467,7 +513,14 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
 
           request.onblocked = () => {
             setIsDeleting(false);
-            showAlert('UI Updated', `${name} removed from list, but storage is locked by the map viewer.`, 'info');
+            showAlert(
+              t('offline.uiUpdatedTitle', 'UI Updated'),
+              t('offline.storageLocked', `${name} removed from list, but storage is locked by the map viewer.`).replace(
+                '${name}',
+                name,
+              ),
+              'info',
+            );
           };
 
           request.onsuccess = (event: any) => {
@@ -476,7 +529,11 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
             if (!db.objectStoreNames.contains('tiles')) {
               db.close();
               setIsDeleting(false);
-              showAlert('Deleted', `${name} removed from your offline maps.`, 'success');
+              showAlert(
+                t('common.success', 'Success'),
+                t('download.successDelete', `${name} removed from your offline maps.`).replace('${name}', name),
+                'success',
+              );
               return;
             }
 
@@ -504,11 +561,16 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
 
               if (deletedTilesCount > 0) {
                 openDialog({
-                  title: 'Storage Optimized',
-                  message: `${name} deleted (${deletedTilesCount} tiles removed).\n\nReboot app to instantly free up physical space?`,
+                  title: t('offline.storageOptimizedTitle', 'Storage Optimized'),
+                  message: t(
+                    'offline.deleteSuccessDetailed',
+                    `${name} deleted (${deletedTilesCount} tiles removed).\n\nReboot app to instantly free up physical space?`,
+                  )
+                    .replace('${name}', name)
+                    .replace('${count}', deletedTilesCount.toString()),
                   type: 'success',
                   isConfirm: true,
-                  confirmText: 'Reboot',
+                  confirmText: t('offline.reboot', 'Reboot'),
                   onCancel: () => closeDialog(),
                   onConfirm: () => {
                     closeDialog();
@@ -516,24 +578,40 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
                   },
                 });
               } else {
-                showAlert('Deleted', `${name} removed from your offline maps.`, 'success');
+                showAlert(
+                  t('common.success', 'Success'),
+                  t('download.successDelete', `${name} removed from your offline maps.`).replace('${name}', name),
+                  'success',
+                );
               }
             };
 
             transaction.onerror = () => {
               setIsDeleting(false);
-              showAlert('Warning', 'List updated, but some map data could not be cleared.', 'danger');
+              showAlert(
+                t('common.warning', 'Warning'),
+                t('offline.deletePartialError', 'List updated, but some map data could not be cleared.'),
+                'danger',
+              );
             };
           };
 
           request.onerror = () => {
             setIsDeleting(false);
-            showAlert('Warning', 'List updated, but could not access local database.', 'danger');
+            showAlert(
+              t('common.warning', 'Warning'),
+              t('offline.dbError', 'List updated, but could not access local database.'),
+              'danger',
+            );
           };
         } catch (error) {
           console.error('Unexpected error during deletion:', error);
           setIsDeleting(false);
-          showAlert('Error', 'List updated, but an error occurred while clearing space.', 'danger');
+          showAlert(
+            t('common.error', 'Error'),
+            t('offline.deleteSpaceError', 'List updated, but an error occurred while clearing space.'),
+            'danger',
+          );
         }
       },
     });
@@ -582,14 +660,16 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
                 <span className="material-symbols-outlined">close</span>
               </button>
               <div className="flex-1">
-                <h2 className="text-white text-sm font-bold">Manual saving</h2>
-                <p className="text-gray-400 text-[10px]">Search a place or move the map</p>
+                <h2 className="text-white text-sm font-bold">{t('download.manualSaving', 'Manual saving')}</h2>
+                <p className="text-gray-400 text-[10px]">
+                  {t('download.searchOrMove', 'Search a place or move the map')}
+                </p>
               </div>
               <button
                 onClick={handleConfirmManualArea}
                 className="bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg active:scale-95"
               >
-                Save this zone
+                {t('download.saveZone', 'Save this zone')}
               </button>
             </div>
 
@@ -601,7 +681,7 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
                   type="text"
                   value={manualSearchQuery}
                   onChange={(e) => setManualSearchQuery(e.target.value)}
-                  placeholder="Find a place to download..."
+                  placeholder={t('download.searchPlace', 'Find a place to download...')}
                   className="bg-transparent text-xs text-white w-full outline-none"
                 />
                 {isManualSearching && (
@@ -650,14 +730,14 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
           >
             <span className="material-symbols-outlined">chevron_left</span>
           </button>
-          <h2 className="text-white text-xl font-bold tracking-wide">Download Maps</h2>
+          <h2 className="text-white text-xl font-bold tracking-wide">{t('download.title', 'Download Maps')}</h2>
         </div>
 
         {/* Custom Area Map Button (Top Right) */}
         <button
           onClick={() => setIsManualSelecting(true)}
           className="text-blue-400 hover:text-blue-300 transition-colors flex items-center justify-center w-10 h-10 bg-blue-500/10 rounded-full active:scale-95"
-          title="Select Custom Area"
+          title={t('download.selectCustom', 'Select Custom Area')}
         >
           <span className="material-symbols-outlined text-xl">map</span>
         </button>
@@ -671,13 +751,15 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search city or region..."
+            placeholder={t('download.searchPlaceholder', 'Search city or region...')}
             className="bg-transparent text-sm text-white w-full outline-none placeholder-gray-500"
           />
         </div>
 
         <section>
-          <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3 px-2">Select Map Layers</h3>
+          <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3 px-2">
+            {t('download.selectLayers', 'Select Map Layers')}
+          </h3>
           <div className="grid grid-cols-2 gap-3 mb-3">
             {Object.values(MAP_STYLES).map((style) => {
               const isSelected = selectedStyles.includes(style.id);
@@ -699,7 +781,11 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
                       <span className="material-symbols-outlined text-white text-[10px] font-bold">check</span>
                     </div>
                   )}
-                  {style.id === 'dark' && <span className="text-[8px] uppercase font-black mt-0.5">Default</span>}
+                  {style.id === 'dark' && (
+                    <span className="text-[8px] uppercase font-black mt-0.5">
+                      {t('download.defaultStyle', 'Default')}
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -708,15 +794,18 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
           <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-3 flex items-start gap-2">
             <span className="material-symbols-outlined text-yellow-500 text-sm mt-0.5">database</span>
             <p className="text-gray-400 text-[10px] leading-relaxed">
-              Selecting multiple layers increases storage usage.{' '}
-              <span className="text-gray-200 font-semibold">Satellite tiles</span> are ~2.5x larger.
+              {t('download.storageWarning1', 'Selecting multiple layers increases storage usage.')}{' '}
+              <span className="text-gray-200 font-semibold">{t('download.satelliteTiles', 'Satellite tiles')}</span>{' '}
+              {t('download.storageWarning2', 'are ~2.5x larger.')}
             </p>
           </div>
         </section>
 
         {/* ─── SUGGESTIONS LIST ─── */}
         <section>
-          <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3 px-2">Suggested Regions</h3>
+          <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3 px-2">
+            {t('download.suggested', 'Suggested Regions')}
+          </h3>
 
           <div className="flex flex-col gap-3">
             {filteredRegions.length > 0 ? (
@@ -750,10 +839,10 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
                         <h4 className="text-white text-sm font-bold mb-0.5">{region.name}</h4>
                         <p className="text-gray-500 text-[11px] font-medium">
                           {isDownloadingThis
-                            ? `Downloading... ${progress}%`
+                            ? `${t('download.downloading', 'Downloading...')} ${progress}%`
                             : isDownloaded
-                              ? 'Available Offline'
-                              : `${region.size} • Map & Navigation Data`}
+                              ? t('download.available', 'Available Offline')
+                              : `${region.size} • ${t('download.mapData', 'Map & Navigation Data')}`}
                         </p>
                       </div>
                     </div>
@@ -789,7 +878,9 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
                 );
               })
             ) : (
-              <div className="text-center py-6 text-gray-500 text-sm">No regions found for "{searchQuery}"</div>
+              <div className="text-center py-6 text-gray-500 text-sm">
+                {t('download.noRegions', 'No regions found for')} "{searchQuery}"
+              </div>
             )}
           </div>
         </section>

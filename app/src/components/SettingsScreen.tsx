@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../db/supabaseClient';
+import { useTranslation } from 'react-i18next';
 import AlertModal, { type AlertType } from './AlertModalProps';
 
 interface SettingsScreenProps {
@@ -7,9 +8,10 @@ interface SettingsScreenProps {
 }
 
 export default function SettingsScreen({ onBack }: SettingsScreenProps) {
+  const { t, i18n } = useTranslation();
+
   // Toggle and selection states
   const [settings, setSettings] = useState({
-    language: 'English (US)',
     theme: 'Dark Safety (Default)',
     pushNotifications: true,
     criticalAlertsOnly: false,
@@ -185,6 +187,22 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
     setSettings((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
+  const [isLanguageMenuOpen, setIsLanguageMenuOpen] = useState(false);
+
+  const languages = [
+    { code: 'en', name: 'English (US)', flag: '🇺🇸' },
+    { code: 'fr', name: 'Français', flag: '🇫🇷' },
+    { code: 'vi', name: 'Tiếng Việt', flag: '🇻🇳' },
+    { code: 'zh', name: '中文', flag: '🇨🇳' },
+    { code: 'mg', name: 'Malagasy', flag: '🇲🇬' },
+  ];
+
+  const changeLanguage = (lng: string) => {
+    i18n.changeLanguage(lng);
+    localStorage.setItem('eris_language', lng);
+    setIsLanguageMenuOpen(false);
+  };
+
   // Handle secure logout
   const handleLogout = async () => {
     try {
@@ -231,27 +249,68 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
         >
           <span className="material-symbols-outlined">chevron_left</span>
         </button>
-        <h2 className="text-white text-xl font-bold tracking-wide">Settings</h2>
+        <h2 className="text-white text-xl font-bold tracking-wide">{t('settings.title', 'Settings')}</h2>
       </header>
 
       <div className="px-4 flex flex-col gap-6 mt-2">
         {/* ─── DISPLAY & LANGUAGE ─── */}
         <section>
-          <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3 px-2">Display & Language</h3>
-          <div className="bg-gray-800/40 border border-gray-700/50 rounded-3xl overflow-hidden">
-            {/* Language Selector */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-700/30 cursor-pointer hover:bg-white/5 transition-colors">
-              <div>
-                <p className="text-white text-sm font-medium">Application Language</p>
-                <p className="text-blue-400 text-[11px] font-bold mt-0.5">{settings.language}</p>
-              </div>
-              <span className="material-symbols-outlined text-gray-500">translate</span>
+          <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3 px-2">
+            {t('settings.displayLanguage', 'Display & Language')}
+          </h3>
+          <div className="bg-gray-800/40 border border-gray-700/50 rounded-3xl overflow-hidden flex flex-col">
+            {/* Language Selector (Collapsible Design) */}
+            <div className="flex flex-col border-b border-gray-700/30">
+              <button
+                onClick={() => setIsLanguageMenuOpen(!isLanguageMenuOpen)}
+                className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors text-left"
+              >
+                <div>
+                  <p className="text-white text-sm font-medium">{t('settings.appLanguage', 'Application Language')}</p>
+                  <p className="text-blue-400 text-[11px] font-bold mt-0.5">
+                    {languages.find((l) => l.code === i18n.language)?.name || 'English (US)'}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-gray-500 text-lg">translate</span>
+                  <span
+                    className={`material-symbols-outlined text-gray-500 transition-transform duration-200 ${isLanguageMenuOpen ? 'rotate-180' : ''}`}
+                  >
+                    expand_more
+                  </span>
+                </div>
+              </button>
+
+              {/* Languages List - Collapsible */}
+              {isLanguageMenuOpen && (
+                <div className="bg-gray-900/40 border-t border-gray-700/20 animate-in fade-in slide-in-from-top-1 duration-200">
+                  {languages.map((lang) => (
+                    <button
+                      key={lang.code}
+                      onClick={() => changeLanguage(lang.code)}
+                      className={`w-full flex items-center justify-between p-4 text-sm text-left transition-colors border-b border-gray-700/10 last:border-0 ${
+                        i18n.language === lang.code
+                          ? 'bg-blue-600/10 text-blue-400 font-bold'
+                          : 'text-gray-300 hover:bg-gray-700/30'
+                      }`}
+                    >
+                      <span className="flex items-center gap-3">
+                        <span className="text-base">{lang.flag}</span>
+                        {lang.name}
+                      </span>
+                      {i18n.language === lang.code && (
+                        <span className="material-symbols-outlined text-base">check</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Theme Selector */}
             <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-white/5 transition-colors">
               <div>
-                <p className="text-white text-sm font-medium">Visual Theme</p>
+                <p className="text-white text-sm font-medium">{t('settings.visualTheme', 'Visual Theme')}</p>
                 <p className="text-blue-400 text-[11px] font-bold mt-0.5">{settings.theme}</p>
               </div>
               <span className="material-symbols-outlined text-gray-500">dark_mode</span>
@@ -261,19 +320,25 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
 
         {/* ─── NOTIFICATIONS ─── */}
         <section>
-          <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3 px-2">Notifications</h3>
+          <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3 px-2">
+            {t('settings.notificationsTitle', 'Notifications')}
+          </h3>
           <div className="bg-gray-800/40 border border-gray-700/50 rounded-3xl overflow-hidden">
             <div className="flex items-center justify-between p-4 border-b border-gray-700/30">
               <div>
-                <p className="text-white text-sm font-medium">Push Notifications</p>
-                <p className="text-gray-500 text-[11px]">Receive real-time safety updates</p>
+                <p className="text-white text-sm font-medium">{t('settings.pushNotif', 'Push Notifications')}</p>
+                <p className="text-gray-500 text-[11px]">
+                  {t('settings.pushNotifDesc', 'Receive real-time safety updates')}
+                </p>
               </div>
               <Switch active={settings.pushNotifications} onClick={() => toggle('pushNotifications')} />
             </div>
             <div className="flex items-center justify-between p-4">
               <div>
-                <p className="text-white text-sm font-medium">Critical Alerts Only</p>
-                <p className="text-gray-500 text-[11px]">Only notify for immediate threats</p>
+                <p className="text-white text-sm font-medium">{t('settings.criticalAlerts', 'Critical Alerts Only')}</p>
+                <p className="text-gray-500 text-[11px]">
+                  {t('settings.criticalAlertsDesc', 'Only notify for immediate threats')}
+                </p>
               </div>
               <Switch active={settings.criticalAlertsOnly} onClick={() => toggle('criticalAlertsOnly')} />
             </div>
@@ -282,19 +347,25 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
 
         {/* ─── PRIVACY & SAFETY ─── */}
         <section>
-          <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3 px-2">Privacy & Safety</h3>
+          <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3 px-2">
+            {t('settings.privacyTitle', 'Privacy & Safety')}
+          </h3>
           <div className="bg-gray-800/40 border border-gray-700/50 rounded-3xl overflow-hidden">
             <div className="flex items-center justify-between p-4 border-b border-gray-700/30">
               <div>
-                <p className="text-white text-sm font-medium">Share Live Location</p>
-                <p className="text-gray-500 text-[11px]">Allow rescue teams to find you</p>
+                <p className="text-white text-sm font-medium">{t('settings.shareLocation', 'Share Live Location')}</p>
+                <p className="text-gray-500 text-[11px]">
+                  {t('settings.shareLocationDesc', 'Allow rescue teams to find you')}
+                </p>
               </div>
               <Switch active={settings.shareLocation} onClick={() => toggle('shareLocation')} />
             </div>
             <div className="flex items-center justify-between p-4">
               <div>
-                <p className="text-white text-sm font-medium">Anonymous Analytics</p>
-                <p className="text-gray-500 text-[11px]">Help us improve the ERIS network</p>
+                <p className="text-white text-sm font-medium">{t('settings.analytics', 'Anonymous Analytics')}</p>
+                <p className="text-gray-500 text-[11px]">
+                  {t('settings.analyticsDesc', 'Help us improve the ERIS network')}
+                </p>
               </div>
               <Switch active={settings.anonymousAnalytics} onClick={() => toggle('anonymousAnalytics')} />
             </div>
@@ -303,19 +374,25 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
 
         {/* ─── DATA & STORAGE ─── */}
         <section>
-          <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3 px-2">Data & Storage</h3>
+          <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3 px-2">
+            {t('settings.dataTitle', 'Data & Storage')}
+          </h3>
           <div className="bg-gray-800/40 border border-gray-700/50 rounded-3xl overflow-hidden">
             <div className="flex items-center justify-between p-4 border-b border-gray-700/30">
               <div>
-                <p className="text-white text-sm font-medium">Auto-Retry SOS</p>
-                <p className="text-gray-500 text-[11px]">Automatically re-send if signal is lost</p>
+                <p className="text-white text-sm font-medium">{t('settings.autoRetry', 'Auto-Retry SOS')}</p>
+                <p className="text-gray-500 text-[11px]">
+                  {t('settings.autoRetryDesc', 'Automatically re-send if signal is lost')}
+                </p>
               </div>
               <Switch active={settings.autoRetrySos} onClick={() => toggle('autoRetrySos')} />
             </div>
             <div className="flex items-center justify-between p-4">
               <div>
-                <p className="text-white text-sm font-medium">Offline Map Cache</p>
-                <p className="text-gray-500 text-[11px]">Currently using {cacheSize}</p>
+                <p className="text-white text-sm font-medium">{t('settings.offlineCache', 'Offline Map Cache')}</p>
+                <p className="text-gray-500 text-[11px]">
+                  {t('settings.offlineCacheDesc', 'Currently using {{size}}', { size: cacheSize })}
+                </p>
               </div>
               <button
                 onClick={clearMapCache}
@@ -326,7 +403,7 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
                     : 'text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 active:scale-95'
                 }`}
               >
-                Clear Cache
+                {t('settings.clearCache', 'Clear Cache')}
               </button>
             </div>
           </div>
@@ -334,22 +411,25 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
 
         {/* ─── SYSTEM DIAGNOSTICS ─── */}
         <section>
-          <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3 px-2">System Diagnostics</h3>
+          <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3 px-2">
+            {t('settings.diagnosticsTitle', 'System Diagnostics')}
+          </h3>
           <div className="bg-gray-800/40 border border-gray-700/50 rounded-3xl p-5 flex flex-col gap-4">
             <div className="flex justify-between items-center">
               <span className="text-gray-300 text-sm">LoRa Module</span>
               <span className="flex items-center gap-2 text-green-400 text-xs font-bold bg-green-400/10 px-3 py-1 rounded-full">
-                <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span> Connected
+                <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span>{' '}
+                {t('settings.connected', 'Connected')}
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-300 text-sm">Mesh Network</span>
               <span className="text-blue-400 text-xs font-bold bg-blue-500/10 px-3 py-1 rounded-full">
-                Searching...
+                {t('settings.searching', 'Searching...')}
               </span>
             </div>
             <button className="mt-2 w-full py-3 bg-gray-700/50 text-white text-xs font-bold rounded-2xl border border-gray-600/50 hover:bg-gray-700 transition-colors active:scale-95">
-              Run Network Test
+              {t('settings.runTest', 'Run Network Test')}
             </button>
           </div>
         </section>
@@ -360,7 +440,7 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
           className="mt-4 mb-8 w-full bg-red-500/10 border border-red-500/30 text-red-500 hover:bg-red-500/20 py-4 rounded-3xl text-sm font-bold flex items-center justify-center gap-2 transition-all active:scale-95"
         >
           <span className="material-symbols-outlined">logout</span>
-          Sign Out of ERIS System
+          {t('settings.logoutBtn', 'Sign Out of ERIS System')}
         </button>
       </div>
     </div>
