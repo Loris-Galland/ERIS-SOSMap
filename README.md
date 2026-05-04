@@ -26,6 +26,7 @@ npx cap sync
 
 <docgen-index>
 
+* [`echo(...)`](#echo)
 * [`triggerEmergency(...)`](#triggeremergency)
 * [`startMeshNetwork()`](#startmeshnetwork)
 * [`stopMeshNetwork()`](#stopmeshnetwork)
@@ -38,17 +39,32 @@ npx cap sync
 <docgen-api>
 <!--Update the source file JSDoc comments and rerun docgen to update the docs below-->
 
+### echo(...)
+
+```typescript
+echo(options: { value: string; }) => Promise<{ value: string; }>
+```
+
+| Param         | Type                            |
+| ------------- | ------------------------------- |
+| **`options`** | <code>{ value: string; }</code> |
+
+**Returns:** <code>Promise&lt;{ value: string; }&gt;</code>
+
+--------------------
+
+
 ### triggerEmergency(...)
 
 ```typescript
-triggerEmergency(options: { latitude: number; longitude: number; userId: string; }) => Promise<{ transmissionMethod: string; }>
+triggerEmergency(options: { latitude: number; longitude: number; userId: string; }) => Promise<{ success: boolean; transmissionMethod: string; }>
 ```
 
 | Param         | Type                                                                  |
 | ------------- | --------------------------------------------------------------------- |
 | **`options`** | <code>{ latitude: number; longitude: number; userId: string; }</code> |
 
-**Returns:** <code>Promise&lt;{ transmissionMethod: string; }&gt;</code>
+**Returns:** <code>Promise&lt;{ success: boolean; transmissionMethod: string; }&gt;</code>
 
 --------------------
 
@@ -87,15 +103,15 @@ broadcastMeshMessage(options: { message: string; }) => Promise<void>
 ### addListener('onMeshMessageReceived', ...)
 
 ```typescript
-addListener(eventName: 'onMeshMessageReceived', listenerFunc: (event: { message: string; }) => void) => Promise<PluginListenerHandle>
+addListener(eventName: 'onMeshMessageReceived', listenerFunc: (data: { message: string; }) => void) => Promise<PluginListenerHandle> & PluginListenerHandle
 ```
 
-| Param              | Type                                                  |
-| ------------------ | ----------------------------------------------------- |
-| **`eventName`**    | <code>'onMeshMessageReceived'</code>                  |
-| **`listenerFunc`** | <code>(event: { message: string; }) =&gt; void</code> |
+| Param              | Type                                                 |
+| ------------------ | ---------------------------------------------------- |
+| **`eventName`**    | <code>'onMeshMessageReceived'</code>                 |
+| **`listenerFunc`** | <code>(data: { message: string; }) =&gt; void</code> |
 
-**Returns:** <code>Promise&lt;<a href="#pluginlistenerhandle">PluginListenerHandle</a>&gt;</code>
+**Returns:** <code>any</code>
 
 --------------------
 
