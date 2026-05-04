@@ -22,6 +22,8 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
 
   const [cacheSize, setCacheSize] = useState('Calculating...');
 
+  const [autoSosBattery, setAutoSosBattery] = useState(localStorage.getItem('eris_auto_sos_battery') === 'true');
+
   const defaultDialogState = {
     isOpen: false,
     title: '',
@@ -405,6 +407,34 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
               >
                 {t('settings.clearCache', 'Clear Cache')}
               </button>
+            </div>
+          </div>
+        </section>
+
+        {/* Power Management*/}
+        <section>
+          <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3 px-2">
+            Power Management
+          </h3>
+          <div className="bg-gray-800/40 border border-gray-700/50 rounded-3xl overflow-hidden">
+            <div className="flex items-center justify-between p-4">
+              <div>
+                <div className="flex items-center gap-2 mb-0.5">
+                  <span className="material-symbols-outlined text-orange-400 text-sm">battery_alert</span>
+                  <p className="text-white text-sm font-medium">Auto-SOS (Critical Battery)</p>
+                </div>
+                <p className="text-gray-500 text-[11px]">
+                  Send last position automatically at 1% battery
+                </p>
+              </div>
+              <Switch 
+                active={autoSosBattery} 
+                onClick={() => {
+                  const newValue = !autoSosBattery;
+                  setAutoSosBattery(newValue);
+                  localStorage.setItem('eris_auto_sos_battery', String(newValue));
+                }} 
+              />
             </div>
           </div>
         </section>
