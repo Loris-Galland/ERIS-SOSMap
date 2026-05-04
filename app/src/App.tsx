@@ -20,6 +20,7 @@ import logo from './assets/small_logo.png';
 import { PRESET_REGIONS, MAP_STYLES } from './utils/MapUtils';
 import SetupProfileScreen from './components/SetupProfileScreen';
 import { useTranslation } from 'react-i18next';
+import LowBatteryGlobal from './components/LowBatteryGlobal';
 import { reportHazard, fetchHazards } from './services/hazardService';
 
 const getWeatherDetails = (code: number) => {
@@ -490,6 +491,8 @@ export default function App() {
   return (
     <div className="flex flex-col h-screen w-full bg-[#0f141e] text-white overflow-hidden font-sans">
       {/* Header */}
+      {/* GLOBAL BATTERY MONITOR  */}
+      <LowBatteryGlobal />
       <header className="flex justify-between items-center px-5 py-3 bg-[#0f141e]/95 backdrop-blur-md border-b border-gray-800/50 z-[1000] relative">
         <div className="flex items-center gap-2">
           <img src={logo} alt="ERIS-SOSMap" className="h-7 w-auto object-contain" />
