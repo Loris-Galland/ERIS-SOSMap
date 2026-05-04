@@ -5,6 +5,7 @@ import { Geolocation } from '@capacitor/geolocation';
 import { Capacitor } from '@capacitor/core';
 import { CapacitorErisSosmap } from 'capacitor-eris-sosmap';
 import type { PluginListenerHandle } from '@capacitor/core';
+import DiagnosticsModal from './components/DiagnosticsModal';
 
 // Auth imports
 import { supabase } from './db/supabaseClient';
@@ -52,6 +53,7 @@ export default function App() {
   const [showHazardReportModal, setShowHazardReportModal] = useState(false);
   const [hazardsList, setHazardsList] = useState<any[]>([]);
   const hazardLayerGroup = useRef<L.LayerGroup | null>(null);
+  const [showDiagnostics, setShowDiagnostics] = useState(false);
 
   // Internationalisation
   const { t } = useTranslation();
@@ -498,12 +500,23 @@ export default function App() {
           <img src={logo} alt="ERIS-SOSMap" className="h-7 w-auto object-contain" />
         </div>
         <h1 className="flex-1 text-center text-white text-lg font-bold tracking-wide">ERIS Safety</h1>
-        <button
-          className="bg-red-500 hover:bg-red-600 text-white text-xs font-bold uppercase tracking-wider px-4 py-1.5 rounded-full transition-colors shadow-lg shadow-red-900/20 active:scale-95"
-          onClick={() => setActiveTab('ALERTS')}
-        >
-          SOS
-        </button>
+
+        {/* DIAGNOSTICS BUTTON */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowDiagnostics(true)}
+            className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center text-gray-300 hover:text-white transition-colors"
+          >
+            <span className="material-symbols-outlined text-lg">signal_cellular_alt</span>
+          </button>
+
+          <button
+            className="bg-red-500 hover:bg-red-600 text-white text-xs font-bold uppercase tracking-wider px-4 py-1.5 rounded-full transition-colors shadow-lg shadow-red-900/20 active:scale-95"
+            onClick={() => setActiveTab('ALERTS')}
+          >
+            SOS
+          </button>
+        </div>
       </header>
 
       {/* --- SEARCH & OFFLINE BAR --- */}
@@ -882,6 +895,8 @@ export default function App() {
             </div>
           </div>
         )}
+        {/* DIAGNOSTICS MODAL */}
+        {showDiagnostics && <DiagnosticsModal onClose={() => setShowDiagnostics(false)} gpsStatus={gpsStatus} />}
       </main>
 
       {/* Bottom Navigation */}
