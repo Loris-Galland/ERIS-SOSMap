@@ -102,6 +102,34 @@ export default function App() {
   } | null>(null);
   const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
 
+  useEffect(() => {
+      if (!session) return;
+
+      CapacitorErisSosmap.startMeshNetwork();
+
+      const meshListener = CapacitorErisSosmap.addListener('onMeshMessageReceived', async (data) => {
+        console.log("🔥 SOS reçu d'un autre utilisateur ERIS via Mesh :", data.message);
+
+        try {
+          const payload = JSON.parse(data.message);
+
+          if (navigator.onLine) {
+            console.log("J'ai internet, je relaie le SOS vers Supabase !");
+          } else {
+            console.log('Je suis hors-ligne aussi, je relaie le signal à mes voisins !');
+            await CapacitorErisSosmap.broadcastMeshMessage({ message: data.message });
+          }
+        } catch (e) {
+          console.error('Erreur lors de la lecture du message Mesh', e);
+        }
+      });
+
+      return () => {
+        CapacitorErisSosmap.stopMeshNetwork();
+        meshListener.then((listener: PluginListenerHandle) => listener.remove());
+      };
+    }, [session]);
+
   // Check auth session
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -351,34 +379,6 @@ export default function App() {
     if (!hazardLayerGroup.current) {
       hazardLayerGroup.current = L.layerGroup().addTo(mapInstance.current);
     }
-
-    useEffect(() => {
-      if (!session) return;
-
-      CapacitorErisSosmap.startMeshNetwork();
-
-      const meshListener = CapacitorErisSosmap.addListener('onMeshMessageReceived', async (data) => {
-        console.log("🔥 SOS reçu d'un autre utilisateur ERIS via Mesh :", data.message);
-
-        try {
-          const payload = JSON.parse(data.message);
-
-          if (navigator.onLine) {
-            console.log("J'ai internet, je relaie le SOS vers Supabase !");
-          } else {
-            console.log('Je suis hors-ligne aussi, je relaie le signal à mes voisins !');
-            await CapacitorErisSosmap.broadcastMeshMessage({ message: data.message });
-          }
-        } catch (e) {
-          console.error('Erreur lors de la lecture du message Mesh', e);
-        }
-      });
-
-      return () => {
-        CapacitorErisSosmap.stopMeshNetwork();
-        meshListener.then((listener: PluginListenerHandle) => listener.remove());
-      };
-    }, [session]);
 
     const loadHazards = async () => {
       const hazards = await fetchHazards();

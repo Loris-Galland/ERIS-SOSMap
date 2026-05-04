@@ -103,7 +103,7 @@ broadcastMeshMessage(options: { message: string; }) => Promise<void>
 ### addListener('onMeshMessageReceived', ...)
 
 ```typescript
-addListener(eventName: 'onMeshMessageReceived', listenerFunc: (data: { message: string; }) => void) => Promise<PluginListenerHandle> & PluginListenerHandle
+addListener(eventName: 'onMeshMessageReceived', listenerFunc: (data: { message: string; }) => void) => Promise<PluginListenerHandle>
 ```
 
 | Param              | Type                                                 |
@@ -111,7 +111,7 @@ addListener(eventName: 'onMeshMessageReceived', listenerFunc: (data: { message: 
 | **`eventName`**    | <code>'onMeshMessageReceived'</code>                 |
 | **`listenerFunc`** | <code>(data: { message: string; }) =&gt; void</code> |
 
-**Returns:** <code>any</code>
+**Returns:** <code>Promise&lt;<a href="#pluginlistenerhandle">PluginListenerHandle</a>&gt;</code>
 
 --------------------
 
