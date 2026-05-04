@@ -8,7 +8,7 @@ interface DistressSignalScreenProps {
 
 export default function DistressSignalScreen({ onClose }: DistressSignalScreenProps) {
   const [isActive, setIsActive] = useState(false);
-  
+
   // Refs to hold instances without triggering re-renders
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const strobeIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -89,41 +89,42 @@ export default function DistressSignalScreen({ onClose }: DistressSignalScreenPr
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'VolumeUp' || event.key === 'VolumeDown') {
-        event.preventDefault(); 
+        event.preventDefault();
         toggleBeacon();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
-    
+
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [toggleBeacon]);
 
   return (
-    <div className={`flex flex-col h-full w-full overflow-y-auto font-sans relative pb-24 pt-4 px-4 transition-colors duration-300 ${isActive ? 'bg-red-700 animate-pulse' : 'bg-[#0f141e]'}`}>
-      
+    <div
+      className={`flex flex-col h-full w-full overflow-y-auto font-sans relative pb-24 pt-4 px-4 transition-colors duration-300 ${isActive ? 'bg-eris-danger animate-pulse' : 'bg-eris-bg'}`}
+    >
       {/* Header */}
       <header className="mb-8 mt-2 flex items-center justify-between">
-        <button 
+        <button
           onClick={onClose}
-          className="w-10 h-10 bg-gray-800/60 border border-gray-700/50 rounded-full flex items-center justify-center text-gray-400 hover:text-white active:scale-95 transition-all z-10"
+          className="w-10 h-10 bg-eris-surface-alt/60 border border-eris-border/50 rounded-full flex items-center justify-center text-eris-text-muted hover:text-eris-text active:scale-95 transition-all z-10"
         >
           <span className="material-symbols-outlined text-xl">arrow_back</span>
         </button>
-        <h2 className="text-white font-bold text-xl tracking-tight">Distress Beacon</h2>
-        <div className="w-10 h-10"></div> 
+        <h2 className="text-eris-text font-bold text-xl tracking-tight">Distress Beacon</h2>
+        <div className="w-10 h-10"></div>
       </header>
 
       {/* Main Content */}
       <section className="flex flex-col items-center justify-center flex-1">
-        
         {/* Hardware Button Hint */}
-        <div className="bg-gray-800/80 border border-gray-700 rounded-2xl p-4 mb-12 flex items-center gap-3 max-w-xs z-10">
-          <span className="material-symbols-outlined text-blue-400 text-3xl">volume_up</span>
-          <p className="text-gray-300 text-xs font-medium leading-relaxed">
-            You can also press the <strong className="text-white">Physical Volume Buttons</strong> on your phone to toggle the beacon.
+        <div className="bg-eris-surface-alt/80 border border-eris-border rounded-2xl p-4 mb-12 flex items-center gap-3 max-w-xs z-10">
+          <span className="material-symbols-outlined text-eris-primary text-3xl">volume_up</span>
+          <p className="text-eris-text-muted text-xs font-medium leading-relaxed">
+            You can also press the <strong className="text-eris-text">Physical Volume Buttons</strong> on your phone to
+            toggle the beacon.
           </p>
         </div>
 
@@ -131,23 +132,17 @@ export default function DistressSignalScreen({ onClose }: DistressSignalScreenPr
         <button
           onClick={toggleBeacon}
           className={`relative flex flex-col items-center justify-center gap-3 z-10 select-none rounded-full overflow-hidden transition-all duration-300 shadow-2xl ${
-            isActive 
-              ? 'bg-white text-red-600 scale-105' 
-              : 'bg-red-600 text-white hover:bg-red-500'
+            isActive ? 'bg-white text-eris-danger scale-105' : 'bg-eris-danger text-eris-text hover:bg-eris-danger'
           }`}
           style={{ width: 220, height: 220, border: '6px solid rgba(255,255,255,0.1)' }}
         >
-          <span 
-            className="material-symbols-outlined text-7xl"
-            style={{ fontVariationSettings: "'FILL' 1" }}
-          >
+          <span className="material-symbols-outlined text-7xl" style={{ fontVariationSettings: "'FILL' 1" }}>
             {isActive ? 'notifications_active' : 'flashlight_on'}
           </span>
           <span className="font-bold text-xl text-center px-4 leading-tight tracking-wide">
             {isActive ? 'BEACON\nON' : 'TAP TO\nACTIVATE'}
           </span>
         </button>
-
       </section>
     </div>
   );

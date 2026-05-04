@@ -41,6 +41,12 @@
     "displayLanguage": "Hiển thị & Ngôn ngữ",
     "appLanguage": "Ngôn ngữ ứng dụng",
     "visualTheme": "Chủ đề hiển thị",
+    "selectTheme": "Chọn giao diện",
+    "themes": {
+      "dark": "Tối an toàn (Mặc định)",
+      "light": "Chế độ sáng",
+      "contrasted": "Độ tương phản cao"
+    },
     "notificationsTitle": "Thông báo",
     "pushNotif": "Thông báo đẩy",
     "pushNotifDesc": "Nhận cập nhật an toàn theo thời gian thực",
@@ -55,7 +61,7 @@
     "autoRetry": "Tự động gửi lại SOS",
     "autoRetryDesc": "Tự động gửi lại nếu mất tín hiệu",
     "offlineCache": "Bộ nhớ bản đồ ngoại tuyến",
-    "offlineCacheDesc": "Hiện đang dùng 124 MB",
+    "offlineCacheDesc": "Hiện đang dùng {{size}}",
     "clearCache": "Xóa bộ nhớ",
     "diagnosticsTitle": "Chẩn đoán hệ thống",
     "connected": "Đã kết nối",

@@ -41,6 +41,12 @@
     "displayLanguage": "Affichage et Langue",
     "appLanguage": "Langue de l'application",
     "visualTheme": "Thème visuel",
+    "selectTheme": "Sélectionner un thème",
+    "themes": {
+      "dark": "Sombre (Défaut)",
+      "light": "Clair",
+      "contrasted": "Contraste élevé"
+    },
     "notificationsTitle": "Notifications",
     "pushNotif": "Notifications Push",
     "pushNotifDesc": "Recevoir les mises à jour de sécurité",
@@ -55,7 +61,7 @@
     "autoRetry": "Auto-réessai SOS",
     "autoRetryDesc": "Renvoyer automatiquement si le signal est perdu",
     "offlineCache": "Cache des cartes hors-ligne",
-    "offlineCacheDesc": "Utilisation actuelle : 124 Mo",
+    "offlineCacheDesc": "Utilisation actuelle : {{size}}",
     "clearCache": "Effacer le cache",
     "diagnosticsTitle": "Diagnostics Système",
     "connected": "Connecté",

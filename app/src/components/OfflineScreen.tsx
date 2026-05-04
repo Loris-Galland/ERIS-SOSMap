@@ -205,7 +205,7 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#0f141e] w-full overflow-y-auto font-sans relative pb-24">
+    <div className="flex flex-col h-full bg-eris-bg w-full overflow-y-auto font-sans relative pb-24">
       <AlertModal
         isOpen={dialog.isOpen}
         title={dialog.title}
@@ -230,46 +230,46 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
           );
         })()}
       {/* ─── HEADER ─── */}
-      <header className="flex items-center px-6 py-4 bg-[#0f141e]/90 backdrop-blur-md sticky top-[-2px] z-50">
+      <header className="flex items-center px-6 py-4 bg-eris-bg/90 backdrop-blur-md sticky top-[-2px] z-50">
         <button
           onClick={onBack}
-          className="text-gray-400 hover:text-white transition-colors mr-4 active:scale-95 flex items-center justify-center w-10 h-10 bg-gray-800/50 rounded-full"
+          className="text-eris-text-muted hover:text-eris-text transition-colors mr-4 active:scale-95 flex items-center justify-center w-10 h-10 bg-eris-surface-alt/50 rounded-full"
         >
           <span className="material-symbols-outlined">chevron_left</span>
         </button>
-        <h2 className="text-white text-xl font-bold tracking-wide">{t('offline.title', 'Offline Maps')}</h2>
+        <h2 className="text-eris-text text-xl font-bold tracking-wide">{t('offline.title', 'Offline Maps')}</h2>
       </header>
 
       <div className="p-4 flex-1 flex flex-col gap-6">
         {/* ─── STORAGE CARD ─── */}
-        <div className="bg-gradient-to-br from-blue-900/30 to-gray-800/40 border border-blue-800/20 rounded-3xl p-5 shadow-lg relative overflow-hidden">
-          {storageUsedMB === 0 && <div className="absolute inset-0 bg-blue-500/5 animate-pulse rounded-3xl" />}
+        <div className="bg-gradient-to-br from-eris-primary/30 to-gray-800/40 border border-eris-primary/20 rounded-3xl p-5 shadow-lg relative overflow-hidden">
+          {storageUsedMB === 0 && <div className="absolute inset-0 bg-eris-primary/5 animate-pulse rounded-3xl" />}
 
           <div className="flex justify-between items-end mb-4 relative z-10">
             <div>
-              <p className="text-gray-400 text-xs font-semibold uppercase tracking-wider mb-1">
+              <p className="text-eris-text-muted text-xs font-semibold uppercase tracking-wider mb-1">
                 {t('offline.localStorage', 'Local Storage')}
               </p>
-              <h3 className="text-white text-3xl font-bold">
+              <h3 className="text-eris-text text-3xl font-bold">
                 {storageUsedMB}{' '}
-                <span className="text-gray-400 text-sm font-normal">{t('offline.mbUsed', 'MB used')}</span>
+                <span className="text-eris-text-muted text-sm font-normal">{t('offline.mbUsed', 'MB used')}</span>
               </h3>
             </div>
-            <span className="text-gray-500 text-sm font-medium bg-gray-900/50 px-3 py-1 rounded-lg">
+            <span className="text-eris-text-subtle text-sm font-medium bg-eris-surface/50 px-3 py-1 rounded-lg">
               {t('offline.gbTotal', '1.0 GB Total')}
             </span>
           </div>
 
-          <div className="w-full h-3 bg-gray-900 rounded-full overflow-hidden border border-gray-700/50 relative z-10">
+          <div className="w-full h-3 bg-eris-surface rounded-full overflow-hidden border border-eris-border/50 relative z-10">
             <div
-              className={`h-full bg-blue-500 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.6)] transition-all duration-1000 ease-out`}
+              className={`h-full bg-eris-primary rounded-full shadow-[0_0_10px_rgba(59,130,246,0.6)] transition-all duration-1000 ease-out`}
               style={{ width: `${progressPercent}%` }}
             ></div>
           </div>
 
           {/* Warning message for when the storage is almost full */}
           {progressPercent > 90 && (
-            <p className="text-red-400 text-[11px] font-medium mt-3 flex items-center gap-1">
+            <p className="text-eris-danger text-[11px] font-medium mt-3 flex items-center gap-1">
               <span className="material-symbols-outlined text-sm">warning</span>
               {t('offline.storageWarning', 'Storage is almost full. Consider deleting old maps.')}
             </p>
@@ -278,7 +278,7 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
 
         {/* ─── REGIONAL MAPS LIST ─── */}
         <section>
-          <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3 px-2">
+          <h3 className="text-eris-text-muted text-xs font-bold uppercase tracking-widest mb-3 px-2">
             {t('offline.myRegions', 'My Regions')}
           </h3>
 
@@ -295,15 +295,15 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
                       const isUpdating = updatingId === id;
                       if (!isUpdating) setViewingRegion(id);
                     }}
-                    className="bg-gray-800/40 border border-gray-700/50 rounded-3xl p-4 flex items-center justify-between shadow-sm animate-fade-in cursor-pointer hover:bg-gray-800/60 transition-colors"
+                    className="bg-eris-surface-alt/40 border border-eris-border/50 rounded-3xl p-4 flex items-center justify-between shadow-sm animate-fade-in cursor-pointer hover:bg-eris-surface-alt/60 transition-colors"
                   >
                     <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 bg-green-500/10 text-green-400">
+                      <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 bg-eris-success/10 text-eris-success">
                         <span className="material-symbols-outlined text-xl">offline_pin</span>
                       </div>
                       <div>
-                        <h4 className="text-white text-sm font-bold mb-0.5">{info.name}</h4>
-                        <p className="text-gray-500 text-[11px] font-medium">
+                        <h4 className="text-eris-text text-sm font-bold mb-0.5">{info.name}</h4>
+                        <p className="text-eris-text-subtle text-[11px] font-medium">
                           {lastUpdate
                             ? getRelativeTimeString(lastUpdate, t)
                             : t('offline.unknownDate', 'Date inconnue')}{' '}
@@ -319,20 +319,20 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
                           e.stopPropagation();
                           setActiveMenu(activeMenu === id ? null : id);
                         }}
-                        className="text-gray-500 hover:text-white transition-colors w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-700/30"
+                        className="text-eris-text-subtle hover:text-eris-text transition-colors w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-700/30"
                       >
                         <span className="material-symbols-outlined">more_vert</span>
                       </button>
 
                       {/* MENU ACTIONS */}
                       {activeMenu === id && (
-                        <div className="absolute right-0 mt-2 w-36 bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl z-[3000] overflow-hidden animate-in fade-in zoom-in duration-150">
+                        <div className="absolute right-0 mt-2 w-36 bg-eris-surface border border-eris-border rounded-2xl shadow-2xl z-[3000] overflow-hidden animate-in fade-in zoom-in duration-150">
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               handleUpdate(id, info.name);
                             }}
-                            className="w-full px-4 py-3 text-left text-xs font-bold text-blue-400 hover:bg-gray-800 flex items-center gap-2 border-b border-gray-800"
+                            className="w-full px-4 py-3 text-left text-xs font-bold text-eris-primary hover:bg-eris-surface-alt flex items-center gap-2 border-b border-eris-border"
                           >
                             <span className="material-symbols-outlined text-sm">update</span>{' '}
                             {t('offline.update', 'Update')}
@@ -342,7 +342,7 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
                               e.stopPropagation();
                               handleDelete(id, info.name);
                             }}
-                            className="w-full px-4 py-3 text-left text-xs font-bold text-red-400 hover:bg-gray-800 flex items-center gap-2"
+                            className="w-full px-4 py-3 text-left text-xs font-bold text-eris-danger hover:bg-eris-surface-alt flex items-center gap-2"
                           >
                             <span className="material-symbols-outlined text-sm">delete</span>{' '}
                             {t('offline.delete', 'Delete')}
@@ -355,9 +355,9 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
               })
             ) : (
               /* If no map is downloaded */
-              <div className="bg-gray-800/20 border border-dashed border-gray-700/50 rounded-3xl p-8 flex flex-col items-center justify-center text-center">
+              <div className="bg-eris-surface-alt/20 border border-dashed border-eris-border/50 rounded-3xl p-8 flex flex-col items-center justify-center text-center">
                 <span className="material-symbols-outlined text-gray-600 text-4xl mb-3">cloud_off</span>
-                <p className="text-gray-500 text-sm">{t('offline.noMapsFound', 'No offline maps found.')}</p>
+                <p className="text-eris-text-subtle text-sm">{t('offline.noMapsFound', 'No offline maps found.')}</p>
                 <p className="text-gray-600 text-[11px] mt-1">
                   {t('offline.downloadPrompt', 'Download a region to use the app without internet.')}
                 </p>
@@ -367,17 +367,17 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
         </section>
 
         {/* ─── DOWNLOAD NEW MAP BUTTON ─── */}
-        <div className="sticky bottom-[-97px] pt-4 pb-2 bg-[#0f141e]/90 backdrop-blur-md border-t border-gray-800/50 mt-auto z-40 -mx-4 px-4">
+        <div className="sticky bottom-[-97px] pt-4 pb-2 bg-eris-bg/90 backdrop-blur-md border-t border-eris-border/50 mt-auto z-40 -mx-4 px-4">
           <button
             onClick={onNavigateDownload}
-            className="w-full py-4 bg-blue-600 text-white rounded-3xl text-sm font-bold tracking-wide flex items-center justify-center gap-2 shadow-lg shadow-blue-900/30 hover:bg-blue-500 transition-all active:scale-95"
+            className="w-full py-4 bg-eris-primary text-eris-text rounded-3xl text-sm font-bold tracking-wide flex items-center justify-center gap-2 shadow-lg shadow-eris-primary/30 hover:bg-eris-primary transition-all active:scale-95"
           >
             <span className="material-symbols-outlined">add_location</span>
             {t('offline.downloadNewRegion', 'Download New Region')}
           </button>
         </div>
 
-        <p className="text-gray-500 text-[11px] text-center mt-4 px-4 leading-relaxed">
+        <p className="text-eris-text-subtle text-[11px] text-center mt-4 px-4 leading-relaxed">
           {t(
             'offline.downloadInfo',
             'Downloading maps allows you to navigate and use the ERIS emergency network even without internet access.',

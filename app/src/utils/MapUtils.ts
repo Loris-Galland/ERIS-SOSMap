@@ -13,16 +13,16 @@ export const MAP_STYLES = {
   light: {
     id: 'light',
     name: 'Light Mode',
-    url: 'https://a.basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}.png',
+    url: 'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
     icon: 'light_mode',
     estimatedSizeFactor: 1.1,
   },
-  satellite: {
-    id: 'satellite',
-    name: 'Satellite',
-    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    icon: 'satellite',
-    estimatedSizeFactor: 2.5, // Satellite tiles are much heavier
+  contrasted: {
+    id: 'contrast',
+    name: 'High Contrast',
+    url: 'https://tiles.stadiamaps.com/tiles/stamen_toner/{z}/{x}/{y}{r}.png',
+    icon: 'contrast',
+    estimatedSizeFactor: 1.5,
   },
   terrain: {
     id: 'terrain',
@@ -30,6 +30,13 @@ export const MAP_STYLES = {
     url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
     icon: 'terrain',
     estimatedSizeFactor: 1.5,
+  },
+  satellite: {
+    id: 'satellite',
+    name: 'Satellite',
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    icon: 'satellite',
+    estimatedSizeFactor: 2.5, // Satellite tiles are much heavier
   },
 };
 

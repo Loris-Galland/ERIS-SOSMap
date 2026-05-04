@@ -41,6 +41,12 @@
     "displayLanguage": "Display & Language",
     "appLanguage": "Application Language",
     "visualTheme": "Visual Theme",
+    "selectTheme": "Select Theme",
+    "themes": {
+      "dark": "Dark Safety (Default)",
+      "light": "Light Mode",
+      "contrasted": "High Contrast"
+    },
     "notificationsTitle": "Notifications",
     "pushNotif": "Push Notifications",
     "pushNotifDesc": "Receive real-time safety updates",
@@ -55,7 +61,7 @@
     "autoRetry": "Auto-Retry SOS",
     "autoRetryDesc": "Automatically re-send if signal is lost",
     "offlineCache": "Offline Map Cache",
-    "offlineCacheDesc": "Currently using 124 MB",
+    "offlineCacheDesc": "Currently using {{size}}",
     "clearCache": "Clear Cache",
     "diagnosticsTitle": "System Diagnostics",
     "connected": "Connected",

@@ -20,27 +20,68 @@ import { useTranslation } from 'react-i18next';
 
 const getWeatherDetails = (code: number) => {
   if (code === 0)
-    return { condition: 'weather.clear', icon: 'sunny', color: 'text-yellow-400', bg: 'bg-yellow-400/20' };
+    return {
+      condition: 'weather.clear',
+      icon: 'sunny',
+      color: 'text-eris-weather-clear',
+      bg: 'bg-eris-weather-clear/20',
+    };
   if (code === 1 || code === 2)
     return {
       condition: 'weather.partlyCloudy',
       icon: 'partly_cloudy_day',
-      color: 'text-yellow-200',
-      bg: 'bg-yellow-200/20',
+      color: 'text-eris-weather-partly',
+      bg: 'bg-eris-weather-partly/20',
     };
-  if (code === 3) return { condition: 'weather.cloudy', icon: 'cloud', color: 'text-gray-400', bg: 'bg-gray-400/20' };
+  if (code === 3)
+    return {
+      condition: 'weather.cloudy',
+      icon: 'cloud',
+      color: 'text-eris-weather-cloudy',
+      bg: 'bg-eris-weather-cloudy/20',
+    };
   if ([45, 48].includes(code))
-    return { condition: 'weather.fog', icon: 'foggy', color: 'text-gray-300', bg: 'bg-gray-300/20' };
+    return {
+      condition: 'weather.fog',
+      icon: 'foggy',
+      color: 'text-eris-weather-fog',
+      bg: 'bg-eris-weather-fog/20',
+    };
   if ([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82].includes(code))
-    return { condition: 'weather.rain', icon: 'rainy', color: 'text-blue-400', bg: 'bg-blue-400/20' };
+    return {
+      condition: 'weather.rain',
+      icon: 'rainy',
+      color: 'text-eris-weather-rainy',
+      bg: 'bg-eris-weather-rainy/20',
+    };
   if ([71, 73, 75, 85, 86].includes(code))
-    return { condition: 'weather.snow', icon: 'weather_snowy', color: 'text-white', bg: 'bg-white/20' };
+    return {
+      condition: 'weather.snow',
+      icon: 'weather_snowy',
+      color: 'text-eris-weather-snow',
+      bg: 'bg-eris-weather-snow/20',
+    };
   if ([77].includes(code))
-    return { condition: 'weather.hail', icon: 'grain', color: 'text-cyan-300', bg: 'bg-cyan-300/20' };
+    return {
+      condition: 'weather.hail',
+      icon: 'grain',
+      color: 'text-eris-weather-hail',
+      bg: 'bg-eris-weather-hail/20',
+    };
   if ([95, 96, 99].includes(code))
-    return { condition: 'weather.storm', icon: 'thunderstorm', color: 'text-purple-400', bg: 'bg-purple-400/20' };
+    return {
+      condition: 'weather.storm',
+      icon: 'thunderstorm',
+      color: 'text-eris-weather-storm',
+      bg: 'bg-eris-weather-storm/20',
+    };
 
-  return { condition: 'profile.unknown', icon: 'cloud', color: 'text-gray-400', bg: 'bg-gray-400/20' };
+  return {
+    condition: 'profile.unknown',
+    icon: 'cloud',
+    color: 'text-eris-weather-cloudy',
+    bg: 'bg-eris-weather-cloudy/20',
+  };
 };
 
 export default function App() {
@@ -80,8 +121,8 @@ export default function App() {
     temp: '--',
     condition: 'profile.loading',
     icon: 'sync',
-    color: 'text-blue-400',
-    bg: 'bg-blue-400/20',
+    color: 'text-eris-primary',
+    bg: 'bg-eris-primary/20',
   });
   const [showWeatherReport, setShowWeatherReport] = useState(false);
 
@@ -91,7 +132,27 @@ export default function App() {
     bounds: L.LatLngBounds;
     isOffline?: boolean;
   } | null>(null);
-  const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
+
+  const [visualTheme, setVisualTheme] = useState(localStorage.getItem('eris_theme') || 'dark');
+
+  // Theme saved applied
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('eris_theme') || 'dark';
+    document.documentElement.classList.remove('theme-dark', 'theme-light', 'theme-contrasted');
+    document.documentElement.classList.add(`theme-${savedTheme}`);
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.classList.remove('theme-dark', 'theme-light', 'theme-contrasted');
+    document.documentElement.classList.add(`theme-${visualTheme}`);
+    localStorage.setItem('eris_theme', visualTheme);
+
+    if (mapInstance.current && baseLayerRef.current) {
+      const mapStyleKey = visualTheme === 'light' ? 'light' : 'dark';
+      baseLayerRef.current.setUrl(MAP_STYLES[mapStyleKey].url);
+      setCurrentMapStyle(mapStyleKey);
+    }
+  }, [visualTheme]);
 
   // Check auth session
   useEffect(() => {
@@ -162,15 +223,21 @@ export default function App() {
       attributionControl: false,
     }).setView(defaultCoords, 13);
 
+    let initialStyle = 'dark';
+    if (visualTheme === 'light') initialStyle = 'light';
+    if (visualTheme === 'contrasted') initialStyle = 'contrasted';
+
     // Initialisation dynamique de la carte
     baseLayerRef.current = (L.tileLayer as any)
-      .offline(MAP_STYLES.dark.url, {
+      .offline(MAP_STYLES[initialStyle as keyof typeof MAP_STYLES].url, {
         attribution: 'ERIS Safety',
         minZoom: 12,
         maxZoom: 17,
         crossOrigin: true,
       })
       .addTo(mapInstance.current);
+
+    setCurrentMapStyle(initialStyle);
 
     setTimeout(() => {
       mapInstance.current?.invalidateSize();
@@ -200,13 +267,7 @@ export default function App() {
               } else {
                 const icon = L.divIcon({
                   className: '',
-                  html: `<div style="
-                      width:18px; height:18px;
-                      background:#3b82f6;
-                      border:3px solid #ffffff;
-                      border-radius:50%;
-                      box-shadow: 0 0 15px rgba(59, 130, 246, 0.6);
-                    "></div>`,
+                  html: `<div class="w-[18px] h-[18px] rounded-full border-[3px] border-white [.theme-contrasted_&]:!shadow-none" style="background-color: rgb(var(--eris-position)); box-shadow: 0 0 15px rgba(var(--eris-position), 0.6);"></div>`,
                   iconSize: [18, 18],
                   iconAnchor: [9, 9],
                 });
@@ -316,7 +377,7 @@ export default function App() {
 
   // Loading screen to prevent UI flash
   if (isInitializing) {
-    return <div className="h-screen w-full bg-[#0f141e]"></div>;
+    return <div className="h-screen w-full bg-eris-bg"></div>;
   }
 
   // Show auth screen if not logged in
@@ -358,15 +419,15 @@ export default function App() {
   };
 
   return (
-    <div className="flex flex-col h-screen w-full bg-[#0f141e] text-white overflow-hidden font-sans">
+    <div className="flex flex-col h-screen w-full bg-eris-bg text-eris-text overflow-hidden font-sans">
       {/* Header */}
-      <header className="flex justify-between items-center px-5 py-3 bg-[#0f141e]/95 backdrop-blur-md border-b border-gray-800/50 z-[1000] relative">
+      <header className="flex justify-between items-center px-5 py-3 bg-eris-bg/95 backdrop-blur-md border-b border-eris-border/50 z-[1000] relative">
         <div className="flex items-center gap-2">
           <img src={logo} alt="ERIS-SOSMap" className="h-7 w-auto object-contain" />
         </div>
-        <h1 className="flex-1 text-center text-white text-lg font-bold tracking-wide">ERIS Safety</h1>
+        <h1 className="flex-1 text-center text-eris-text text-lg font-bold tracking-wide">ERIS Safety</h1>
         <button
-          className="bg-red-500 hover:bg-red-600 text-white text-xs font-bold uppercase tracking-wider px-4 py-1.5 rounded-full transition-colors shadow-lg shadow-red-900/20 active:scale-95"
+          className="bg-eris-danger hover:opacity-90 text-eris-text text-xs font-bold uppercase tracking-wider px-4 py-1.5 rounded-full transition-colors shadow-lg shadow-red-900/20 active:scale-95"
           onClick={() => setActiveTab('ALERTS')}
         >
           SOS
@@ -375,37 +436,37 @@ export default function App() {
 
       {/* --- SEARCH & OFFLINE BAR --- */}
       {activeTab === 'MAP' && (
-        <div className="flex items-center px-4 py-3 bg-[#0f141e]/80 backdrop-blur-md z-[9999] gap-3 relative">
+        <div className="flex items-center px-4 py-3 bg-eris-bg/80 backdrop-blur-md z-[9999] gap-3 relative">
           {/* Search input (Soft rounded shape) */}
           <div className="relative flex-1">
-            <div className="flex items-center bg-gray-800/60 border border-gray-700/50 rounded-full px-4 py-2.5 gap-2 shadow-inner">
-              <span className="material-symbols-outlined text-gray-400 text-lg">search</span>
+            <div className="flex items-center bg-eris-surface-alt/60 border border-eris-border/50 rounded-full px-4 py-2.5 gap-2 shadow-inner">
+              <span className="material-symbols-outlined text-eris-text-muted text-lg">search</span>
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={t('download.searchPlaceholder', 'Search city or coordinates...')}
-                className="bg-transparent text-sm text-white w-full outline-none placeholder-gray-500"
+                className="bg-transparent text-sm text-eris-text w-full outline-none placeholder-gray-500"
               />
               {isSearching && (
-                <span className="material-symbols-outlined text-blue-400 text-lg animate-spin">sync</span>
+                <span className="material-symbols-outlined text-eris-primary text-lg animate-spin">sync</span>
               )}
             </div>
 
             {searchResults.length > 0 && (
-              <div className="absolute top-full mt-2 left-0 right-0 bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl overflow-hidden flex flex-col z-[5000]">
+              <div className="absolute top-full mt-2 left-0 right-0 bg-eris-surface-alt border border-eris-border rounded-2xl shadow-2xl overflow-hidden flex flex-col z-[5000]">
                 {searchResults.map((result, index) => (
                   <button
                     key={index}
                     onClick={() => handleSelectResult(result)}
-                    className="px-4 py-3 text-left hover:bg-gray-700 flex items-center gap-3 border-b border-gray-700/50 last:border-0 transition-colors"
+                    className="px-4 py-3 text-left hover:bg-gray-700 flex items-center gap-3 border-b border-eris-border/50 last:border-0 transition-colors"
                   >
-                    <span className="material-symbols-outlined text-gray-400">location_on</span>
+                    <span className="material-symbols-outlined text-eris-text-muted">location_on</span>
                     <div className="flex-col overflow-hidden">
-                      <span className="text-white text-sm font-bold block truncate">
+                      <span className="text-eris-text text-sm font-bold block truncate">
                         {result.display_name.split(',')[0]}
                       </span>
-                      <span className="text-gray-500 text-[10px] block truncate">{result.display_name}</span>
+                      <span className="text-eris-text-subtle text-[10px] block truncate">{result.display_name}</span>
                     </div>
                   </button>
                 ))}
@@ -416,8 +477,8 @@ export default function App() {
             onClick={() => setOfflineMode((v) => !v)}
             className={`flex items-center justify-center w-11 h-11 rounded-full transition-colors shadow-lg ${
               offlineMode
-                ? 'bg-blue-500 text-white shadow-blue-900/30'
-                : 'bg-gray-800 border border-gray-700 text-gray-400'
+                ? 'bg-eris-primary text-eris-text shadow-blue-900/30'
+                : 'bg-eris-surface-alt border border-eris-border text-eris-text-muted'
             }`}
           >
             <span className="material-symbols-outlined text-xl">{offlineMode ? 'cloud_off' : 'cloud_download'}</span>
@@ -432,31 +493,31 @@ export default function App() {
 
         {/* Location Card */}
         <div className="absolute top-4 left-4 z-[1000] pointer-events-none flex flex-col gap-2">
-          <div className="bg-gray-900/80 backdrop-blur-md border border-gray-700/50 rounded-2xl p-4 shadow-xl">
+          <div className="bg-eris-surface/80 backdrop-blur-md border border-eris-border/50 rounded-2xl p-4 shadow-xl">
             <div className="flex items-center gap-2 mb-2">
               <span
-                className={`w-2 h-2 rounded-full ${gpsStatus === 'Connected' ? 'bg-green-500' : 'bg-yellow-500 animate-pulse'}`}
+                className={`w-2 h-2 rounded-full ${gpsStatus === 'Connected' ? 'bg-eris-success' : 'bg-yellow-500 [.theme-contrasted_&]:!bg-gray-500 animate-pulse'}`}
               ></span>
-              <span className="text-gray-300 text-xs font-semibold">{gpsStatus}</span>
+              <span className="text-eris-text-muted text-xs font-semibold">{gpsStatus}</span>
             </div>
             {userPosition.lat !== 0 ? (
               <>
-                <div className="text-white text-sm font-mono font-medium">
+                <div className="text-eris-text text-sm font-mono font-medium">
                   {userPosition.lat.toFixed(4)}° N, {userPosition.lng.toFixed(4)}° E
                 </div>
-                <div className="text-gray-500 text-[11px] mt-1">
+                <div className="text-eris-text-subtle text-[11px] mt-1">
                   {t('alert.altitude', 'Altitude')}: {userPosition.alt.toFixed(0)}m
                 </div>
               </>
             ) : (
-              <div className="text-gray-400 text-sm">{t('profile.locating', 'Acquiring position...')}</div>
+              <div className="text-eris-text-muted text-sm">{t('profile.locating', 'Acquiring position...')}</div>
             )}
           </div>
         </div>
 
         {/* ─── WEATHER WIDGET ─── */}
         <div className="absolute top-[120px] left-4 z-[1000] flex flex-col gap-2">
-          <div className="bg-gray-900/80 backdrop-blur-md border border-gray-700/50 rounded-2xl p-2.5 shadow-xl flex items-center justify-between gap-4">
+          <div className="bg-eris-surface/80 backdrop-blur-md border border-eris-border/50 rounded-2xl p-2.5 shadow-xl flex items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center ${currentWeather.bg} ${currentWeather.color}`}
@@ -468,8 +529,8 @@ export default function App() {
                 </span>
               </div>
               <div>
-                <div className="text-white font-bold text-sm leading-none">{currentWeather.temp}°C</div>
-                <div className="text-gray-400 text-[9px] uppercase tracking-wider mt-0.5">
+                <div className="text-eris-text font-bold text-sm leading-none">{currentWeather.temp}°C</div>
+                <div className="text-eris-text-muted text-[9px] uppercase tracking-wider mt-0.5">
                   {t(currentWeather.condition)}
                 </div>
               </div>
@@ -477,7 +538,7 @@ export default function App() {
             <div className="w-px h-6 bg-gray-700/50"></div>
             <button
               onClick={() => setShowWeatherReport(true)}
-              className="w-8 h-8 rounded-full bg-gray-800/80 flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700 transition-colors active:scale-95"
+              className="w-8 h-8 rounded-full bg-eris-surface-alt/80 flex items-center justify-center text-eris-text-muted hover:text-eris-text hover:bg-gray-700 transition-colors active:scale-95"
               title={t('weather.reportWeather', 'Report Weather')}
             >
               <span className="material-symbols-outlined text-sm">edit_location_alt</span>
@@ -487,7 +548,7 @@ export default function App() {
 
         {/* ─── MAP CONTROLS & LAYERS MENU ─── */}
         <div className="absolute top-[120px] left-4 z-[1000] flex flex-col gap-2">
-          <div className="bg-gray-900/80 backdrop-blur-md border border-gray-700/50 rounded-2xl p-2.5 shadow-xl flex items-center justify-between gap-4">
+          <div className="bg-eris-surface/80 backdrop-blur-md border border-eris-border/50 rounded-2xl p-2.5 shadow-xl flex items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center ${currentWeather.bg} ${currentWeather.color}`}
@@ -499,8 +560,8 @@ export default function App() {
                 </span>
               </div>
               <div>
-                <div className="text-white font-bold text-sm leading-none">{currentWeather.temp}°C</div>
-                <div className="text-gray-400 text-[9px] uppercase tracking-wider mt-0.5">
+                <div className="text-eris-text font-bold text-sm leading-none">{currentWeather.temp}°C</div>
+                <div className="text-eris-text-muted text-[9px] uppercase tracking-wider mt-0.5">
                   {t(currentWeather.condition)}
                 </div>
               </div>
@@ -508,7 +569,7 @@ export default function App() {
             <div className="w-px h-6 bg-gray-700/50"></div>
             <button
               onClick={() => setShowWeatherReport(true)}
-              className="w-8 h-8 rounded-full bg-gray-800/80 flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700 transition-colors active:scale-95"
+              className="w-8 h-8 rounded-full bg-eris-surface-alt/80 flex items-center justify-center text-eris-text-muted hover:text-eris-text hover:bg-gray-700 transition-colors active:scale-95"
               title="Report Weather"
             >
               <span className="material-symbols-outlined text-sm">edit_location_alt</span>
@@ -522,8 +583,10 @@ export default function App() {
           <div className="relative">
             <button
               onClick={() => setShowLayerMenu(!showLayerMenu)}
-              className={`w-12 h-12 border border-gray-700/50 rounded-full flex items-center justify-center transition-colors shadow-lg active:scale-95 ${
-                showLayerMenu ? 'bg-gray-800 text-white' : 'bg-gray-900/90 text-gray-300 hover:bg-gray-800'
+              className={`w-12 h-12 border border-eris-border/50 rounded-full flex items-center justify-center transition-colors shadow-lg active:scale-95 ${
+                showLayerMenu
+                  ? 'bg-eris-surface-alt text-eris-text'
+                  : 'bg-eris-surface/90 text-eris-text-muted hover:bg-eris-surface-alt'
               }`}
             >
               <span className="material-symbols-outlined text-xl">layers</span>
@@ -531,9 +594,9 @@ export default function App() {
 
             {/* Layers Dropdown */}
             {showLayerMenu && (
-              <div className="absolute right-14 top-0 bg-gray-900/95 backdrop-blur-md border border-gray-700 rounded-2xl shadow-2xl overflow-hidden flex flex-col w-44 z-[1000] animate-in fade-in zoom-in duration-150">
-                <div className="px-3 py-2 bg-gray-800/50 border-b border-gray-700">
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+              <div className="absolute right-14 top-0 bg-eris-surface/95 backdrop-blur-md border border-eris-border rounded-2xl shadow-2xl overflow-hidden flex flex-col w-44 z-[1000] animate-in fade-in zoom-in duration-150">
+                <div className="px-3 py-2 bg-eris-surface-alt/50 border-b border-eris-border">
+                  <span className="text-[10px] font-bold text-eris-text-muted uppercase tracking-wider">
                     {t('offlineViewer.mapType', 'Map Type')}
                   </span>
                 </div>
@@ -541,8 +604,10 @@ export default function App() {
                   <button
                     key={key}
                     onClick={() => changeMapStyle(key)}
-                    className={`px-4 py-3 text-left text-xs font-bold flex items-center gap-3 border-b border-gray-800/50 last:border-0 transition-colors ${
-                      currentMapStyle === key ? 'text-blue-400 bg-gray-800/80' : 'text-gray-300 hover:bg-gray-800/40'
+                    className={`px-4 py-3 text-left text-xs font-bold flex items-center gap-3 border-b border-eris-border/50 last:border-0 transition-colors ${
+                      currentMapStyle === key
+                        ? 'text-eris-primary bg-eris-surface-alt/80'
+                        : 'text-eris-text-muted hover:bg-eris-surface-alt/40'
                     }`}
                   >
                     <span className="material-symbols-outlined text-base">{style.icon}</span>
@@ -559,30 +624,30 @@ export default function App() {
                 mapInstance.current.setView([userPosition.lat, userPosition.lng], 15);
               }
             }}
-            className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white hover:bg-blue-500 transition-colors shadow-lg shadow-blue-900/30 active:scale-95"
+            className="w-12 h-12 bg-eris-primary rounded-full flex items-center justify-center text-eris-text [.theme-light_&]:text-white [.theme-contrasted_&]:border-2 [.theme-contrasted_&]:!border-black hover:bg-eris-primary transition-colors shadow-lg shadow-blue-900/30 active:scale-95"
           >
-            <span className="material-symbols-outlined text-xl">my_location</span>
+            <span className="material-symbols-outlined [.theme-contrasted_&]:!text-black text-xl">my_location</span>
           </button>
         </div>
 
         {/* Hazard Alert */}
         {showHazardAlert && (
           <div className="absolute bottom-24 left-4 right-20 z-[1000] animate-fade-in">
-            <div className="bg-red-500/90 backdrop-blur-md rounded-2xl p-4 flex items-start gap-3 shadow-[0_8px_30px_rgba(239,68,68,0.3)] border border-red-400/30">
-              <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+            <div className="bg-eris-danger/90 [.theme-contrasted_&]:bg-black backdrop-blur-md rounded-2xl p-4 flex items-start gap-3 shadow-[0_8px_30px_rgba(var(--eris-danger),0.3)] [.theme-contrasted_&]:shadow-none border border-white/30 [.theme-contrasted_&]:border-white">
+              <div className="w-8 h-8 rounded-full bg-white/30 [.theme-contrasted_&]:bg-transparent [.theme-contrasted_&]:border [.theme-contrasted_&]:border-white flex items-center justify-center shrink-0">
                 <span className="material-symbols-outlined text-white text-lg">warning</span>
               </div>
               <div className="flex-1">
                 <h4 className="text-white text-sm font-bold mb-0.5">Area Warning</h4>
-                <p className="text-red-100 text-xs leading-relaxed">
+                <p className="text-red-100 [.theme-contrasted_&]:text-white text-xs leading-relaxed">
                   High avalanche risk reported in your current sector. Avoid steep terrains.
                 </p>
               </div>
               <button
                 onClick={() => setShowHazardAlert(false)}
-                className="text-red-200 hover:text-white transition-colors"
+                className="text-red-200 hover:text-eris-text transition-colors"
               >
-                <span className="material-symbols-outlined text-xl">close</span>
+                <span className="material-symbols-outlined [.theme-contrasted_&]:text-white text-xl">close</span>
               </button>
             </div>
           </div>
@@ -591,7 +656,7 @@ export default function App() {
         {/* --- MAIN SOS BUTTON (Bottom Right) --- */}
         <div className="absolute bottom-6 right-4 z-[1000]">
           <button
-            className="w-16 h-16 rounded-full bg-red-500 border-4 border-red-400/50 flex flex-col items-center justify-center shadow-[0_0_20px_rgba(239,68,68,0.4)] active:scale-95 transition-all"
+            className="w-16 h-16 rounded-full bg-eris-danger border-[3px] border-white/30 [.theme-contrasted_&]:!border-black flex flex-col items-center justify-center shadow-[0_0_20px_rgba(var(--eris-danger),0.4)] [.theme-contrasted_&]:shadow-none active:scale-95 transition-all"
             onClick={() => setActiveTab('ALERTS')}
           >
             <span className="material-symbols-outlined text-white text-3xl">sensors</span>
@@ -600,56 +665,60 @@ export default function App() {
 
         {/* Tab Screens */}
         {activeTab === 'ALERTS' && (
-          <div className="absolute inset-0 z-[2000] bg-[#0f141e]">
+          <div className="absolute inset-0 z-[2000] bg-eris-bg">
             <AlertScreen />
           </div>
         )}
 
         {activeTab === 'OFFLINE' && (
-          <div className="absolute inset-0 z-[2000] bg-[#0f141e]">
+          <div className="absolute inset-0 z-[2000] bg-eris-bg">
             <OfflineScreen onBack={() => setActiveTab('MAP')} onNavigateDownload={() => setActiveTab('DOWNLOAD_MAP')} />
           </div>
         )}
 
         {activeTab === 'DOWNLOAD_MAP' && (
-          <div className="absolute inset-0 z-[3000] bg-[#0f141e]">
+          <div className="absolute inset-0 z-[3000] bg-eris-bg">
             <DownloadMapScreen onBack={() => setActiveTab('OFFLINE')} map={mapInstance.current} />
           </div>
         )}
 
         {activeTab === 'USER' && (
-          <div className="absolute inset-0 z-[2000] bg-[#0f141e]">
+          <div className="absolute inset-0 z-[2000] bg-eris-bg">
             <ProfileScreen onOpenSettings={() => setActiveTab('SETTINGS')} />
           </div>
         )}
 
         {activeTab === 'PROFILE_SETUP' && session && (
-          <div className="absolute inset-0 z-[5000] bg-[#0f141e]">
+          <div className="absolute inset-0 z-[5000] bg-eris-bg">
             <SetupProfileScreen userId={session.user.id} onComplete={() => setActiveTab('ALERTS')} />
           </div>
         )}
 
         {activeTab === 'SETTINGS' && (
-          <div className="absolute inset-0 z-[3000] bg-[#0f141e]">
-            <SettingsScreen onBack={() => setActiveTab('USER')} />
+          <div className="absolute inset-0 z-[3000] bg-eris-bg">
+            <SettingsScreen
+              onBack={() => setActiveTab('USER')}
+              currentTheme={visualTheme}
+              onThemeChange={setVisualTheme}
+            />
           </div>
         )}
 
         {/* ─── WEATHER REPORTING MODAL ─── */}
         {showWeatherReport && (
-          <div className="absolute inset-0 z-[6000] bg-[#0f141e]/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-            <div className="bg-gray-900 border border-gray-700/50 rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-in zoom-in-95 duration-200">
+          <div className="absolute inset-0 z-[6000] bg-eris-bg/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+            <div className="bg-eris-surface border border-eris-border/50 rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-in zoom-in-95 duration-200">
               <div className="flex justify-between items-center mb-2">
-                <h3 className="text-white text-lg font-bold">{t('weather.reportWeather', 'Report Weather')}</h3>
+                <h3 className="text-eris-text text-lg font-bold">{t('weather.reportWeather', 'Report Weather')}</h3>
                 <button
                   onClick={() => setShowWeatherReport(false)}
-                  className="w-8 h-8 flex items-center justify-center bg-gray-800 rounded-full text-gray-400 hover:text-white active:scale-95"
+                  className="w-8 h-8 flex items-center justify-center bg-eris-surface-alt rounded-full text-eris-text-muted hover:text-eris-text active:scale-95"
                 >
                   <span className="material-symbols-outlined text-sm">close</span>
                 </button>
               </div>
 
-              <p className="text-gray-400 text-xs mb-5 leading-relaxed">
+              <p className="text-eris-text-muted text-xs mb-5 leading-relaxed">
                 {t(
                   'weather.reportHelp',
                   'Help others by reporting the current weather conditions at your exact location.',
@@ -658,25 +727,60 @@ export default function App() {
 
               <div className="grid grid-cols-3 gap-3 mb-2">
                 {[
-                  { condition: 'weather.clear', icon: 'sunny', color: 'text-yellow-400', bg: 'bg-yellow-400/20' },
+                  {
+                    condition: 'weather.clear',
+                    icon: 'sunny',
+                    color: 'text-eris-weather-clear',
+                    bg: 'bg-eris-weather-clear/20',
+                  },
                   {
                     condition: 'weather.partlyCloudy',
                     icon: 'partly_cloudy_day',
-                    color: 'text-yellow-200',
-                    bg: 'bg-yellow-200/20',
+                    color: 'text-eris-weather-partly',
+                    bg: 'bg-eris-weather-partly/20',
                   },
-                  { condition: 'weather.cloudy', icon: 'cloud', color: 'text-gray-400', bg: 'bg-gray-400/20' },
-                  { condition: 'weather.windy', icon: 'air', color: 'text-teal-400', bg: 'bg-teal-400/20' },
-                  { condition: 'weather.rain', icon: 'rainy', color: 'text-blue-400', bg: 'bg-blue-400/20' },
+                  {
+                    condition: 'weather.cloudy',
+                    icon: 'cloud',
+                    color: 'text-eris-weather-cloudy',
+                    bg: 'bg-eris-weather-cloudy/20',
+                  },
+                  {
+                    condition: 'weather.windy',
+                    icon: 'air',
+                    color: 'text-eris-weather-windy',
+                    bg: 'bg-eris-weather-windy/20',
+                  },
+                  {
+                    condition: 'weather.rain',
+                    icon: 'rainy',
+                    color: 'text-eris-weather-rainy',
+                    bg: 'bg-eris-weather-rainy/20',
+                  },
                   {
                     condition: 'weather.storm',
                     icon: 'thunderstorm',
-                    color: 'text-purple-400',
-                    bg: 'bg-purple-400/20',
+                    color: 'text-eris-weather-storm',
+                    bg: 'bg-eris-weather-storm/20',
                   },
-                  { condition: 'weather.hail', icon: 'grain', color: 'text-cyan-300', bg: 'bg-cyan-300/20' },
-                  { condition: 'weather.snow', icon: 'weather_snowy', color: 'text-white', bg: 'bg-white/20' },
-                  { condition: 'weather.fog', icon: 'foggy', color: 'text-gray-300', bg: 'bg-gray-300/20' },
+                  {
+                    condition: 'weather.hail',
+                    icon: 'grain',
+                    color: 'text-eris-weather-hail',
+                    bg: 'bg-eris-weather-hail/20',
+                  },
+                  {
+                    condition: 'weather.snow',
+                    icon: 'weather_snowy',
+                    color: 'text-eris-weather-snow',
+                    bg: 'bg-eris-weather-snow/20',
+                  },
+                  {
+                    condition: 'weather.fog',
+                    icon: 'foggy',
+                    color: 'text-eris-weather-fog',
+                    bg: 'bg-eris-weather-fog/20',
+                  },
                 ].map((w) => (
                   <button
                     key={w.condition}
@@ -691,10 +795,10 @@ export default function App() {
                       });
                       setShowWeatherReport(false);
                     }}
-                    className="flex flex-col items-center justify-center gap-2 bg-gray-800/40 border border-gray-700/50 hover:bg-gray-700 hover:border-blue-500 rounded-2xl p-3 transition-all active:scale-95"
+                    className="flex flex-col items-center justify-center gap-2 bg-eris-surface-alt/40 border border-eris-border/50 hover:bg-gray-700 hover:border-eris-primary rounded-2xl p-3 transition-all active:scale-95"
                   >
                     <span className={`material-symbols-outlined text-2xl ${w.color}`}>{w.icon}</span>
-                    <span className="text-gray-300 text-[10px] font-bold uppercase tracking-wider">
+                    <span className="text-eris-text-muted text-[10px] font-bold uppercase tracking-wider">
                       {t(w.condition)}
                     </span>
                   </button>
@@ -706,7 +810,7 @@ export default function App() {
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="flex items-center justify-around h-20 bg-[#0f141e]/95 backdrop-blur-md border-t border-gray-800/50 pb-safe z-[1000]">
+      <nav className="flex items-center justify-around h-20 bg-eris-bg/95 backdrop-blur-md border-t border-eris-border/50 pb-safe z-[1000]">
         {(
           [
             { id: 'ALERTS', icon: 'notifications', label: t('nav.alerts', 'Alerts') },
@@ -720,10 +824,10 @@ export default function App() {
             <button
               key={id}
               onClick={() => setActiveTab(id)}
-              className={`flex flex-col items-center justify-center w-16 gap-1 transition-all ${isActive ? 'text-blue-500' : 'text-gray-500 hover:text-gray-400'}`}
+              className={`flex flex-col items-center justify-center w-16 gap-1 transition-all ${isActive ? 'text-eris-primary' : 'text-eris-text-subtle hover:text-eris-text-muted'}`}
             >
               <div
-                className={`px-4 py-1 rounded-full transition-all ${isActive ? 'bg-blue-500/10' : 'bg-transparent'}`}
+                className={`px-4 py-1 rounded-full transition-all ${isActive ? 'bg-eris-primary/10' : 'bg-transparent'}`}
               >
                 <span
                   className="material-symbols-outlined text-2xl"

@@ -41,6 +41,12 @@
     "displayLanguage": "Fampisehoana sy Fiteny",
     "appLanguage": "Fitenin'ny fampiharana",
     "visualTheme": "Endrika fampisehoana",
+    "selectTheme": "Misafidiana endrika",
+    "themes": {
+      "dark": "Maizina (Mahazatra)",
+      "light": "Mazava",
+      "contrasted": "Fifanoherana avo"
+    },
     "notificationsTitle": "Fampandrenesana",
     "pushNotif": "Fampandrenesana",
     "pushNotifDesc": "Handray vaovao momba ny fiarovana",
@@ -55,7 +61,7 @@
     "autoRetry": "Haverina ho azy ny SOS",
     "autoRetryDesc": "Halefa indray raha toa ka tapaka ny fifandraisana",
     "offlineCache": "Tahiry sarintany",
-    "offlineCacheDesc": "Mampiasa 124 MB amin'izao fotoana izao",
+    "offlineCacheDesc": "Mampiasa {{size}} amin'izao fotoana izao",
     "clearCache": "Hamafa ny tahiry",
     "diagnosticsTitle": "Fandinihana ny rafitra",
     "connected": "Mifandray",
