@@ -90,6 +90,16 @@ const getWeatherDetails = (code: number) => {
   };
 };
 
+// For sending SOS without account
+const getGuestId = () => {
+  let id = localStorage.getItem('eris_guest_id');
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem('eris_guest_id', id);
+  }
+  return id;
+};
+
 export default function App() {
   const [showHazardReportModal, setShowHazardReportModal] = useState(false);
   const [hazardsList, setHazardsList] = useState<any[]>([]);
@@ -510,9 +520,11 @@ export default function App() {
   }
 
   // Show auth screen if not logged in
+  /*
   if (!session) {
     return <AuthScreen />;
   }
+  */
 
   // Search result
   const handleSelectResult = (item: any) => {
@@ -842,7 +854,11 @@ export default function App() {
 
         {activeTab === 'USER' && (
           <div className="absolute inset-0 z-[2000] bg-eris-bg">
-            <ProfileScreen onOpenSettings={() => setActiveTab('SETTINGS')} />
+            {session ? (
+              <ProfileScreen onOpenSettings={() => setActiveTab('SETTINGS')} />
+            ) : (
+              <AuthScreen onOpenSettings={() => setActiveTab('SETTINGS')} />
+            )}
           </div>
         )}
 
@@ -1019,9 +1035,10 @@ export default function App() {
                     key={hazard.type}
                     onClick={async () => {
                       if (userPosition.lat !== 0) {
-                        await reportHazard(session.user.id, hazard.type as any, userPosition.lat, userPosition.lng);
+                        const currentUserId = session?.user?.id || getGuestId();
+
+                        await reportHazard(currentUserId, hazard.type as any, userPosition.lat, userPosition.lng);
                         setShowHazardReportModal(false);
-                        // Force a quick refresh of the map tab to show the new marker instantly
                         setActiveTab('MAP');
                       }
                     }}

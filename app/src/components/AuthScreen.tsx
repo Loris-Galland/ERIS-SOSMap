@@ -2,7 +2,11 @@ import { useState } from 'react';
 import { supabase } from '../db/supabaseClient';
 import { useTranslation } from 'react-i18next';
 
-export default function AuthScreen() {
+interface AuthScreenProps {
+  onOpenSettings?: () => void;
+}
+
+export default function AuthScreen({ onOpenSettings }: AuthScreenProps) {
   const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -30,6 +34,16 @@ export default function AuthScreen() {
 
   return (
     <div className="min-h-screen bg-eris-bg flex flex-col items-center justify-center p-6 relative overflow-hidden font-sans">
+      {onOpenSettings && (
+        <button
+          onClick={onOpenSettings}
+          className="absolute top-6 right-6 w-12 h-12 bg-eris-surface/80 border border-eris-border rounded-full flex items-center justify-center text-eris-text-muted hover:text-eris-text hover:bg-eris-surface-alt transition-all active:scale-95 shadow-lg z-50 backdrop-blur-md"
+          title="Paramètres"
+        >
+          <span className="material-symbols-outlined text-2xl">settings</span>
+        </button>
+      )}
+
       {/* Decorative blurred background elements */}
       <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-eris-primary/20 rounded-full blur-[100px] pointer-events-none"></div>
       <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-eris-danger/10 rounded-full blur-[100px] pointer-events-none"></div>
