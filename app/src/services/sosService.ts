@@ -114,7 +114,7 @@ export const dispatchSOS = async (
     timestamp: Date.now(),
   };
 
-  // NEW: Prepare the stringified payload to bounce across the Mesh Network 
+  // Prepare the stringified payload to bounce across the Mesh Network 
   const meshPayload = JSON.stringify({
     ...supabasePayload,
     isRelay: true // Flag to tell receivers this is a relayed message, not their own
@@ -156,10 +156,10 @@ export const dispatchSOS = async (
       // Trigger the SMS fallback notification
       await triggerOfflineNotification(position, finalNotes);
 
-      // NEW: Broadcast to local Mesh Network (Bluetooth/Wi-Fi Direct)
+      // Broadcast to local Mesh Network (Bluetooth/Wi-Fi Direct)
       console.log('[ERIS] Offline: Broadcasting SOS to local Mesh Network...');
       CapacitorErisSosmap.broadcastMeshMessage({ message: meshPayload })
-        .catch(err => console.warn('[ERIS] Mesh broadcast failed:', err));
+        .catch((err) => console.warn('[ERIS] Mesh broadcast failed:', err));
 
       return { success: true, method: nativeResult.transmissionMethod, localId };
     }
@@ -177,7 +177,7 @@ export const dispatchSOS = async (
     // Broadcast to local Mesh Network even on total failure
     console.log('[ERIS] Total Failure: Broadcasting SOS to local Mesh Network...');
     CapacitorErisSosmap.broadcastMeshMessage({ message: meshPayload })
-      .catch(err => console.warn('[ERIS] Mesh broadcast failed:', err));
+      .catch((err) => console.warn('[ERIS] Mesh broadcast failed:', err));
 
     return { success: false, method: 'QUEUED_FOR_RETRY', localId };
   }

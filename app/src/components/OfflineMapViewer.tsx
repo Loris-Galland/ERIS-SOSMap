@@ -7,9 +7,10 @@ interface OfflineMapViewerProps {
   name: string;
   bounds: L.LatLngBounds;
   onClose: () => void;
+  availableStyles?: string[];
 }
 
-export default function OfflineMapViewer({ name, bounds, onClose }: OfflineMapViewerProps) {
+export default function OfflineMapViewer({ name, bounds, onClose, availableStyles }: OfflineMapViewerProps) {
   const { t } = useTranslation();
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -18,7 +19,14 @@ export default function OfflineMapViewer({ name, bounds, onClose }: OfflineMapVi
 
   // Layer Menu States
   const [showLayerMenu, setShowLayerMenu] = useState(false);
-  const [currentMapStyle, setCurrentMapStyle] = useState<string>('dark');
+  const [currentMapStyle, setCurrentMapStyle] = useState<string>(() => {
+    const theme = localStorage.getItem('eris_theme') || 'dark';
+    const preferredKey = theme === 'light' ? 'light' : theme === 'contrasted' ? 'contrasted' : 'dark';
+
+    if (!availableStyles || availableStyles.length === 0) return preferredKey;
+    if (availableStyles.includes(preferredKey)) return preferredKey;
+    return availableStyles[0];
+  });
 
   useEffect(() => {
     if (mapContainerRef.current && !mapInstanceRef.current) {
@@ -28,8 +36,10 @@ export default function OfflineMapViewer({ name, bounds, onClose }: OfflineMapVi
         attributionControl: false,
       }).fitBounds(bounds);
 
+      const initialUrl = MAP_STYLES[currentMapStyle as keyof typeof MAP_STYLES].url;
+
       // Add offline layer and save reference
-      baseLayerRef.current = createOfflineLayer();
+      baseLayerRef.current = createOfflineLayer(initialUrl);
       baseLayerRef.current.addTo(mapInstanceRef.current);
 
       // Fix frequent rendering bug (gray blocks)
@@ -57,20 +67,23 @@ export default function OfflineMapViewer({ name, bounds, onClose }: OfflineMapVi
     setShowLayerMenu(false);
   };
 
+  const currentTheme = localStorage.getItem('eris_theme') || 'dark';
+  const defaultStyleId = currentTheme === 'light' ? 'light' : currentTheme === 'contrasted' ? 'contrasted' : 'dark';
+
   return (
-    <div className="fixed inset-0 z-[6000] bg-[#0f141e] flex flex-col animate-in slide-in-from-bottom duration-300">
+    <div className="fixed inset-0 z-[6000] bg-eris-bg flex flex-col animate-in slide-in-from-bottom duration-300">
       {/* Internal header for Map view */}
-      <header className="flex justify-between items-center px-6 py-4 bg-[#0f141e]/90 backdrop-blur-md z-10">
+      <header className="flex justify-between items-center px-6 py-4 bg-eris-bg/90 backdrop-blur-md z-10">
         <div className="flex items-center gap-3">
           <button
             onClick={onClose}
-            className="w-10 h-10 flex items-center justify-center bg-gray-800 rounded-full text-white active:scale-90 transition-transform"
+            className="w-10 h-10 flex items-center justify-center bg-eris-surface-alt rounded-full text-eris-text active:scale-90 transition-transform"
           >
             <span className="material-symbols-outlined">arrow_back</span>
           </button>
           <div>
-            <h2 className="text-white font-bold">{name}</h2>
-            <p className="text-blue-400 text-[10px] font-bold uppercase tracking-tighter">
+            <h2 className="text-eris-text font-bold">{name}</h2>
+            <p className="text-eris-primary text-[10px] font-bold uppercase tracking-tighter">
               {t('offlineViewer.offlineMode')}
             </p>
           </div>
@@ -86,8 +99,10 @@ export default function OfflineMapViewer({ name, bounds, onClose }: OfflineMapVi
           <div className="relative">
             <button
               onClick={() => setShowLayerMenu(!showLayerMenu)}
-              className={`w-12 h-12 border border-gray-700/50 rounded-full flex items-center justify-center transition-colors shadow-lg active:scale-95 ${
-                showLayerMenu ? 'bg-gray-800 text-white' : 'bg-gray-900/90 text-gray-300 hover:bg-gray-800'
+              className={`w-12 h-12 border border-eris-border/50 rounded-full flex items-center justify-center transition-colors shadow-lg active:scale-95 ${
+                showLayerMenu
+                  ? 'bg-eris-surface-alt text-eris-text'
+                  : 'bg-eris-surface/90 text-eris-text-muted hover:bg-eris-surface-alt'
               }`}
             >
               <span className="material-symbols-outlined text-xl">layers</span>
@@ -95,25 +110,49 @@ export default function OfflineMapViewer({ name, bounds, onClose }: OfflineMapVi
 
             {/* Layers Dropdown */}
             {showLayerMenu && (
-              <div className="absolute right-14 top-0 bg-gray-900/95 backdrop-blur-md border border-gray-700 rounded-2xl shadow-2xl overflow-hidden flex flex-col w-44 z-[1000] animate-in fade-in zoom-in duration-150">
-                <div className="px-3 py-2 bg-gray-800/50 border-b border-gray-700">
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+              <div className="absolute right-14 top-0 bg-eris-surface/95 backdrop-blur-md border border-eris-border rounded-2xl shadow-2xl overflow-hidden flex flex-col w-44 z-[1000] animate-in fade-in zoom-in duration-150">
+                <div className="px-3 py-2 bg-eris-surface-alt/50 border-b border-eris-border">
+                  <span className="text-[10px] font-bold text-eris-text-muted uppercase tracking-wider">
                     {t('offlineViewer.mapType')}
                   </span>
                 </div>
-                {Object.entries(MAP_STYLES).map(([key, style]) => (
-                  <button
-                    key={key}
-                    onClick={() => changeMapStyle(key)}
-                    className={`px-4 py-3 text-left text-xs font-bold flex items-center gap-3 border-b border-gray-800/50 last:border-0 transition-colors ${
-                      currentMapStyle === key ? 'text-blue-400 bg-gray-800/80' : 'text-gray-300 hover:bg-gray-800/40'
-                    }`}
-                  >
-                    <span className="material-symbols-outlined text-base">{style.icon}</span>
-                    {/* fallback on style.name if translation key doesn't exist yet */}
-                    {t(`mapStyles.${key}`, style.name)}
-                  </button>
-                ))}
+                {Object.entries(MAP_STYLES)
+                  .sort(([keyA], [keyB]) => {
+                    const currentDefault =
+                      currentTheme === 'light' ? 'light' : currentTheme === 'contrasted' ? 'contrasted' : 'dark';
+                    if (keyA === currentDefault) return -1;
+                    if (keyB === currentDefault) return 1;
+                    return 0;
+                  })
+                  .map(([key, style]) => {
+                    const isAvailable = !availableStyles || availableStyles.includes(key);
+                    return (
+                      <button
+                        key={key}
+                        onClick={() => isAvailable && changeMapStyle(key)}
+                        disabled={!isAvailable}
+                        className={`px-4 py-3 text-left text-xs font-bold flex items-center gap-3 border-b border-eris-border/50 last:border-0 transition-colors ${
+                          !isAvailable
+                            ? 'opacity-40 cursor-not-allowed text-eris-text-subtle' // if unavailable -> grey out
+                            : currentMapStyle === key
+                              ? 'text-eris-primary bg-eris-surface-alt/80'
+                              : 'text-eris-text-muted hover:bg-eris-surface-alt/40'
+                        }`}
+                      >
+                        <span className="material-symbols-outlined text-base">
+                          {isAvailable ? style.icon : 'cloud_off'}
+                        </span>
+                        <div className="flex flex-col">
+                          <span>{t(`mapStyles.${key}`, style.name)}</span>
+                          {!isAvailable && (
+                            <span className="text-[9px] font-normal italic">
+                              {t('offlineViewer.notDownloaded', 'Non téléchargé')}
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
               </div>
             )}
           </div>
@@ -121,9 +160,9 @@ export default function OfflineMapViewer({ name, bounds, onClose }: OfflineMapVi
       </div>
 
       {/* Small floating indicator at the bottom */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 bg-gray-900/80 backdrop-blur-md border border-gray-700 px-4 py-2 rounded-full shadow-2xl">
-        <p className="text-white text-[11px] font-medium flex items-center gap-2">
-          <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 bg-eris-surface/80 backdrop-blur-md border border-eris-border px-4 py-2 rounded-full shadow-2xl">
+        <p className="text-eris-text text-[11px] font-medium flex items-center gap-2">
+          <span className="w-2 h-2 bg-eris-success rounded-full animate-pulse"></span>
           {t('offlineViewer.viewingLocal')}
         </p>
       </div>

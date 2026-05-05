@@ -1,12 +1,107 @@
 @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
-@import "leaflet/dist/leaflet.css";
+@import 'leaflet/dist/leaflet.css';
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-body, html {
+/* Default value (dark theme) */
+:root,
+.theme-dark {
+  --eris-bg: 15 20 30; /* #0f141e */
+  --eris-surface: 31 41 55; /* #1f2937 (gray-800) */
+  --eris-surface-alt: 55 65 81; /* #374151 (gray-700) */
+  --eris-text: 255 255 255; /* #ffffff */
+  --eris-text-muted: 156 163 175; /* #9ca3af (gray-400) */
+  --eris-text-subtle: 107 114 128; /* #6b7280 (gray-500) */
+  --eris-border: 55 65 81; /* #374151 (gray-700) */
+  --eris-primary: 59 130 246; /* #3b82f6 (blue-500) */
+  --eris-danger: 239 68 68; /* #ef4444 (red-500) */
+  --eris-success: 74 222 128; /* #4ade80 (green-400) */
+  --eris-position: 59 130 246;
+  --eris-alert: 234 179 8; /* (yellow-500) */
+  --eris-weather-clear: 250 204 21; /* Jaune soleil (yellow-400) */
+  --eris-weather-partly: 125 211 252; /* Bleu ciel doux (sky-300) */
+  --eris-weather-cloudy: 148 163 184; /* Gris bleuté (slate-400) */
+  --eris-weather-rainy: 59 130 246; /* Bleu pluie (blue-500) */
+  --eris-weather-hail: 34 211 238; /* Cyan glacé (cyan-400) */
+  --eris-weather-fog: 156 163 175; /* Gris brumeux (gray-400) */
+  --eris-weather-storm: 139 92 246; /* Violet orage (violet-500) */
+  --eris-weather-snow: 226 232 240; /* Blanc cassé / Neige (slate-200) */
+  --eris-weather-windy: 34 197 94; /* Vert vif (green-500) */
+}
+
+/* Light theme */
+.theme-light {
+  --eris-bg: 243 244 246; /* #f3f4f6 (gray-100) */
+  --eris-surface: 229 231 235; /* #e5e7eb (gray-200) */
+  --eris-text-muted: 55 65 81; /* #374151 (gray-700) */
+  --eris-text-subtle: 107 114 128; /* #6b7280 (gray-500) */
+  --eris-surface-alt: 209 213 219; /* #d1d5db (gray-300) */
+  --eris-text: 17 24 39; /* #111827 (gray-900) */
+  --eris-border: 209 213 219; /* #d1d5db (gray-300) */
+  --eris-primary: 37 99 235; /* #2563eb (blue-600) */
+  --eris-danger: 220 38 38; /* #dc2626 (red-600) */
+  --eris-success: 22 163 74; /* #16a34a (green-600) */
+  --eris-position: 59 130 246;
+  --eris-alert: 217 119 6; /* (amber-600) */
+  --eris-weather-clear: 245 158 11; /* Ambre chaleureux (amber-500) */
+  --eris-weather-partly: 14 165 233; /* Bleu ciel soutenu (sky-500) */
+  --eris-weather-cloudy: 100 116 139; /* Gris foncé (slate-500) */
+  --eris-weather-rainy: 37 99 235; /* Bleu profond (blue-600) */
+  --eris-weather-hail: 8 145 178; /* Cyan foncé (cyan-600) */
+  --eris-weather-fog: 107 114 128; /* Gris dense (gray-500) */
+  --eris-weather-storm: 124 58 237; /* Violet profond (violet-600) */
+  --eris-weather-snow: 148 163 184; /* Bleu-Gris "Glace" (slate-400) -> Parfait sur fond blanc ! */
+  --eris-weather-windy: 22 163 74; /* Vert sapin (green-600) */
+}
+
+/* Contrasted theme */
+.theme-contrasted {
+  --eris-bg: 0 0 0; /* #000000 */
+  --eris-surface: 17 24 39; /* #111827 */
+  --eris-surface-alt: 55 65 81; /* #374151 */
+  --eris-text: 255 255 255; /* #ffffff */
+  --eris-text-muted: 255 255 255; /* #ffffff */
+  --eris-text-subtle: 209 213 219; /* #d1d5db */
+  --eris-border: 255 255 255; /* #ffffff */
+  --eris-primary: 255 255 255; /* #ffffff */
+  --eris-danger: 255 255 255; /* #ffffff */
+  --eris-success: 255 255 255; /* #ffffff */
+  --eris-position: 0 0 0; /* #000000 */
+  --eris-alert: 255 255 255; /* #ffffff */
+  --eris-weather-clear: 255 255 255; /* #ffffff */
+  --eris-weather-partly: 255 255 255; /* #ffffff */
+  --eris-weather-cloudy: 255 255 255; /* #ffffff */
+  --eris-weather-rainy: 255 255 255; /* #ffffff */
+  --eris-weather-hail: 255 255 255; /* #ffffff */
+  --eris-weather-fog: 255 255 255; /* #ffffff */
+  --eris-weather-storm: 255 255 255; /* #ffffff */
+  --eris-weather-snow: 255 255 255; /* #ffffff */
+  --eris-weather-windy: 255 255 255; /* #ffffff */
+}
+
+.theme-contrasted .bg-eris-primary,
+.theme-contrasted .bg-eris-primary *,
+.theme-contrasted .bg-eris-danger,
+.theme-contrasted .bg-eris-danger *,
+.theme-contrasted .bg-eris-success,
+.theme-contrasted .bg-eris-success * {
+  color: rgb(0 0 0) !important;
+  border-color: rgb(255 255 255) !important;
+}
+
+body {
+  background-color: rgb(var(--eris-bg));
+  color: rgb(var(--eris-text));
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
+}
+
+body,
+html {
   margin: 0;
   padding: 0;
   width: 100%;
@@ -17,7 +112,7 @@ body, html {
 
 /* Dark map background while tiles load */
 .leaflet-container {
-  background-color: #0A0A0A !important;
+  background-color: #0a0a0a !important;
   width: 100%;
   height: 100%;
   z-index: 0 !important;
@@ -32,9 +127,55 @@ body, html {
 ::-webkit-scrollbar {
   width: 4px;
 }
-::-webkit-scrollbar-track {
+
+.theme-dark ::-webkit-scrollbar-track {
   background: #111;
 }
-::-webkit-scrollbar-thumb {
-  background: #CC0000;
+.theme-dark ::-webkit-scrollbar-thumb {
+  background: #cc0000;
+}
+
+.theme-light ::-webkit-scrollbar-track {
+  background: #ffffff;
+}
+.theme-light ::-webkit-scrollbar-thumb {
+  background: #cc0000;
+}
+
+.theme-contrasted ::-webkit-scrollbar-track {
+  background: #111;
+}
+.theme-contrasted ::-webkit-scrollbar-thumb {
+  background: #ffffff;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px rgb(var(--eris-surface-alt)) inset !important;
+  -webkit-text-fill-color: rgb(var(--eris-text)) !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+.theme-contrasted .bg-eris-weather-clear,
+.theme-contrasted .bg-eris-weather-clear *,
+.theme-contrasted .bg-eris-weather-partly,
+.theme-contrasted .bg-eris-weather-partly *,
+.theme-contrasted .bg-eris-weather-cloudy,
+.theme-contrasted .bg-eris-weather-cloudy *,
+.theme-contrasted .bg-eris-weather-rainy,
+.theme-contrasted .bg-eris-weather-rainy *,
+.theme-contrasted .bg-eris-weather-hail,
+.theme-contrasted .bg-eris-weather-hail *,
+.theme-contrasted .bg-eris-weather-fog,
+.theme-contrasted .bg-eris-weather-fog *,
+.theme-contrasted .bg-eris-weather-storm,
+.theme-contrasted .bg-eris-weather-storm *,
+.theme-contrasted .bg-eris-weather-snow,
+.theme-contrasted .bg-eris-weather-snow *,
+.theme-contrasted .bg-eris-weather-windy,
+.theme-contrasted .bg-eris-weather-windy * {
+  color: rgb(0 0 0) !important;
+  border-color: rgb(255 255 255) !important;
 }

@@ -32,14 +32,17 @@ function getMethodBadge(method: string, t: any): { label: string; color: string 
   if (method === 'INTERNET')
     return {
       label: t('history.methodInternet', 'Internet'),
-      color: 'text-green-400 bg-green-400/10 border-green-400/20',
+      color: 'text-eris-success bg-eris-success/10 border-eris-success/20',
     };
   if (method === 'INTERNET_RETRY')
-    return { label: t('history.methodRetry', 'Retry'), color: 'text-blue-400 bg-blue-400/10 border-blue-400/20' };
+    return {
+      label: t('history.methodRetry', 'Retry'),
+      color: 'text-eris-primary bg-eris-primary/10 border-eris-primary/20',
+    };
   if (method?.includes('WIFI') || method?.includes('HARDWARE'))
     return {
       label: t('history.methodHardware', 'HW Fallback'),
-      color: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20',
+      color: 'text-eris-alert bg-eris-alert/10 border-eris-alert/20',
     };
   if (method === 'QUEUED_FOR_RETRY')
     return {
@@ -48,16 +51,16 @@ function getMethodBadge(method: string, t: any): { label: string; color: string 
     };
   return {
     label: method ?? t('history.methodUnknown', 'Unknown'),
-    color: 'text-gray-400 bg-gray-400/10 border-gray-400/20',
+    color: 'text-eris-text-muted bg-gray-400/10 border-gray-400/20',
   };
 }
 
 // Returns a status indicator color
 function getStatusColor(status: string): string {
-  if (status === 'delivered') return 'bg-green-500';
-  if (status === 'delivered_to_hardware') return 'bg-yellow-500';
+  if (status === 'delivered') return 'bg-eris-success';
+  if (status === 'delivered_to_hardware') return 'bg-eris-alert';
   if (status === 'queued') return 'bg-orange-500 animate-pulse';
-  if (status === 'pending') return 'bg-blue-500 animate-pulse';
+  if (status === 'pending') return 'bg-eris-primary animate-pulse';
   return 'bg-gray-500';
 }
 
@@ -165,18 +168,18 @@ export default function SOSHistoryScreen({ onClose }: SOSHistoryScreenProps) {
   };
 
   return (
-    <div className="absolute inset-0 z-[4000] bg-[#0f141e] flex flex-col animate-in slide-in-from-bottom duration-300">
+    <div className="absolute inset-0 z-[4000] bg-eris-bg flex flex-col animate-in slide-in-from-bottom duration-300">
       {/* Header */}
-      <header className="flex items-center px-6 py-4 sticky top-0 z-50 bg-[#0f141e]/90 backdrop-blur-md border-b border-gray-800/50">
+      <header className="flex items-center px-6 py-4 sticky top-0 z-50 bg-eris-bg/90 backdrop-blur-md border-b border-eris-border/50">
         <button
           onClick={onClose}
-          className="text-gray-400 hover:text-white transition-colors mr-4 active:scale-95 flex items-center justify-center w-10 h-10 bg-gray-800/50 rounded-full"
+          className="text-eris-text-muted hover:text-eris-text transition-colors mr-4 active:scale-95 flex items-center justify-center w-10 h-10 bg-eris-surface-alt/50 rounded-full"
         >
           <span className="material-symbols-outlined">chevron_left</span>
         </button>
         <div>
-          <h2 className="text-white text-xl font-bold tracking-wide">{t('history.title', 'SOS History')}</h2>
-          <p className="text-gray-500 text-[11px] font-medium">
+          <h2 className="text-eris-text text-xl font-bold tracking-wide">{t('history.title', 'SOS History')}</h2>
+          <p className="text-eris-text-subtle text-[11px] font-medium">
             {loading
               ? t('history.loading', 'Loading...')
               : t('history.alertsFound', '{{count}} alerts found', { count: alerts.length })}
@@ -184,7 +187,7 @@ export default function SOSHistoryScreen({ onClose }: SOSHistoryScreenProps) {
         </div>
         <button
           onClick={fetchAllAlerts}
-          className="ml-auto text-gray-400 hover:text-white transition-colors w-10 h-10 bg-gray-800/50 rounded-full flex items-center justify-center active:scale-95"
+          className="ml-auto text-eris-text-muted hover:text-eris-text transition-colors w-10 h-10 bg-eris-surface-alt/50 rounded-full flex items-center justify-center active:scale-95"
         >
           <span className="material-symbols-outlined">refresh</span>
         </button>
@@ -195,17 +198,17 @@ export default function SOSHistoryScreen({ onClose }: SOSHistoryScreenProps) {
         {loading && (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
             <span className="material-symbols-outlined text-gray-600 text-4xl animate-spin">sync</span>
-            <p className="text-gray-500 text-sm">{t('history.loadingText', 'Loading your alert history...')}</p>
+            <p className="text-eris-text-subtle text-sm">{t('history.loadingText', 'Loading your alert history...')}</p>
           </div>
         )}
 
         {!loading && alerts.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
-            <div className="w-16 h-16 bg-gray-800/60 rounded-3xl flex items-center justify-center">
+            <div className="w-16 h-16 bg-eris-surface-alt/60 rounded-3xl flex items-center justify-center">
               <span className="material-symbols-outlined text-gray-600 text-3xl">history</span>
             </div>
             <div className="text-center">
-              <p className="text-gray-400 text-sm font-medium">{t('history.noAlerts', 'No alerts yet')}</p>
+              <p className="text-eris-text-muted text-sm font-medium">{t('history.noAlerts', 'No alerts yet')}</p>
               <p className="text-gray-600 text-[11px] mt-1">
                 {t('history.noAlertsDesc', 'Your SOS history will appear here')}
               </p>
@@ -222,7 +225,7 @@ export default function SOSHistoryScreen({ onClose }: SOSHistoryScreenProps) {
               <button
                 key={`${alert.source}-${alert.id}`}
                 onClick={() => setSelectedAlert(alert)}
-                className="w-full bg-gray-800/40 border border-gray-700/50 rounded-3xl p-4 flex items-center gap-4 text-left hover:bg-gray-800/60 active:scale-[0.98] transition-all"
+                className="w-full bg-eris-surface-alt/40 border border-eris-border/50 rounded-3xl p-4 flex items-center gap-4 text-left hover:bg-eris-surface-alt/60 active:scale-[0.98] transition-all"
               >
                 <div className="flex flex-col items-center gap-1 shrink-0">
                   <div className={`w-3 h-3 rounded-full ${getStatusColor(alert.status)}`} />
@@ -231,7 +234,7 @@ export default function SOSHistoryScreen({ onClose }: SOSHistoryScreenProps) {
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-white text-sm font-bold truncate">
+                    <span className="text-eris-text text-sm font-bold truncate">
                       {alert.first_name && alert.last_name
                         ? `${alert.first_name} ${alert.last_name}`
                         : t('history.defaultAlertName', 'SOS Alert')}
@@ -242,8 +245,8 @@ export default function SOSHistoryScreen({ onClose }: SOSHistoryScreenProps) {
                       </span>
                     )}
                   </div>
-                  <p className="text-gray-500 text-[11px]">{formatDate(alert.timestamp, i18n)}</p>
-                  {alert.notes && <p className="text-gray-400 text-[11px] mt-1 truncate">{alert.notes}</p>}
+                  <p className="text-eris-text-subtle text-[11px]">{formatDate(alert.timestamp, i18n)}</p>
+                  {alert.notes && <p className="text-eris-text-muted text-[11px] mt-1 truncate">{alert.notes}</p>}
                 </div>
 
                 <div className="flex flex-col items-end gap-2 shrink-0">
@@ -262,15 +265,15 @@ export default function SOSHistoryScreen({ onClose }: SOSHistoryScreenProps) {
       {/* Detail Modal */}
       {selectedAlert && (
         <div className="absolute inset-0 z-[5000] bg-black/60 backdrop-blur-sm flex items-end">
-          <div className="w-full bg-[#0f141e] border-t border-gray-800 rounded-t-3xl overflow-y-auto max-h-[85vh] animate-in slide-in-from-bottom duration-300">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800/50 sticky top-0 bg-[#0f141e] z-10">
+          <div className="w-full bg-eris-bg border-t border-eris-border rounded-t-3xl overflow-y-auto max-h-[85vh] animate-in slide-in-from-bottom duration-300">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-eris-border/50 sticky top-0 bg-eris-bg z-10">
               <div>
-                <h3 className="text-white font-bold text-lg">{t('history.detailsTitle', 'Alert Details')}</h3>
-                <p className="text-gray-500 text-[11px]">{formatDate(selectedAlert.timestamp, i18n)}</p>
+                <h3 className="text-eris-text font-bold text-lg">{t('history.detailsTitle', 'Alert Details')}</h3>
+                <p className="text-eris-text-subtle text-[11px]">{formatDate(selectedAlert.timestamp, i18n)}</p>
               </div>
               <button
                 onClick={() => setSelectedAlert(null)}
-                className="w-10 h-10 bg-gray-800/50 rounded-full flex items-center justify-center text-gray-400 hover:text-white active:scale-95"
+                className="w-10 h-10 bg-eris-surface-alt/50 rounded-full flex items-center justify-center text-eris-text-muted hover:text-eris-text active:scale-95"
               >
                 <span className="material-symbols-outlined">close</span>
               </button>
@@ -279,7 +282,7 @@ export default function SOSHistoryScreen({ onClose }: SOSHistoryScreenProps) {
             <div className="px-6 py-5 flex flex-col gap-5">
               <div className="flex items-center gap-3">
                 <div className={`w-3 h-3 rounded-full ${getStatusColor(selectedAlert.status)}`} />
-                <span className="text-white text-sm font-bold capitalize">
+                <span className="text-eris-text text-sm font-bold capitalize">
                   {selectedAlert.status.replace(/_/g, ' ')}
                 </span>
                 <span
@@ -290,31 +293,31 @@ export default function SOSHistoryScreen({ onClose }: SOSHistoryScreenProps) {
               </div>
 
               <section>
-                <h4 className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-3">
+                <h4 className="text-eris-text-muted text-[10px] font-bold uppercase tracking-widest mb-3">
                   {t('history.locationSection', 'Location')}
                 </h4>
-                <div className="bg-gray-800/40 border border-gray-700/50 rounded-2xl p-4 grid grid-cols-3 gap-3 text-center">
+                <div className="bg-eris-surface-alt/40 border border-eris-border/50 rounded-2xl p-4 grid grid-cols-3 gap-3 text-center">
                   <div>
-                    <p className="text-gray-500 text-[9px] font-bold uppercase tracking-wider mb-1">
+                    <p className="text-eris-text-subtle text-[9px] font-bold uppercase tracking-wider mb-1">
                       {t('history.latitude', 'Latitude')}
                     </p>
-                    <p className="text-blue-400 text-xs font-mono font-bold">
+                    <p className="text-eris-primary text-xs font-mono font-bold">
                       {selectedAlert.latitude?.toFixed(4) ?? 'N/A'}°
                     </p>
                   </div>
                   <div>
-                    <p className="text-gray-500 text-[9px] font-bold uppercase tracking-wider mb-1">
+                    <p className="text-eris-text-subtle text-[9px] font-bold uppercase tracking-wider mb-1">
                       {t('history.longitude', 'Longitude')}
                     </p>
-                    <p className="text-blue-400 text-xs font-mono font-bold">
+                    <p className="text-eris-primary text-xs font-mono font-bold">
                       {selectedAlert.longitude?.toFixed(4) ?? 'N/A'}°
                     </p>
                   </div>
                   <div>
-                    <p className="text-gray-500 text-[9px] font-bold uppercase tracking-wider mb-1">
+                    <p className="text-eris-text-subtle text-[9px] font-bold uppercase tracking-wider mb-1">
                       {t('history.altitude', 'Altitude')}
                     </p>
-                    <p className="text-blue-400 text-xs font-mono font-bold">
+                    <p className="text-eris-primary text-xs font-mono font-bold">
                       {selectedAlert.altitude?.toFixed(0) ?? 'N/A'} m
                     </p>
                   </div>
@@ -322,23 +325,23 @@ export default function SOSHistoryScreen({ onClose }: SOSHistoryScreenProps) {
               </section>
 
               <section>
-                <h4 className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-3">
+                <h4 className="text-eris-text-muted text-[10px] font-bold uppercase tracking-widest mb-3">
                   {t('history.deviceSection', 'Device')}
                 </h4>
-                <div className="bg-gray-800/40 border border-gray-700/50 rounded-2xl p-4 flex items-center gap-4">
-                  <span className="material-symbols-outlined text-gray-400">battery_5_bar</span>
+                <div className="bg-eris-surface-alt/40 border border-eris-border/50 rounded-2xl p-4 flex items-center gap-4">
+                  <span className="material-symbols-outlined text-eris-text-muted">battery_5_bar</span>
                   <div>
-                    <p className="text-gray-500 text-[9px] font-bold uppercase tracking-wider">
+                    <p className="text-eris-text-subtle text-[9px] font-bold uppercase tracking-wider">
                       {t('history.batteryLabel', 'Battery at alert time')}
                     </p>
-                    <p className="text-white text-sm font-bold mt-0.5">{selectedAlert.battery_level ?? 'N/A'}%</p>
+                    <p className="text-eris-text text-sm font-bold mt-0.5">{selectedAlert.battery_level ?? 'N/A'}%</p>
                   </div>
                   <div className="ml-auto">
-                    <p className="text-gray-500 text-[9px] font-bold uppercase tracking-wider">
+                    <p className="text-eris-text-subtle text-[9px] font-bold uppercase tracking-wider">
                       {t('history.sourceLabel', 'Source')}
                     </p>
                     <p
-                      className={`text-xs font-bold mt-0.5 ${selectedAlert.source === 'remote' ? 'text-green-400' : 'text-orange-400'}`}
+                      className={`text-xs font-bold mt-0.5 ${selectedAlert.source === 'remote' ? 'text-eris-success' : 'text-orange-400'}`}
                     >
                       {selectedAlert.source === 'remote'
                         ? t('history.sourceSynchronized', 'Synchronized')
@@ -350,32 +353,32 @@ export default function SOSHistoryScreen({ onClose }: SOSHistoryScreenProps) {
 
               {selectedAlert.notes && (
                 <section>
-                  <h4 className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-3">
+                  <h4 className="text-eris-text-muted text-[10px] font-bold uppercase tracking-widest mb-3">
                     {t('history.notesSection', 'Notes')}
                   </h4>
-                  <div className="bg-gray-800/40 border border-gray-700/50 rounded-2xl p-4">
-                    <p className="text-white text-sm leading-relaxed">{selectedAlert.notes}</p>
+                  <div className="bg-eris-surface-alt/40 border border-eris-border/50 rounded-2xl p-4">
+                    <p className="text-eris-text text-sm leading-relaxed">{selectedAlert.notes}</p>
                   </div>
                 </section>
               )}
 
               <section>
-                <h4 className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-3">
+                <h4 className="text-eris-text-muted text-[10px] font-bold uppercase tracking-widest mb-3">
                   {t('history.medicalSnapshotTitle', 'Medical Data at Alert Time')}
                 </h4>
-                <div className="bg-gray-800/40 border border-gray-700/50 rounded-2xl overflow-hidden">
-                  <div className="flex items-center justify-between p-4 border-b border-gray-700/30">
-                    <span className="text-gray-400 text-sm">{t('history.medName', 'Name')}</span>
-                    <span className="text-white text-sm font-bold">
+                <div className="bg-eris-surface-alt/40 border border-eris-border/50 rounded-2xl overflow-hidden">
+                  <div className="flex items-center justify-between p-4 border-b border-eris-border/30">
+                    <span className="text-eris-text-muted text-sm">{t('history.medName', 'Name')}</span>
+                    <span className="text-eris-text text-sm font-bold">
                       {selectedAlert.first_name && selectedAlert.last_name
                         ? `${selectedAlert.first_name} ${selectedAlert.last_name}`
                         : t('history.medUnknown', 'Unknown')}
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between p-4 border-b border-gray-700/30">
-                    <span className="text-gray-400 text-sm">{t('history.medBloodType', 'Blood Type')}</span>
-                    <span className="text-red-400 font-bold text-sm bg-red-400/10 px-3 py-1 rounded-full">
+                  <div className="flex items-center justify-between p-4 border-b border-eris-border/30">
+                    <span className="text-eris-text-muted text-sm">{t('history.medBloodType', 'Blood Type')}</span>
+                    <span className="text-eris-danger font-bold text-sm bg-eris-danger/10 px-3 py-1 rounded-full">
                       {selectedAlert.blood_type || 'N/A'}
                     </span>
                   </div>
@@ -387,10 +390,10 @@ export default function SOSHistoryScreen({ onClose }: SOSHistoryScreenProps) {
                   ].map((field) => (
                     <div
                       key={field.label}
-                      className="flex flex-col gap-1 p-4 border-b border-gray-700/30 last:border-0"
+                      className="flex flex-col gap-1 p-4 border-b border-eris-border/30 last:border-0"
                     >
-                      <span className="text-gray-400 text-sm">{field.label}</span>
-                      <span className="text-white text-sm font-medium">
+                      <span className="text-eris-text-muted text-sm">{field.label}</span>
+                      <span className="text-eris-text text-sm font-medium">
                         {field.value || t('history.medNone', 'None')}
                       </span>
                     </div>

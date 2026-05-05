@@ -51,20 +51,20 @@ export default function AlertModal({
   const theme = {
     info: {
       icon: 'info',
-      iconBg: 'bg-blue-500/10 text-blue-400',
-      btnBg: 'bg-blue-600 hover:bg-blue-500 shadow-blue-900/20',
+      iconBg: 'bg-eris-primary/10 text-eris-primary',
+      btnBg: 'bg-eris-primary hover:bg-eris-primary shadow-eris-primary/20',
       defaultConfirmText: 'OK',
     },
     danger: {
       icon: 'warning',
-      iconBg: 'bg-red-500/10 text-red-500',
-      btnBg: 'bg-red-600 hover:bg-red-500 shadow-red-900/20',
+      iconBg: 'bg-eris-danger/10 text-eris-danger',
+      btnBg: 'bg-eris-danger hover:bg-eris-danger shadow-eris-danger/20',
       defaultConfirmText: 'Supprimer',
     },
     success: {
       icon: 'check_circle',
-      iconBg: 'bg-green-500/10 text-green-400',
-      btnBg: 'bg-green-600 hover:bg-green-500 shadow-green-900/20',
+      iconBg: 'bg-eris-success/10 text-eris-success',
+      btnBg: 'bg-eris-success hover:bg-eris-success shadow-eris-success/20',
       defaultConfirmText: 'Continuer',
     },
   }[type];
@@ -72,17 +72,17 @@ export default function AlertModal({
   return (
     <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
       <div
-        className="absolute inset-0 bg-[#0f141e]/80 backdrop-blur-md transition-opacity animate-in fade-in duration-200"
+        className="absolute inset-0 bg-eris-bg/80 backdrop-blur-md transition-opacity animate-in fade-in duration-200"
         onClick={onCancel}
       ></div>
 
-      <div className="relative bg-gray-900 border border-gray-700/50 rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+      <div className="relative bg-eris-surface border border-eris-border/50 rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-in fade-in zoom-in-95 duration-200">
         <div className="flex flex-col items-center text-center mb-6">
           <div className={`w-14 h-14 rounded-full flex items-center justify-center mb-4 ${theme.iconBg}`}>
             <span className="material-symbols-outlined text-3xl">{theme.icon}</span>
           </div>
-          <h3 className="text-white text-lg font-bold mb-2 tracking-wide">{title}</h3>
-          <p className="text-gray-400 text-sm leading-relaxed">{message}</p>
+          <h3 className="text-eris-text text-lg font-bold mb-2 tracking-wide">{title}</h3>
+          <p className="text-eris-text-muted text-sm leading-relaxed">{message}</p>
 
           {/* NOUVEAU : Champ de texte si isPrompt est true */}
           {isPrompt && (
@@ -90,7 +90,7 @@ export default function AlertModal({
               type="text"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              className="mt-4 w-full bg-gray-800/80 border border-gray-700 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-blue-500 transition-colors text-center"
+              className="mt-4 w-full bg-eris-surface-alt/80 border border-eris-border rounded-xl px-4 py-3 text-eris-text text-sm outline-none focus:border-eris-primary transition-colors text-center"
               autoFocus
             />
           )}
@@ -100,7 +100,7 @@ export default function AlertModal({
           {(isConfirm || isPrompt) && (
             <button
               onClick={onCancel}
-              className="flex-1 py-3 px-4 bg-gray-800 border border-gray-700 text-white rounded-2xl text-sm font-bold hover:bg-gray-700 transition-colors active:scale-95"
+              className="flex-1 py-3 px-4 bg-eris-surface-alt border border-eris-border text-eris-text rounded-2xl text-sm font-bold hover:bg-gray-700 transition-colors active:scale-95"
             >
               {cancelText}
             </button>
@@ -110,7 +110,7 @@ export default function AlertModal({
               onConfirm(inputValue);
               if (!isConfirm && !isPrompt) onCancel();
             }}
-            className={`flex-1 py-3 px-4 rounded-2xl text-sm font-bold transition-all active:scale-95 shadow-lg text-white ${theme.btnBg}`}
+            className={`flex-1 py-3 px-4 rounded-2xl text-sm font-bold transition-all active:scale-95 shadow-lg text-eris-text ${theme.btnBg}`}
           >
             {confirmText || theme.defaultConfirmText}
           </button>

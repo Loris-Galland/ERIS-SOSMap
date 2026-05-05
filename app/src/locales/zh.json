@@ -41,6 +41,12 @@
     "displayLanguage": "显示与语言",
     "appLanguage": "应用语言",
     "visualTheme": "视觉主题",
+    "selectTheme": "选择主题",
+    "themes": {
+      "dark": "深色安全 (默认)",
+      "light": "浅色模式",
+      "contrasted": "高对比度"
+    },
     "notificationsTitle": "通知",
     "pushNotif": "推送通知",
     "pushNotifDesc": "接收实时安全更新",
@@ -55,7 +61,7 @@
     "autoRetry": "自动重试 SOS",
     "autoRetryDesc": "如果信号丢失则自动重新发送",
     "offlineCache": "离线地图缓存",
-    "offlineCacheDesc": "当前使用 124 MB",
+    "offlineCacheDesc": "当前使用 {{size}}",
     "clearCache": "清除缓存",
     "diagnosticsTitle": "系统诊断",
     "connected": "已连接",

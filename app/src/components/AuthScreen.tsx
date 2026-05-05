@@ -33,11 +33,11 @@ export default function AuthScreen({ onOpenSettings }: AuthScreenProps) {
   };
 
   return (
-    <div className="min-h-screen bg-[#0f141e] flex flex-col items-center justify-center p-6 relative overflow-hidden font-sans">
+    <div className="min-h-screen bg-eris-bg flex flex-col items-center justify-center p-6 relative overflow-hidden font-sans">
       {onOpenSettings && (
         <button
           onClick={onOpenSettings}
-          className="absolute top-6 right-6 w-12 h-12 bg-gray-800/80 border border-gray-700 rounded-full flex items-center justify-center text-gray-300 hover:text-white hover:bg-gray-700 transition-all active:scale-95 shadow-lg z-50 backdrop-blur-md"
+          className="absolute top-6 right-6 w-12 h-12 bg-eris-surface/80 border border-eris-border rounded-full flex items-center justify-center text-eris-text-muted hover:text-eris-text hover:bg-eris-surface-alt transition-all active:scale-95 shadow-lg z-50 backdrop-blur-md"
           title="Paramètres"
         >
           <span className="material-symbols-outlined text-2xl">settings</span>
@@ -45,31 +45,31 @@ export default function AuthScreen({ onOpenSettings }: AuthScreenProps) {
       )}
 
       {/* Decorative blurred background elements */}
-      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-600/20 rounded-full blur-[100px] pointer-events-none"></div>
-      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-red-600/10 rounded-full blur-[100px] pointer-events-none"></div>
+      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-eris-primary/20 rounded-full blur-[100px] pointer-events-none"></div>
+      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-eris-danger/10 rounded-full blur-[100px] pointer-events-none"></div>
 
       <div className="w-full max-w-sm z-10 flex flex-col items-center">
         {/* Header / Logo Area */}
         <div className="mb-10 text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="w-20 h-20 bg-gray-800/80 rounded-3xl mx-auto mb-6 flex items-center justify-center shadow-2xl border border-gray-700/50 backdrop-blur-sm">
-            <span className="material-symbols-outlined text-4xl text-blue-500">shield_lock</span>
+          <div className="w-20 h-20 bg-eris-surface-alt/80 rounded-3xl mx-auto mb-6 flex items-center justify-center shadow-2xl border border-eris-border/50 backdrop-blur-sm">
+            <span className="material-symbols-outlined text-4xl text-eris-primary">shield_lock</span>
           </div>
-          <h1 className="text-3xl font-black text-white tracking-tight mb-2">ERIS</h1>
-          <p className="text-gray-400 text-sm font-medium">Emergency Response & Info System</p>
+          <h1 className="text-3xl font-black text-eris-text tracking-tight mb-2">ERIS</h1>
+          <p className="text-eris-text-muted text-sm font-medium">Emergency Response & Info System</p>
         </div>
 
         {/* Auth Card */}
-        <div className="w-full bg-gray-800/40 backdrop-blur-xl border border-gray-700/50 p-6 rounded-3xl shadow-2xl animate-in fade-in slide-in-from-bottom-6 duration-700">
-          <h2 className="text-xl font-bold text-white mb-1">{t('auth.title')}</h2>
-          <p className="text-gray-500 text-xs mb-6">{t('auth.subtitle')}</p>
+        <div className="w-full bg-eris-surface-alt/40 backdrop-blur-xl border border-eris-border/50 p-6 rounded-3xl shadow-2xl animate-in fade-in slide-in-from-bottom-6 duration-700">
+          <h2 className="text-xl font-bold text-eris-text mb-1">{t('auth.title')}</h2>
+          <p className="text-eris-text-subtle text-xs mb-6">{t('auth.subtitle')}</p>
 
           <form onSubmit={handleAuth} className="space-y-4">
             <div className="space-y-1">
-              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">
+              <label className="text-[10px] font-bold text-eris-text-muted uppercase tracking-widest ml-1">
                 {t('auth.email')}
               </label>
               <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-gray-500 text-lg">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-eris-text-subtle text-lg">
                   mail
                 </span>
                 <input
@@ -77,18 +77,18 @@ export default function AuthScreen({ onOpenSettings }: AuthScreenProps) {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-gray-900/50 border border-gray-700 text-white rounded-2xl py-3 pl-12 pr-4 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-sm"
+                  className="w-full bg-eris-surface/50 border border-eris-border text-eris-text rounded-2xl py-3 pl-12 pr-4 outline-none focus:border-eris-primary focus:ring-1 focus:ring-eris-primary transition-all text-sm"
                   placeholder="name@example.com"
                 />
               </div>
             </div>
 
             <div className="space-y-1">
-              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">
+              <label className="text-[10px] font-bold text-eris-text-muted uppercase tracking-widest ml-1">
                 {t('auth.password')}
               </label>
               <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-gray-500 text-lg">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-eris-text-subtle text-lg">
                   lock
                 </span>
                 <input
@@ -96,7 +96,7 @@ export default function AuthScreen({ onOpenSettings }: AuthScreenProps) {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-gray-900/50 border border-gray-700 text-white rounded-2xl py-3 pl-12 pr-4 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-sm"
+                  className="w-full bg-eris-surface/50 border border-eris-border text-eris-text rounded-2xl py-3 pl-12 pr-4 outline-none focus:border-eris-primary focus:ring-1 focus:ring-eris-primary transition-all text-sm"
                   placeholder="••••••••"
                 />
               </div>
@@ -105,7 +105,7 @@ export default function AuthScreen({ onOpenSettings }: AuthScreenProps) {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 rounded-2xl mt-4 transition-all active:scale-[0.98] disabled:opacity-70 flex justify-center items-center shadow-lg shadow-blue-900/20"
+              className="w-full bg-eris-primary hover:bg-eris-primary text-eris-text font-bold py-3.5 rounded-2xl mt-4 transition-all active:scale-[0.98] disabled:opacity-70 flex justify-center items-center shadow-lg shadow-eris-primary/20"
             >
               {loading ? (
                 <span className="material-symbols-outlined animate-spin">sync</span>
@@ -121,10 +121,10 @@ export default function AuthScreen({ onOpenSettings }: AuthScreenProps) {
             <button
               type="button"
               onClick={() => setIsSignUp(!isSignUp)}
-              className="text-xs text-gray-400 hover:text-white transition-colors"
+              className="text-xs text-eris-text-muted hover:text-eris-text transition-colors"
             >
               {isSignUp ? t('auth.hasAccount') : t('auth.noAccount')}{' '}
-              <span className="text-blue-400 font-bold">{isSignUp ? t('auth.signIn') : t('auth.signUp')}</span>
+              <span className="text-eris-primary font-bold">{isSignUp ? t('auth.signIn') : t('auth.signUp')}</span>
             </button>
           </div>
         </div>

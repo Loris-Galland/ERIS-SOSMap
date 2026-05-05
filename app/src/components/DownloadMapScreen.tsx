@@ -48,7 +48,11 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
 
   const [viewingRegion, setViewingRegion] = useState<number | string | null>(null);
 
-  const [selectedStyles, setSelectedStyles] = useState<string[]>(['dark']);
+  const [selectedStyles, setSelectedStyles] = useState<string[]>(() => {
+    const theme = localStorage.getItem('eris_theme') || 'dark';
+    const initialStyle = theme === 'light' ? 'light' : theme === 'contrasted' ? 'contrasted' : 'dark';
+    return [initialStyle];
+  });
 
   const selectionMapRef = useRef<L.Map | null>(null);
   const selectionContainerRef = useRef<HTMLDivElement>(null);
@@ -181,7 +185,11 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
         zoomControl: false,
       }).setView([46.6033, 1.8883], 6); // Centered on France
 
-      createOfflineLayer().addTo(selectionMapRef.current);
+      const theme = localStorage.getItem('eris_theme') || 'dark';
+      const styleKey = theme === 'light' ? 'light' : theme === 'contrasted' ? 'contrasted' : 'dark';
+      const styleUrl = MAP_STYLES[styleKey as keyof typeof MAP_STYLES].url;
+
+      createOfflineLayer(styleUrl).addTo(selectionMapRef.current);
       setTimeout(() => selectionMapRef.current?.invalidateSize(), 200);
     }
     return () => {
@@ -237,7 +245,9 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
     const savedMetadata = localStorage.getItem('eris_offline_metadata');
     const metadata = savedMetadata ? JSON.parse(savedMetadata) : {};
     metadata[id] = {
+      ...metadata[id],
       lastUpdate: Date.now(),
+      styles: selectedStyles,
     };
 
     localStorage.setItem('eris_offline_metadata', JSON.stringify(metadata));
@@ -623,8 +633,17 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
     region.name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
+  const currentTheme = localStorage.getItem('eris_theme') || 'dark';
+  const defaultStyleKey = currentTheme === 'light' ? 'light' : currentTheme === 'contrasted' ? 'contrasted' : 'dark';
+
+  const sortedStyles = Object.entries(MAP_STYLES).sort(([keyA], [keyB]) => {
+    if (keyA === defaultStyleKey) return -1;
+    if (keyB === defaultStyleKey) return 1;
+    return 0;
+  });
+
   return (
-    <div className="flex flex-col h-full bg-[#0f141e] w-full overflow-y-auto font-sans relative pb-20">
+    <div className="flex flex-col h-full bg-eris-bg w-full overflow-y-auto font-sans relative">
       <AlertModal
         isOpen={dialog.isOpen}
         title={dialog.title}
@@ -645,29 +664,44 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
 
           if (!bounds || !regionObj) return null;
 
-          return <OfflineMapViewer name={regionObj.name} bounds={bounds} onClose={() => setViewingRegion(null)} />;
+          const savedMetadata = localStorage.getItem('eris_offline_metadata');
+          const metadata = savedMetadata ? JSON.parse(savedMetadata) : {};
+          const availableStyles = metadata[viewingRegion]?.styles;
+
+          return (
+            <OfflineMapViewer
+              name={regionObj.name}
+              bounds={bounds}
+              onClose={() => setViewingRegion(null)}
+              availableStyles={availableStyles}
+            />
+          );
         })()}
 
       {/* ─── MANUAL SELECTION OVERLAY ─── */}
-      {isManualSelecting && (
-        <div className="absolute inset-0 z-[7000] flex flex-col bg-[#0f141e] animate-in slide-in-from-bottom duration-300">
-          <header className="px-4 py-4 bg-[#0f141e]/95 backdrop-blur-md z-[50] shadow-md border-b border-gray-800">
+      {isManualSelecting ? (
+        <div
+          className={`absolute inset-0 z-[7000] flex-col bg-eris-bg animate-in slide-in-from-bottom duration-300 ${
+            isManualSelecting ? 'flex' : 'hidden'
+          }`}
+        >
+          <header className="px-4 py-4 bg-eris-bg/95 backdrop-blur-md z-[50] shadow-md border-b border-eris-border">
             <div className="flex items-center gap-3 mb-4">
               <button
                 onClick={() => setIsManualSelecting(false)}
-                className="w-10 h-10 flex items-center justify-center bg-gray-800 rounded-full text-white"
+                className="w-10 h-10 flex items-center justify-center bg-eris-surface-alt rounded-full text-eris-text"
               >
                 <span className="material-symbols-outlined">close</span>
               </button>
               <div className="flex-1">
-                <h2 className="text-white text-sm font-bold">{t('download.manualSaving', 'Manual saving')}</h2>
-                <p className="text-gray-400 text-[10px]">
+                <h2 className="text-eris-text text-sm font-bold">{t('download.manualSaving', 'Manual saving')}</h2>
+                <p className="text-eris-text-muted text-[10px]">
                   {t('download.searchOrMove', 'Search a place or move the map')}
                 </p>
               </div>
               <button
                 onClick={handleConfirmManualArea}
-                className="bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg active:scale-95"
+                className="bg-eris-primary text-eris-text px-4 py-2 rounded-xl text-xs font-bold shadow-lg active:scale-95"
               >
                 {t('download.saveZone', 'Save this zone')}
               </button>
@@ -675,35 +709,35 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
 
             {/* SEARCH BAR */}
             <div className="relative">
-              <div className="flex items-center bg-gray-800/60 border border-gray-700/50 rounded-full px-4 py-2 gap-2">
-                <span className="material-symbols-outlined text-gray-400 text-sm">search</span>
+              <div className="flex items-center bg-eris-surface-alt/60 border border-eris-border/50 rounded-full px-4 py-2 gap-2">
+                <span className="material-symbols-outlined text-eris-text-muted text-sm">search</span>
                 <input
                   type="text"
                   value={manualSearchQuery}
                   onChange={(e) => setManualSearchQuery(e.target.value)}
                   placeholder={t('download.searchPlace', 'Find a place to download...')}
-                  className="bg-transparent text-xs text-white w-full outline-none"
+                  className="bg-transparent text-xs text-eris-text w-full outline-none"
                 />
                 {isManualSearching && (
-                  <span className="material-symbols-outlined text-blue-400 text-sm animate-spin">sync</span>
+                  <span className="material-symbols-outlined text-eris-primary text-sm animate-spin">sync</span>
                 )}
               </div>
 
               {/* SEARCH RESULTS */}
               {manualSearchResults.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl overflow-hidden flex flex-col z-[100]">
+                <div className="absolute top-full left-0 right-0 mt-2 bg-eris-surface border border-eris-border rounded-2xl shadow-2xl overflow-hidden flex flex-col z-[100]">
                   {manualSearchResults.map((result, idx) => (
                     <button
                       key={idx}
                       onClick={() => handleManualSearchResultClick(result)}
-                      className="px-4 py-3 text-left hover:bg-gray-800 flex items-center gap-3 border-b border-gray-800 last:border-0"
+                      className="px-4 py-3 text-left hover:bg-eris-surface-alt flex items-center gap-3 border-b border-eris-border last:border-0"
                     >
-                      <span className="material-symbols-outlined text-gray-400 text-sm">location_on</span>
+                      <span className="material-symbols-outlined text-eris-text-muted text-sm">location_on</span>
                       <div className="flex-col overflow-hidden">
-                        <span className="text-white text-xs font-bold block truncate">
+                        <span className="text-eris-text text-xs font-bold block truncate">
                           {result.display_name.split(',')[0]}
                         </span>
-                        <span className="text-gray-500 text-[9px] block truncate">{result.display_name}</span>
+                        <span className="text-eris-text-subtle text-[9px] block truncate">{result.display_name}</span>
                       </div>
                     </button>
                   ))}
@@ -712,179 +746,183 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
             </div>
           </header>
 
-          <div className="flex-1 w-full relative bg-gray-900">
+          <div className="flex-1 w-full relative bg-eris-surface">
             <div className="absolute inset-0" ref={selectionContainerRef}></div>
             <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-[10]">
-              <div className="w-[85%] h-[65%] border-2 border-blue-500/40 rounded-3xl shadow-[0_0_0_9999px_rgba(15,20,30,0.5)]"></div>
+              <div className="w-[85%] h-[65%] border-2 border-eris-primary/40 rounded-3xl shadow-[0_0_0_9999px_rgba(15,20,30,0.5)]"></div>
             </div>
           </div>
         </div>
-      )}
+      ) : (
+        <div className="flex flex-col h-full bg-eris-bg w-full overflow-y-auto font-sans relative pb-0">
+          {/* ─── HEADER ─── */}
+          <header className="flex justify-between items-center px-6 py-4 sticky top-0 z-50 bg-eris-bg/90 backdrop-blur-md">
+            <div className="flex items-center">
+              <button
+                onClick={onBack}
+                className="text-eris-text-muted hover:text-eris-text transition-colors mr-4 active:scale-95 flex items-center justify-center w-10 h-10 bg-eris-surface-alt/50 rounded-full"
+              >
+                <span className="material-symbols-outlined">chevron_left</span>
+              </button>
+              <h2 className="text-eris-text text-xl font-bold tracking-wide">{t('download.title', 'Download Maps')}</h2>
+            </div>
 
-      {/* ─── HEADER ─── */}
-      <header className="flex justify-between items-center px-6 py-4 sticky top-0 z-50 bg-[#0f141e]/90 backdrop-blur-md">
-        <div className="flex items-center">
-          <button
-            onClick={onBack}
-            className="text-gray-400 hover:text-white transition-colors mr-4 active:scale-95 flex items-center justify-center w-10 h-10 bg-gray-800/50 rounded-full"
-          >
-            <span className="material-symbols-outlined">chevron_left</span>
-          </button>
-          <h2 className="text-white text-xl font-bold tracking-wide">{t('download.title', 'Download Maps')}</h2>
-        </div>
+            {/* Custom Area Map Button (Top Right) */}
+            <button
+              onClick={() => setIsManualSelecting(true)}
+              className="text-eris-primary hover:text-eris-primary transition-colors flex items-center justify-center w-10 h-10 bg-eris-primary/10 rounded-full active:scale-95"
+              title={t('download.selectCustom', 'Select Custom Area')}
+            >
+              <span className="material-symbols-outlined text-xl">map</span>
+            </button>
+          </header>
 
-        {/* Custom Area Map Button (Top Right) */}
-        <button
-          onClick={() => setIsManualSelecting(true)}
-          className="text-blue-400 hover:text-blue-300 transition-colors flex items-center justify-center w-10 h-10 bg-blue-500/10 rounded-full active:scale-95"
-          title={t('download.selectCustom', 'Select Custom Area')}
-        >
-          <span className="material-symbols-outlined text-xl">map</span>
-        </button>
-      </header>
+          <div className="px-4 flex flex-col gap-6 mt-2">
+            {/* ─── SEARCH BAR ─── */}
+            <div className="flex items-center bg-eris-surface-alt/40 border border-eris-border/50 rounded-2xl px-4 py-3 gap-3 shadow-inner">
+              <span className="material-symbols-outlined text-eris-text-muted text-xl">search</span>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={t('download.searchPlaceholder', 'Search city or region...')}
+                className="bg-transparent text-sm text-eris-text w-full outline-none placeholder-gray-500"
+              />
+            </div>
 
-      <div className="px-4 flex flex-col gap-6 mt-2">
-        {/* ─── SEARCH BAR ─── */}
-        <div className="flex items-center bg-gray-800/40 border border-gray-700/50 rounded-2xl px-4 py-3 gap-3 shadow-inner">
-          <span className="material-symbols-outlined text-gray-400 text-xl">search</span>
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={t('download.searchPlaceholder', 'Search city or region...')}
-            className="bg-transparent text-sm text-white w-full outline-none placeholder-gray-500"
-          />
-        </div>
+            <section>
+              <h3 className="text-eris-text-muted text-xs font-bold uppercase tracking-widest mb-3 px-2">
+                {t('download.selectLayers', 'Select Map Layers')}
+              </h3>
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                {sortedStyles.map(([key, style]) => {
+                  const isSelected = selectedStyles.includes(key);
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => toggleStyle(key)}
+                      disabled={downloadingId !== null}
+                      className={`relative flex flex-col items-center justify-center gap-2 p-3 rounded-2xl border transition-all active:scale-95 ${
+                        isSelected
+                          ? 'bg-eris-primary/20 border-eris-primary text-eris-primary'
+                          : 'bg-eris-surface-alt/40 border-eris-border text-eris-text-subtle hover:bg-eris-surface-alt'
+                      }`}
+                    >
+                      <span className="material-symbols-outlined text-2xl">{style.icon}</span>
+                      <span className="text-xs font-bold">{t(`mapStyles.${key}`, style.name)}</span>
 
-        <section>
-          <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3 px-2">
-            {t('download.selectLayers', 'Select Map Layers')}
-          </h3>
-          <div className="grid grid-cols-2 gap-3 mb-3">
-            {Object.values(MAP_STYLES).map((style) => {
-              const isSelected = selectedStyles.includes(style.id);
-              return (
-                <button
-                  key={style.id}
-                  onClick={() => toggleStyle(style.id)}
-                  disabled={downloadingId !== null}
-                  className={`relative flex flex-col items-center justify-center gap-2 p-3 rounded-2xl border transition-all active:scale-95 ${
-                    isSelected
-                      ? 'bg-blue-600/20 border-blue-500 text-blue-400'
-                      : 'bg-gray-800/40 border-gray-700 text-gray-500 hover:bg-gray-800'
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-2xl">{style.icon}</span>
-                  <span className="text-xs font-bold">{style.name}</span>
-                  {isSelected && (
-                    <div className="absolute top-2 right-2 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
-                      <span className="material-symbols-outlined text-white text-[10px] font-bold">check</span>
-                    </div>
-                  )}
-                  {style.id === 'dark' && (
-                    <span className="text-[8px] uppercase font-black mt-0.5">
-                      {t('download.defaultStyle', 'Default')}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-3 flex items-start gap-2">
-            <span className="material-symbols-outlined text-yellow-500 text-sm mt-0.5">database</span>
-            <p className="text-gray-400 text-[10px] leading-relaxed">
-              {t('download.storageWarning1', 'Selecting multiple layers increases storage usage.')}{' '}
-              <span className="text-gray-200 font-semibold">{t('download.satelliteTiles', 'Satellite tiles')}</span>{' '}
-              {t('download.storageWarning2', 'are ~2.5x larger.')}
-            </p>
-          </div>
-        </section>
-
-        {/* ─── SUGGESTIONS LIST ─── */}
-        <section>
-          <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3 px-2">
-            {t('download.suggested', 'Suggested Regions')}
-          </h3>
-
-          <div className="flex flex-col gap-3">
-            {filteredRegions.length > 0 ? (
-              filteredRegions.map((region) => {
-                //const isDownloaded = downloadedRegions.includes(region.id);
-                //const isDownloadingThis = downloadingId === region.id;
-                const isDownloaded = downloadedRegions.some((r) => String(r) === String(region.id));
-                const isDownloadingThis = String(downloadingId) === String(region.id);
-                const isCustom = typeof region.id === 'string' && region.id.startsWith('custom');
-
-                return (
-                  <div
-                    key={region.id}
-                    onClick={() => {
-                      if (isDownloaded && !isDownloadingThis) {
-                        setViewingRegion(region.id);
-                      }
-                    }}
-                    className="bg-gray-800/40 border border-gray-700/50 rounded-3xl p-4 flex items-center justify-between shadow-sm"
-                  >
-                    <div className="flex items-center gap-4">
-                      {/* Location Icon */}
-                      <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 bg-gray-700/50 text-gray-400">
-                        <span className="material-symbols-outlined text-xl">
-                          {isDownloaded ? 'offline_pin' : isCustom ? 'dashboard_customize' : 'location_city'}
-                        </span>
-                      </div>
-
-                      {/* Region Info */}
-                      <div>
-                        <h4 className="text-white text-sm font-bold mb-0.5">{region.name}</h4>
-                        <p className="text-gray-500 text-[11px] font-medium">
-                          {isDownloadingThis
-                            ? `${t('download.downloading', 'Downloading...')} ${progress}%`
-                            : isDownloaded
-                              ? t('download.available', 'Available Offline')
-                              : `${region.size} • ${t('download.mapData', 'Map & Navigation Data')}`}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Buttons (Download / Loading / Delete) */}
-                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                      {isDownloadingThis ? (
-                        <button
-                          disabled
-                          className="w-10 h-10 rounded-full flex items-center justify-center bg-yellow-500/20 text-yellow-500 animate-pulse shrink-0"
-                        >
-                          <span className="material-symbols-outlined text-xl">sync</span>
-                        </button>
-                      ) : isDownloaded ? (
-                        <button
-                          onClick={() => handleDelete(region.id, region.name)}
-                          className="w-10 h-10 rounded-full flex items-center justify-center bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all shrink-0"
-                          title="Delete Zone"
-                        >
-                          <span className="material-symbols-outlined text-xl">delete</span>
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => handleDownload(region.id, region.name)}
-                          className="w-10 h-10 rounded-full flex items-center justify-center bg-blue-600/10 text-blue-400 hover:bg-blue-600/20 transition-all shrink-0"
-                          title="Download Zone"
-                        >
-                          <span className="material-symbols-outlined text-xl">download</span>
-                        </button>
+                      {isSelected && (
+                        <div className="absolute top-2 right-2 w-4 h-4 bg-eris-primary rounded-full flex items-center justify-center">
+                          <span className="material-symbols-outlined text-eris-text text-[10px] font-bold">check</span>
+                        </div>
                       )}
-                    </div>
-                  </div>
-                );
-              })
-            ) : (
-              <div className="text-center py-6 text-gray-500 text-sm">
-                {t('download.noRegions', 'No regions found for')} "{searchQuery}"
+
+                      {key === defaultStyleKey && (
+                        <span className="text-[8px] uppercase font-black mt-0.5">
+                          {t('download.defaultStyle', 'Default')}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
-            )}
+
+              <div className="bg-eris-alert/10 border border-eris-alert/30 rounded-xl p-3 flex items-start gap-2">
+                <span className="material-symbols-outlined text-eris-alert text-sm mt-0.5">database</span>
+                <p className="text-eris-text-muted text-[10px] leading-relaxed">
+                  {t('download.storageWarning1', 'Selecting multiple layers increases storage usage.')}{' '}
+                  <span className="text-eris-text font-semibold">
+                    {t('download.satelliteTiles', 'Satellite tiles')}
+                  </span>{' '}
+                  {t('download.storageWarning2', 'are ~2.5x larger.')}
+                </p>
+              </div>
+            </section>
+
+            {/* ─── SUGGESTIONS LIST ─── */}
+            <section>
+              <h3 className="text-eris-text-muted text-xs font-bold uppercase tracking-widest mb-3 px-2">
+                {t('download.suggested', 'Suggested Regions')}
+              </h3>
+
+              <div className="flex flex-col gap-3">
+                {filteredRegions.length > 0 ? (
+                  filteredRegions.map((region) => {
+                    const isDownloaded = downloadedRegions.some((r) => String(r) === String(region.id));
+                    const isDownloadingThis = String(downloadingId) === String(region.id);
+                    const isCustom = typeof region.id === 'string' && region.id.startsWith('custom');
+
+                    return (
+                      <div
+                        key={region.id}
+                        onClick={() => {
+                          if (isDownloaded && !isDownloadingThis) {
+                            setViewingRegion(region.id);
+                          }
+                        }}
+                        className="bg-eris-surface-alt/40 border border-eris-border/50 rounded-3xl p-4 flex items-center justify-between shadow-sm"
+                      >
+                        <div className="flex items-center gap-4">
+                          {/* Location Icon */}
+                          <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 bg-gray-700/50 text-eris-text-muted">
+                            <span className="material-symbols-outlined text-xl">
+                              {isDownloaded ? 'offline_pin' : isCustom ? 'dashboard_customize' : 'location_city'}
+                            </span>
+                          </div>
+
+                          {/* Region Info */}
+                          <div>
+                            <h4 className="text-eris-text text-sm font-bold mb-0.5">{region.name}</h4>
+                            <p className="text-eris-text-subtle text-[11px] font-medium">
+                              {isDownloadingThis
+                                ? `${t('download.downloading', 'Downloading...')} ${progress}%`
+                                : isDownloaded
+                                  ? t('download.available', 'Available Offline')
+                                  : `${region.size} • ${t('download.mapData', 'Map & Navigation Data')}`}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Buttons (Download / Loading / Delete) */}
+                        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                          {isDownloadingThis ? (
+                            <button
+                              disabled
+                              className="w-10 h-10 rounded-full flex items-center justify-center bg-eris-alert/20 text-eris-alert animate-pulse shrink-0"
+                            >
+                              <span className="material-symbols-outlined text-xl">sync</span>
+                            </button>
+                          ) : isDownloaded ? (
+                            <button
+                              onClick={() => handleDelete(region.id, region.name)}
+                              className="w-10 h-10 rounded-full flex items-center justify-center bg-eris-danger/10 text-eris-danger hover:bg-eris-danger/20 transition-all shrink-0"
+                              title="Delete Zone"
+                            >
+                              <span className="material-symbols-outlined text-xl">delete</span>
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleDownload(region.id, region.name)}
+                              className="w-10 h-10 rounded-full flex items-center justify-center bg-eris-primary/10 text-eris-primary hover:bg-eris-primary/20 transition-all shrink-0"
+                              title="Download Zone"
+                            >
+                              <span className="material-symbols-outlined text-xl">download</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="text-center py-6 text-eris-text-subtle text-sm">
+                    {t('download.noRegions', 'No regions found for')} "{searchQuery}"
+                  </div>
+                )}
+              </div>
+            </section>
           </div>
-        </section>
-      </div>
+        </div>
+      )}
     </div>
   );
 }
