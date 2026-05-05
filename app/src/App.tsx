@@ -116,8 +116,6 @@ export default function App() {
   const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
 
   useEffect(() => {
-    if (!session && !isGuest) return;
-
     CapacitorErisSosmap.startMeshNetwork();
 
     const meshListener = CapacitorErisSosmap.addListener('onMeshMessageReceived', async (data) => {
@@ -209,7 +207,7 @@ export default function App() {
 
   // Initialize map and GPS tracking only if logged in
   useEffect(() => {
-    if ((!session && !isGuest) || !mapRef.current || mapInstance.current) return;
+    if (!mapRef.current || mapInstance.current) return;
 
     let watchId: string | null = null;
 
