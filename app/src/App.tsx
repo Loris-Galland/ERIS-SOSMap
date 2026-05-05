@@ -755,7 +755,11 @@ export default function App() {
 
         {activeTab === 'USER' && (
           <div className="absolute inset-0 z-[2000] bg-[#0f141e]">
-            {session ? <ProfileScreen onOpenSettings={() => setActiveTab('SETTINGS')} /> : <AuthScreen />}
+            {session ? (
+              <ProfileScreen onOpenSettings={() => setActiveTab('SETTINGS')} />
+            ) : (
+              <AuthScreen onOpenSettings={() => setActiveTab('SETTINGS')} />
+            )}
           </div>
         )}
 
