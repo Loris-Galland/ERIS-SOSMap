@@ -48,7 +48,11 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
 
   const [viewingRegion, setViewingRegion] = useState<number | string | null>(null);
 
-  const [selectedStyles, setSelectedStyles] = useState<string[]>(['dark']);
+  const [selectedStyles, setSelectedStyles] = useState<string[]>(() => {
+    const theme = localStorage.getItem('eris_theme') || 'dark';
+    const initialStyle = theme === 'light' ? 'light' : theme === 'contrasted' ? 'contrasted' : 'dark';
+    return [initialStyle];
+  });
 
   const selectionMapRef = useRef<L.Map | null>(null);
   const selectionContainerRef = useRef<HTMLDivElement>(null);
@@ -181,7 +185,11 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
         zoomControl: false,
       }).setView([46.6033, 1.8883], 6); // Centered on France
 
-      createOfflineLayer().addTo(selectionMapRef.current);
+      const theme = localStorage.getItem('eris_theme') || 'dark';
+      const styleKey = theme === 'light' ? 'light' : theme === 'contrasted' ? 'contrasted' : 'dark';
+      const styleUrl = MAP_STYLES[styleKey as keyof typeof MAP_STYLES].url;
+
+      createOfflineLayer(styleUrl).addTo(selectionMapRef.current);
       setTimeout(() => selectionMapRef.current?.invalidateSize(), 200);
     }
     return () => {
@@ -237,7 +245,9 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
     const savedMetadata = localStorage.getItem('eris_offline_metadata');
     const metadata = savedMetadata ? JSON.parse(savedMetadata) : {};
     metadata[id] = {
+      ...metadata[id],
       lastUpdate: Date.now(),
+      styles: selectedStyles,
     };
 
     localStorage.setItem('eris_offline_metadata', JSON.stringify(metadata));
@@ -623,6 +633,15 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
     region.name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
+  const currentTheme = localStorage.getItem('eris_theme') || 'dark';
+  const defaultStyleKey = currentTheme === 'light' ? 'light' : currentTheme === 'contrasted' ? 'contrasted' : 'dark';
+
+  const sortedStyles = Object.entries(MAP_STYLES).sort(([keyA], [keyB]) => {
+    if (keyA === defaultStyleKey) return -1;
+    if (keyB === defaultStyleKey) return 1;
+    return 0;
+  });
+
   return (
     <div className="flex flex-col h-full bg-eris-bg w-full overflow-y-auto font-sans relative">
       <AlertModal
@@ -645,7 +664,18 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
 
           if (!bounds || !regionObj) return null;
 
-          return <OfflineMapViewer name={regionObj.name} bounds={bounds} onClose={() => setViewingRegion(null)} />;
+          const savedMetadata = localStorage.getItem('eris_offline_metadata');
+          const metadata = savedMetadata ? JSON.parse(savedMetadata) : {};
+          const availableStyles = metadata[viewingRegion]?.styles;
+
+          return (
+            <OfflineMapViewer
+              name={regionObj.name}
+              bounds={bounds}
+              onClose={() => setViewingRegion(null)}
+              availableStyles={availableStyles}
+            />
+          );
         })()}
 
       {/* ─── MANUAL SELECTION OVERLAY ─── */}
@@ -765,12 +795,12 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
                 {t('download.selectLayers', 'Select Map Layers')}
               </h3>
               <div className="grid grid-cols-2 gap-3 mb-3">
-                {Object.values(MAP_STYLES).map((style) => {
-                  const isSelected = selectedStyles.includes(style.id);
+                {sortedStyles.map(([key, style]) => {
+                  const isSelected = selectedStyles.includes(key);
                   return (
                     <button
-                      key={style.id}
-                      onClick={() => toggleStyle(style.id)}
+                      key={key}
+                      onClick={() => toggleStyle(key)}
                       disabled={downloadingId !== null}
                       className={`relative flex flex-col items-center justify-center gap-2 p-3 rounded-2xl border transition-all active:scale-95 ${
                         isSelected
@@ -779,13 +809,15 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
                       }`}
                     >
                       <span className="material-symbols-outlined text-2xl">{style.icon}</span>
-                      <span className="text-xs font-bold">{style.name}</span>
+                      <span className="text-xs font-bold">{t(`mapStyles.${key}`, style.name)}</span>
+
                       {isSelected && (
                         <div className="absolute top-2 right-2 w-4 h-4 bg-eris-primary rounded-full flex items-center justify-center">
                           <span className="material-symbols-outlined text-eris-text text-[10px] font-bold">check</span>
                         </div>
                       )}
-                      {style.id === 'dark' && (
+
+                      {key === defaultStyleKey && (
                         <span className="text-[8px] uppercase font-black mt-0.5">
                           {t('download.defaultStyle', 'Default')}
                         </span>

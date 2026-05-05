@@ -148,7 +148,7 @@ export default function App() {
     localStorage.setItem('eris_theme', visualTheme);
 
     if (mapInstance.current && baseLayerRef.current) {
-      const mapStyleKey = visualTheme === 'light' ? 'light' : 'dark';
+      const mapStyleKey = visualTheme === 'light' ? 'light' : visualTheme === 'contrasted' ? 'contrasted' : 'dark';
       baseLayerRef.current.setUrl(MAP_STYLES[mapStyleKey].url);
       setCurrentMapStyle(mapStyleKey);
     }
@@ -600,20 +600,28 @@ export default function App() {
                     {t('offlineViewer.mapType', 'Map Type')}
                   </span>
                 </div>
-                {Object.entries(MAP_STYLES).map(([key, style]) => (
-                  <button
-                    key={key}
-                    onClick={() => changeMapStyle(key)}
-                    className={`px-4 py-3 text-left text-xs font-bold flex items-center gap-3 border-b border-eris-border/50 last:border-0 transition-colors ${
-                      currentMapStyle === key
-                        ? 'text-eris-primary bg-eris-surface-alt/80'
-                        : 'text-eris-text-muted hover:bg-eris-surface-alt/40'
-                    }`}
-                  >
-                    <span className="material-symbols-outlined text-base">{style.icon}</span>
-                    {t(`mapStyles.${key}`, style.name)}
-                  </button>
-                ))}
+                {Object.entries(MAP_STYLES)
+                  .sort(([keyA], [keyB]) => {
+                    const currentDefault =
+                      visualTheme === 'light' ? 'light' : visualTheme === 'contrasted' ? 'contrasted' : 'dark';
+                    if (keyA === currentDefault) return -1;
+                    if (keyB === currentDefault) return 1;
+                    return 0;
+                  })
+                  .map(([key, style]) => (
+                    <button
+                      key={key}
+                      onClick={() => changeMapStyle(key)}
+                      className={`px-4 py-3 text-left text-xs font-bold flex items-center gap-3 border-b border-eris-border/50 last:border-0 transition-colors ${
+                        currentMapStyle === key
+                          ? 'text-eris-primary bg-eris-surface-alt/80'
+                          : 'text-eris-text-muted hover:bg-eris-surface-alt/40'
+                      }`}
+                    >
+                      <span className="material-symbols-outlined text-base">{style.icon}</span>
+                      {t(`mapStyles.${key}`, style.name)}
+                    </button>
+                  ))}
               </div>
             )}
           </div>

@@ -33,7 +33,7 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
   const [downloadedIds, setDownloadedIds] = useState<(number | string)[]>([]);
   const [customRegions, setCustomRegions] = useState<any[]>([]);
 
-  const [metadata, setMetadata] = useState<Record<number | string, { lastUpdate: number }>>({});
+  const [metadata, setMetadata] = useState<Record<number | string, { lastUpdate: number; styles?: string[] }>>({});
   const [activeMenu, setActiveMenu] = useState<number | string | null>(null);
   const [updatingId, setUpdatingId] = useState<number | string | null>(null);
   const [progress, setProgress] = useState(0);
@@ -175,12 +175,12 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
       const now = Date.now();
       setMetadata((prev) => ({
         ...prev,
-        [id]: { lastUpdate: now },
+        [id]: { ...prev[id], lastUpdate: now },
       }));
 
       const savedMeta = localStorage.getItem('eris_offline_metadata');
       const currentMeta = savedMeta ? JSON.parse(savedMeta) : {};
-      currentMeta[id] = { lastUpdate: now };
+      currentMeta[id] = { ...currentMeta[id], lastUpdate: now };
       localStorage.setItem('eris_offline_metadata', JSON.stringify(currentMeta));
 
       setTimeout(() => {
@@ -221,11 +221,13 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
         (() => {
           const regionInfo = getRegionInfo(viewingRegion);
           if (!regionInfo) return null;
+          const availableStyles = metadata[viewingRegion]?.styles;
           return (
             <OfflineMapViewer
               name={regionInfo.name}
               bounds={regionInfo.bounds}
               onClose={() => setViewingRegion(null)}
+              availableStyles={availableStyles}
             />
           );
         })()}

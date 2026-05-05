@@ -7,9 +7,10 @@ interface OfflineMapViewerProps {
   name: string;
   bounds: L.LatLngBounds;
   onClose: () => void;
+  availableStyles?: string[];
 }
 
-export default function OfflineMapViewer({ name, bounds, onClose }: OfflineMapViewerProps) {
+export default function OfflineMapViewer({ name, bounds, onClose, availableStyles }: OfflineMapViewerProps) {
   const { t } = useTranslation();
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -18,7 +19,14 @@ export default function OfflineMapViewer({ name, bounds, onClose }: OfflineMapVi
 
   // Layer Menu States
   const [showLayerMenu, setShowLayerMenu] = useState(false);
-  const [currentMapStyle, setCurrentMapStyle] = useState<string>('dark');
+  const [currentMapStyle, setCurrentMapStyle] = useState<string>(() => {
+    const theme = localStorage.getItem('eris_theme') || 'dark';
+    const preferredKey = theme === 'light' ? 'light' : theme === 'contrasted' ? 'contrasted' : 'dark';
+
+    if (!availableStyles || availableStyles.length === 0) return preferredKey;
+    if (availableStyles.includes(preferredKey)) return preferredKey;
+    return availableStyles[0];
+  });
 
   useEffect(() => {
     if (mapContainerRef.current && !mapInstanceRef.current) {
@@ -28,8 +36,10 @@ export default function OfflineMapViewer({ name, bounds, onClose }: OfflineMapVi
         attributionControl: false,
       }).fitBounds(bounds);
 
+      const initialUrl = MAP_STYLES[currentMapStyle as keyof typeof MAP_STYLES].url;
+
       // Add offline layer and save reference
-      baseLayerRef.current = createOfflineLayer();
+      baseLayerRef.current = createOfflineLayer(initialUrl);
       baseLayerRef.current.addTo(mapInstanceRef.current);
 
       // Fix frequent rendering bug (gray blocks)
@@ -56,6 +66,9 @@ export default function OfflineMapViewer({ name, bounds, onClose }: OfflineMapVi
     }
     setShowLayerMenu(false);
   };
+
+  const currentTheme = localStorage.getItem('eris_theme') || 'dark';
+  const defaultStyleId = currentTheme === 'light' ? 'light' : currentTheme === 'contrasted' ? 'contrasted' : 'dark';
 
   return (
     <div className="fixed inset-0 z-[6000] bg-eris-bg flex flex-col animate-in slide-in-from-bottom duration-300">
@@ -103,21 +116,43 @@ export default function OfflineMapViewer({ name, bounds, onClose }: OfflineMapVi
                     {t('offlineViewer.mapType')}
                   </span>
                 </div>
-                {Object.entries(MAP_STYLES).map(([key, style]) => (
-                  <button
-                    key={key}
-                    onClick={() => changeMapStyle(key)}
-                    className={`px-4 py-3 text-left text-xs font-bold flex items-center gap-3 border-b border-eris-border/50 last:border-0 transition-colors ${
-                      currentMapStyle === key
-                        ? 'text-eris-primary bg-eris-surface-alt/80'
-                        : 'text-eris-text-muted hover:bg-eris-surface-alt/40'
-                    }`}
-                  >
-                    <span className="material-symbols-outlined text-base">{style.icon}</span>
-                    {/* fallback on style.name if translation key doesn't exist yet */}
-                    {t(`mapStyles.${key}`, style.name)}
-                  </button>
-                ))}
+                {Object.entries(MAP_STYLES)
+                  .sort(([keyA], [keyB]) => {
+                    const currentDefault =
+                      currentTheme === 'light' ? 'light' : currentTheme === 'contrasted' ? 'contrasted' : 'dark';
+                    if (keyA === currentDefault) return -1;
+                    if (keyB === currentDefault) return 1;
+                    return 0;
+                  })
+                  .map(([key, style]) => {
+                    const isAvailable = !availableStyles || availableStyles.includes(key);
+                    return (
+                      <button
+                        key={key}
+                        onClick={() => isAvailable && changeMapStyle(key)}
+                        disabled={!isAvailable}
+                        className={`px-4 py-3 text-left text-xs font-bold flex items-center gap-3 border-b border-eris-border/50 last:border-0 transition-colors ${
+                          !isAvailable
+                            ? 'opacity-40 cursor-not-allowed text-eris-text-subtle' // if unavailable -> grey out
+                            : currentMapStyle === key
+                              ? 'text-eris-primary bg-eris-surface-alt/80'
+                              : 'text-eris-text-muted hover:bg-eris-surface-alt/40'
+                        }`}
+                      >
+                        <span className="material-symbols-outlined text-base">
+                          {isAvailable ? style.icon : 'cloud_off'}
+                        </span>
+                        <div className="flex flex-col">
+                          <span>{t(`mapStyles.${key}`, style.name)}</span>
+                          {!isAvailable && (
+                            <span className="text-[9px] font-normal italic">
+                              {t('offlineViewer.notDownloaded', 'Non téléchargé')}
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
               </div>
             )}
           </div>
