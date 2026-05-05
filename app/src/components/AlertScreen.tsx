@@ -7,6 +7,7 @@ import SOSHistoryScreen from './SosHistoryScreen';
 import { Geolocation } from '@capacitor/geolocation';
 import { Device } from '@capacitor/device';
 import { useTranslation } from 'react-i18next';
+import DistressSignalScreen from './DistressSignalScreen';
 
 // Types
 interface Coords {
@@ -30,6 +31,7 @@ export default function AlertScreen() {
   const [notes, setNotes] = useState<string>('');
   const [userId, setUserId] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState<boolean>(false);
+  const [showBeacon, setShowBeacon] = useState<boolean>(false);
 
   const [coords, setCoords] = useState<Coords>({
     lat: '0.0000° N',
@@ -288,253 +290,259 @@ export default function AlertScreen() {
   }, [sent, isSending]);
 
   return (
-    <div className="flex flex-col h-full bg-eris-bg w-full overflow-y-auto font-sans relative pb-24 pt-4 px-4">
+    <div
+      className={`flex flex-col h-full bg-eris-bg w-full font-sans relative pb-24 pt-4 px-4 ${showHistory || showBeacon ? 'overflow-hidden' : 'overflow-y-auto'}`}
+    >
       {/* History screen overlay */}
-      {showHistory ? (
-        <SOSHistoryScreen onClose={() => setShowHistory(false)} />
-      ) : (
-        <>
-          {/* ─── CANCELLATION POPUP (GRACE PERIOD) ─── */}
-          {isGracePeriod && (
-            <div className="fixed bottom-28 left-4 right-4 z-[9999] animate-in fade-in slide-in-from-bottom-4 duration-300">
-              <div className="bg-eris-danger rounded-2xl p-4 shadow-2xl flex items-center justify-between border border-white/20 [.theme-contrasted_&]:!border-2 [.theme-contrasted_&]:!border-black overflow-hidden relative">
-                <div className="flex items-center gap-3 relative z-10">
-                  <div className="w-8 h-8 bg-white/20 [.theme-contrasted_&]:!border-2 [.theme-contrasted_&]:!border-black rounded-full flex items-center justify-center animate-pulse">
-                    <span className="material-symbols-outlined text-eris-text text-lg">emergency</span>
-                  </div>
-                  <div>
-                    <p className="text-eris-text font-bold text-sm">{t('alert.alertSent')}</p>
-                    <p className="text-eris-text/80 text-[10px] uppercase tracking-wider font-semibold">
-                      {t('alert.cancelAvailable')}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={handleCancelAlert}
-                  className="bg-white text-eris-danger [.theme-contrasted_&]:!bg-black [.theme-contrasted_&]:!text-white font-black px-4 py-2 rounded-xl text-xs active:scale-95 transition-transform relative z-10"
-                >
-                  {t('alert.cancelBtn')}
-                </button>
-                {/* Timer Progress Bar */}
-                <div
-                  className="absolute bottom-0 left-0 h-1 bg-white/40 [.theme-contrasted_&]:!bg-black/40 w-full origin-left"
-                  style={{ animation: 'timer-bar 5s linear forwards' }}
-                ></div>
+      {showHistory && <SOSHistoryScreen onClose={() => setShowHistory(false)} />}
+
+      {/* Beacon screen overlay */}
+      {showBeacon && <DistressSignalScreen onClose={() => setShowBeacon(false)} />}
+
+      {/* ─── CANCELLATION POPUP (GRACE PERIOD) ─── */}
+      {isGracePeriod && (
+        <div className="fixed bottom-28 left-4 right-4 z-[9999] animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="bg-eris-danger rounded-2xl p-4 shadow-2xl flex items-center justify-between border border-white/20 overflow-hidden relative">
+            <div className="flex items-center gap-3 relative z-10">
+              <div className="w-8 h-8 bg-white/20 [.theme-contrasted_&]:!border-2 [.theme-contrasted_&]:!border-black rounded-full flex items-center justify-center animate-pulse">
+                <span className="material-symbols-outlined text-eris-text text-lg">emergency</span>
+              </div>
+              <div>
+                <p className="text-eris-text font-bold text-sm">{t('alert.alertSent')}</p>
+                <p className="text-eris-text/80 text-[10px] uppercase tracking-wider font-semibold">
+                  {t('alert.cancelAvailable')}
+                </p>
               </div>
             </div>
-          )}
-
-          {/* Header */}
-          <header className="mb-8 mt-2 text-center">
-            <h2 className="text-eris-text font-bold text-3xl tracking-tight mb-2">{t('alert.triggerTitle')}</h2>
-            <div className="h-1 w-16 bg-eris-danger mx-auto rounded-full mb-3" />
-            <p className="text-eris-text-muted font-medium text-xs">{t('alert.triggerSubtitle')}</p>
-
-            {/* History access button */}
             <button
-              onClick={() => setShowHistory(true)}
-              className="absolute right-2 top-6 w-10 h-10 bg-eris-surface-alt/60 border border-eris-border/50 rounded-full flex items-center justify-center text-eris-text-muted hover:text-eris-text active:scale-95 transition-all"
-              title="SOS History"
+              onClick={handleCancelAlert}
+              className="bg-white text-eris-danger [.theme-contrasted_&]:!bg-black [.theme-contrasted_&]:!text-white font-black px-4 py-2 rounded-xl text-xs active:scale-95 transition-transform relative z-10"
             >
-              <span className="material-symbols-outlined text-xl">history</span>
+              {t('alert.cancelBtn')}
             </button>
-          </header>
+            {/* Timer Progress Bar */}
+            <div
+              className="absolute bottom-0 left-0 h-1 bg-white/40 [.theme-contrasted_&]:!bg-black/40 w-full origin-left"
+              style={{ animation: 'timer-bar 5s linear forwards' }}
+            ></div>
+          </div>
+        </div>
+      )}
 
-          {/* Queued Banner */}
-          {(queuedCount ?? 0) > 0 && (
-            <div className="mb-4 bg-eris-alert/10 border border-eris-alert/30 rounded-2xl p-3 flex items-center gap-2">
-              <span className="material-symbols-outlined text-eris-alert text-lg">schedule_send</span>
-              <p className="text-eris-alert text-xs font-medium">
-                {queuedCount} {t('alert.pendingAlerts')}
-              </p>
-            </div>
-          )}
+      {/* Header */}
+      <header className="mb-8 mt-2 text-center">
+        <h2 className="text-eris-text font-bold text-3xl tracking-tight mb-2">{t('alert.triggerTitle')}</h2>
+        <div className="h-1 w-16 bg-eris-danger mx-auto rounded-full mb-3" />
+        <p className="text-eris-text-muted font-medium text-xs">{t('alert.triggerSubtitle')}</p>
 
-          {/* SOS Button Zone */}
-          <section className="flex flex-col items-center justify-center py-6 mb-4">
-            <div className="relative flex items-center justify-center mb-8">
-              {/* Rotating ring */}
+        {/* Flashlight */}
+        <button
+          onClick={() => setShowBeacon(true)}
+          className="absolute left-2 top-6 w-10 h-10 bg-eris-danger/10 border border-eris-danger/30 rounded-full flex items-center justify-center text-eris-danger hover:bg-eris-danger/20 active:scale-95 transition-all"
+          title="Distress Beacon"
+        >
+          <span className="material-symbols-outlined text-xl">flashlight_on</span>
+        </button>
+
+        {/* History access button */}
+        <button
+          onClick={() => setShowHistory(true)}
+          className="absolute right-2 top-6 w-10 h-10 bg-eris-surface-alt/60 border border-eris-border/50 rounded-full flex items-center justify-center text-eris-text-muted hover:text-eris-text active:scale-95 transition-all"
+          title="SOS History"
+        >
+          <span className="material-symbols-outlined text-xl">history</span>
+        </button>
+      </header>
+
+      {/* Queued Banner */}
+      {(queuedCount ?? 0) > 0 && (
+        <div className="mb-4 bg-eris-alert/10 border border-eris-alert/30 rounded-2xl p-3 flex items-center gap-2">
+          <span className="material-symbols-outlined text-eris-alert text-lg">schedule_send</span>
+          <p className="text-eris-alert text-xs font-medium">
+            {queuedCount} {t('alert.pendingAlerts')}
+          </p>
+        </div>
+      )}
+
+      {/* SOS Button Zone */}
+      <section className="flex flex-col items-center justify-center py-6 mb-4">
+        <div className="relative flex items-center justify-center mb-8">
+          {/* Rotating ring */}
+          <div
+            className={`absolute rounded-full border ${
+              sent ? 'border-eris-success/20 bg-eris-success/5' : 'border-eris-danger/20 bg-eris-danger/5'
+            } [.theme-contrasted_&]:border-white [.theme-contrasted_&]:bg-gray-600/60`}
+            style={{
+              width: 300,
+              height: 300,
+            }}
+          />
+
+          {/* SOS Button */}
+          <button
+            onMouseDown={startHold}
+            onTouchStart={startHold}
+            onMouseUp={cancelHold}
+            onMouseLeave={cancelHold}
+            onTouchEnd={cancelHold}
+            disabled={isSending}
+            className={`relative flex flex-col items-center justify-center gap-3 z-10 select-none rounded-full overflow-hidden transition-all duration-300 disabled:opacity-80 disabled:cursor-not-allowed border-[6px] border-white/10 [.theme-contrasted_&]:!border-white [.theme-contrasted_&]:shadow-none ${
+              sent
+                ? 'bg-eris-success shadow-[0_0_40px_rgba(var(--eris-success),0.4),0_0_80px_rgba(var(--eris-success),0.2)]'
+                : 'bg-eris-danger shadow-[0_0_40px_rgba(var(--eris-danger),0.4),0_0_80px_rgba(var(--eris-danger),0.2)]'
+            }`}
+            style={{
+              width: 240,
+              height: 240,
+              cursor: isSending ? 'not-allowed' : 'pointer',
+              WebkitUserSelect: 'none',
+              touchAction: 'none',
+            }}
+          >
+            {/* Hold progress fill */}
+            {holding && (
               <div
-                className={`absolute rounded-full border ${
-                  sent ? 'border-eris-success/20 bg-eris-success/5' : 'border-eris-danger/20 bg-eris-danger/5'
-                } [.theme-contrasted_&]:border-white [.theme-contrasted_&]:bg-gray-600/60`}
+                className="absolute bottom-0 left-0 w-full bg-white/20 [.theme-contrasted_&]:bg-black/20 pointer-events-none"
                 style={{
-                  width: 300,
-                  height: 300,
+                  height: `${progress}%`,
+                  transition: 'height 0.03s linear',
                 }}
               />
-
-              {/* SOS Button */}
-              <button
-                onMouseDown={startHold}
-                onTouchStart={startHold}
-                onMouseUp={cancelHold}
-                onMouseLeave={cancelHold}
-                onTouchEnd={cancelHold}
-                disabled={isSending}
-                className={`relative flex flex-col items-center justify-center gap-3 z-10 select-none rounded-full overflow-hidden transition-all duration-300 disabled:opacity-80 disabled:cursor-not-allowed border-[6px] border-white/10 [.theme-contrasted_&]:!border-white [.theme-contrasted_&]:shadow-none ${
-                  sent
-                    ? 'bg-eris-success shadow-[0_0_40px_rgba(var(--eris-success),0.4),0_0_80px_rgba(var(--eris-success),0.2)]'
-                    : 'bg-eris-danger shadow-[0_0_40px_rgba(var(--eris-danger),0.4),0_0_80px_rgba(var(--eris-danger),0.2)]'
-                }`}
-                style={{
-                  width: 240,
-                  height: 240,
-                  cursor: isSending ? 'not-allowed' : 'pointer',
-                  WebkitUserSelect: 'none',
-                  touchAction: 'none',
-                }}
-              >
-                {/* Hold progress fill */}
-                {holding && (
-                  <div
-                    className="absolute bottom-0 left-0 w-full bg-white/20 [.theme-contrasted_&]:bg-black/20 pointer-events-none"
-                    style={{
-                      height: `${progress}%`,
-                      transition: 'height 0.03s linear',
-                    }}
-                  />
-                )}
-
-                {isSending ? (
-                  <span className="material-symbols-outlined relative z-10 text-eris-text text-6xl animate-spin">
-                    sync
-                  </span>
-                ) : (
-                  <span
-                    className="material-symbols-outlined relative z-10 text-white text-6xl"
-                    style={{ fontVariationSettings: "'FILL' 1" }}
-                  >
-                    {sent ? 'check_circle' : 'emergency_share'}
-                  </span>
-                )}
-
-                <span className="font-bold text-xl text-center px-4 leading-tight text-white relative z-10 whitespace-pre-line tracking-wide">
-                  {isSending
-                    ? t('alert.sending')
-                    : sent
-                      ? t('alert.sentCheck')
-                      : holding
-                        ? t('alert.holding')
-                        : t('alert.holdBtn')}
-                </span>
-              </button>
-            </div>
-
-            {/* Status Message Banner */}
-            {statusMessage && (
-              <div
-                className={`w-full max-w-xs rounded-2xl p-3 flex items-center gap-2 mb-4 ${
-                  statusType === 'success'
-                    ? 'bg-eris-success/10 border border-eris-success/30'
-                    : statusType === 'warning'
-                      ? 'bg-eris-alert/10 border border-eris-alert/30'
-                      : statusType === 'error'
-                        ? 'bg-eris-danger/10 border border-eris-danger/30'
-                        : 'bg-eris-surface-alt/60 border border-eris-border/50'
-                }`}
-              >
-                <span
-                  className={`material-symbols-outlined text-lg ${
-                    statusType === 'success'
-                      ? 'text-eris-success'
-                      : statusType === 'warning'
-                        ? 'text-eris-alert'
-                        : statusType === 'error'
-                          ? 'text-eris-danger'
-                          : 'text-eris-primary'
-                  }`}
-                >
-                  {statusType === 'success'
-                    ? 'check_circle'
-                    : statusType === 'warning'
-                      ? 'schedule_send'
-                      : statusType === 'error'
-                        ? 'error'
-                        : 'sync'}
-                </span>
-                <p className="text-eris-text text-xs font-medium leading-snug">{statusMessage}</p>
-                {/* ─── OFFLINE SMS FALLBACK BUTTON ─── */}
-                {statusType === 'warning' && (
-                  <button
-                    onClick={sendFallbackSMS}
-                    className="w-full mt-3 py-3 bg-eris-primary hover:bg-eris-primary text-eris-text rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-colors active:scale-95 shadow-lg"
-                  >
-                    <span className="material-symbols-outlined text-sm">sms</span>
-                    {t('alert.sendSmsBtn')}
-                  </button>
-                )}
-              </div>
             )}
 
-            {/* Warning & Progress Bar */}
-            <p className="font-semibold text-xs tracking-wider uppercase flex items-center gap-2 text-eris-alert mb-4">
-              <span className="material-symbols-outlined text-sm">warning</span>
-              {t('alert.holdRequired')}
-            </p>
-
-            <div className="w-48 h-1.5 bg-eris-surface-alt rounded-full overflow-hidden">
-              <div
-                className="h-full bg-eris-alert rounded-full"
-                style={{
-                  width: `${progress}%`,
-                  transition: holding ? 'width 0.03s linear' : 'none',
-                  opacity: holding || sent ? 1 : 0,
-                }}
-              />
-            </div>
-          </section>
-
-          {/* Alert Details Form */}
-          <section className="space-y-4 px-2">
-            <div className="bg-eris-surface-alt/40 border border-eris-border/50 rounded-3xl p-4 shadow-sm">
-              <label
-                className="block font-bold text-xs uppercase tracking-wider mb-2 text-eris-text-muted px-1"
-                htmlFor="alert-notes"
-              >
-                {t('alert.emergencyDetails')}
-              </label>
-              <textarea
-                id="alert-notes"
-                rows={3}
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                disabled={isSending || isGracePeriod}
-                className="w-full bg-eris-surface/50 border border-eris-border/50 rounded-2xl p-3 resize-none outline-none focus:ring-2 focus:ring-eris-primary/50 text-eris-text text-sm placeholder-gray-500 transition-all disabled:opacity-50"
-                placeholder={t('alert.describeSituation')}
-              />
-            </div>
-
-            {/* GPS Coordinates Display */}
-            <div className="bg-eris-surface-alt/40 border border-eris-border/50 rounded-3xl p-4 shadow-sm">
-              <div className="grid grid-cols-3 gap-2 text-center">
-                {[
-                  { label: t('alert.latitude'), value: coords.lat },
-                  { label: t('alert.longitude'), value: coords.lon },
-                  { label: t('alert.altitude'), value: coords.alt },
-                ].map(({ label, value }) => (
-                  <div key={label} className="flex flex-col gap-1">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-eris-text-subtle">
-                      {label}
-                    </span>
-                    <span className="text-sm font-bold text-eris-primary">{value}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Network Indicator */}
-            <div className="flex items-center justify-center gap-2 py-2">
+            {isSending ? (
+              <span className="material-symbols-outlined relative z-10 text-eris-text text-6xl animate-spin">sync</span>
+            ) : (
               <span
-                className={`w-2 h-2 rounded-full ${navigator.onLine ? 'bg-eris-success' : 'bg-amber-500 animate-pulse'}`}
-              />
-              <span className="text-eris-text-subtle text-[11px] font-semibold uppercase tracking-wider">
-                {navigator.onLine ? t('alert.networkActive') : t('alert.networkOffline')}
+                className="material-symbols-outlined relative z-10 text-white text-6xl"
+                style={{ fontVariationSettings: "'FILL' 1" }}
+              >
+                {sent ? 'check_circle' : 'emergency_share'}
               </span>
-            </div>
-          </section>
-        </>
-      )}
+            )}
+
+            <span className="font-bold text-xl text-center px-4 leading-tight text-white relative z-10 whitespace-pre-line tracking-wide">
+              {isSending
+                ? t('alert.sending')
+                : sent
+                  ? t('alert.sentCheck')
+                  : holding
+                    ? t('alert.holding')
+                    : t('alert.holdBtn')}
+            </span>
+          </button>
+        </div>
+
+        {/* Status Message Banner */}
+        {statusMessage && (
+          <div
+            className={`w-full max-w-xs rounded-2xl p-3 flex items-center gap-2 mb-4 ${
+              statusType === 'success'
+                ? 'bg-eris-success/10 border border-eris-success/30'
+                : statusType === 'warning'
+                  ? 'bg-eris-alert/10 border border-eris-alert/30'
+                  : statusType === 'error'
+                    ? 'bg-eris-danger/10 border border-eris-danger/30'
+                    : 'bg-eris-surface-alt/60 border border-eris-border/50'
+            }`}
+          >
+            <span
+              className={`material-symbols-outlined text-lg ${
+                statusType === 'success'
+                  ? 'text-eris-success'
+                  : statusType === 'warning'
+                    ? 'text-eris-alert'
+                    : statusType === 'error'
+                      ? 'text-eris-danger'
+                      : 'text-eris-primary'
+              }`}
+            >
+              {statusType === 'success'
+                ? 'check_circle'
+                : statusType === 'warning'
+                  ? 'schedule_send'
+                  : statusType === 'error'
+                    ? 'error'
+                    : 'sync'}
+            </span>
+            <p className="text-eris-text text-xs font-medium leading-snug">{statusMessage}</p>
+            {/* ─── OFFLINE SMS FALLBACK BUTTON ─── */}
+            {statusType === 'warning' && (
+              <button
+                onClick={sendFallbackSMS}
+                className="w-full mt-3 py-3 bg-eris-primary hover:bg-eris-primary text-eris-text rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-colors active:scale-95 shadow-lg"
+              >
+                <span className="material-symbols-outlined text-sm">sms</span>
+                {t('alert.sendSmsBtn')}
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Warning & Progress Bar */}
+        <p className="font-semibold text-xs tracking-wider uppercase flex items-center gap-2 text-eris-alert mb-4">
+          <span className="material-symbols-outlined text-sm">warning</span>
+          {t('alert.holdRequired')}
+        </p>
+
+        <div className="w-48 h-1.5 bg-eris-surface-alt rounded-full overflow-hidden">
+          <div
+            className="h-full bg-eris-alert rounded-full"
+            style={{
+              width: `${progress}%`,
+              transition: holding ? 'width 0.03s linear' : 'none',
+              opacity: holding || sent ? 1 : 0,
+            }}
+          />
+        </div>
+      </section>
+
+      {/* Alert Details Form */}
+      <section className="space-y-4 px-2">
+        <div className="bg-eris-surface-alt/40 border border-eris-border/50 rounded-3xl p-4 shadow-sm">
+          <label
+            className="block font-bold text-xs uppercase tracking-wider mb-2 text-eris-text-muted px-1"
+            htmlFor="alert-notes"
+          >
+            {t('alert.emergencyDetails')}
+          </label>
+          <textarea
+            id="alert-notes"
+            rows={3}
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            disabled={isSending || isGracePeriod}
+            className="w-full bg-eris-surface/50 border border-eris-border/50 rounded-2xl p-3 resize-none outline-none focus:ring-2 focus:ring-eris-primary/50 text-eris-text text-sm placeholder-gray-500 transition-all disabled:opacity-50"
+            placeholder={t('alert.describeSituation')}
+          />
+        </div>
+
+        {/* GPS Coordinates Display */}
+        <div className="bg-eris-surface-alt/40 border border-eris-border/50 rounded-3xl p-4 shadow-sm">
+          <div className="grid grid-cols-3 gap-2 text-center">
+            {[
+              { label: t('alert.latitude'), value: coords.lat },
+              { label: t('alert.longitude'), value: coords.lon },
+              { label: t('alert.altitude'), value: coords.alt },
+            ].map(({ label, value }) => (
+              <div key={label} className="flex flex-col gap-1">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-eris-text-subtle">{label}</span>
+                <span className="text-sm font-bold text-eris-primary">{value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Network Indicator */}
+        <div className="flex items-center justify-center gap-2 py-2">
+          <span
+            className={`w-2 h-2 rounded-full ${navigator.onLine ? 'bg-eris-success' : 'bg-amber-500 animate-pulse'}`}
+          />
+          <span className="text-eris-text-subtle text-[11px] font-semibold uppercase tracking-wider">
+            {navigator.onLine ? t('alert.networkActive') : t('alert.networkOffline')}
+          </span>
+        </div>
+      </section>
 
       {/* Animations */}
       <style>{`

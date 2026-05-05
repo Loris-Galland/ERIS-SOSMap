@@ -28,6 +28,11 @@ npx cap sync
 
 * [`echo(...)`](#echo)
 * [`triggerEmergency(...)`](#triggeremergency)
+* [`startMeshNetwork()`](#startmeshnetwork)
+* [`stopMeshNetwork()`](#stopmeshnetwork)
+* [`broadcastMeshMessage(...)`](#broadcastmeshmessage)
+* [`addListener('onMeshMessageReceived', ...)`](#addlisteneronmeshmessagereceived-)
+* [Interfaces](#interfaces)
 
 </docgen-index>
 
@@ -62,5 +67,62 @@ triggerEmergency(options: { latitude: number; longitude: number; userId: string;
 **Returns:** <code>Promise&lt;{ success: boolean; transmissionMethod: string; }&gt;</code>
 
 --------------------
+
+
+### startMeshNetwork()
+
+```typescript
+startMeshNetwork() => Promise<void>
+```
+
+--------------------
+
+
+### stopMeshNetwork()
+
+```typescript
+stopMeshNetwork() => Promise<void>
+```
+
+--------------------
+
+
+### broadcastMeshMessage(...)
+
+```typescript
+broadcastMeshMessage(options: { message: string; }) => Promise<void>
+```
+
+| Param         | Type                              |
+| ------------- | --------------------------------- |
+| **`options`** | <code>{ message: string; }</code> |
+
+--------------------
+
+
+### addListener('onMeshMessageReceived', ...)
+
+```typescript
+addListener(eventName: 'onMeshMessageReceived', listenerFunc: (data: { message: string; }) => void) => Promise<PluginListenerHandle>
+```
+
+| Param              | Type                                                 |
+| ------------------ | ---------------------------------------------------- |
+| **`eventName`**    | <code>'onMeshMessageReceived'</code>                 |
+| **`listenerFunc`** | <code>(data: { message: string; }) =&gt; void</code> |
+
+**Returns:** <code>Promise&lt;<a href="#pluginlistenerhandle">PluginListenerHandle</a>&gt;</code>
+
+--------------------
+
+
+### Interfaces
+
+
+#### PluginListenerHandle
+
+| Prop         | Type                                      |
+| ------------ | ----------------------------------------- |
+| **`remove`** | <code>() =&gt; Promise&lt;void&gt;</code> |
 
 </docgen-api>

@@ -88,22 +88,29 @@ export default function DistressSignalScreen({ onClose }: DistressSignalScreenPr
   // Hardware Volume Buttons Listener
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'VolumeUp' || event.key === 'VolumeDown') {
+      if (
+        event.key === 'VolumeUp' ||
+        event.key === 'VolumeDown' ||
+        event.key === 'AudioVolumeUp' ||
+        event.key === 'AudioVolumeDown'
+      ) {
         event.preventDefault();
         toggleBeacon();
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('keydown', handleKeyDown);
 
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('keydown', handleKeyDown);
     };
   }, [toggleBeacon]);
 
   return (
     <div
-      className={`flex flex-col h-full w-full overflow-y-auto font-sans relative pb-24 pt-4 px-4 transition-colors duration-300 ${isActive ? 'bg-eris-danger animate-pulse' : 'bg-eris-bg'}`}
+      className={`absolute inset-0 z-[5000] flex flex-col w-full overflow-y-auto font-sans pb-24 pt-4 px-4 transition-colors duration-300 ${
+        isActive ? 'bg-eris-danger' : 'bg-eris-bg'
+      }`}
     >
       {/* Header */}
       <header className="mb-8 mt-2 flex items-center justify-between">
@@ -132,14 +139,22 @@ export default function DistressSignalScreen({ onClose }: DistressSignalScreenPr
         <button
           onClick={toggleBeacon}
           className={`relative flex flex-col items-center justify-center gap-3 z-10 select-none rounded-full overflow-hidden transition-all duration-300 shadow-2xl ${
-            isActive ? 'bg-white text-eris-danger scale-105' : 'bg-eris-danger text-eris-text hover:bg-eris-danger'
+            isActive
+              ? 'animate-pulse bg-white text-eris-danger [.theme-contrasted_&]:!bg-black [.theme-contrasted_&]:!text-white scale-105'
+              : 'bg-eris-danger text-eris-text [.theme-light_&]:text-white hover:bg-eris-danger'
           }`}
           style={{ width: 220, height: 220, border: '6px solid rgba(255,255,255,0.1)' }}
         >
-          <span className="material-symbols-outlined text-7xl" style={{ fontVariationSettings: "'FILL' 1" }}>
+          <span
+            className={`material-symbols-outlined text-7xl ${isActive ? '[.theme-contrasted_&]:!text-white' : ''}`}
+            style={{ fontVariationSettings: "'FILL' 1" }}
+          >
             {isActive ? 'notifications_active' : 'flashlight_on'}
           </span>
-          <span className="font-bold text-xl text-center px-4 leading-tight tracking-wide">
+
+          <span
+            className={`font-bold text-xl text-center px-4 leading-tight tracking-wide whitespace-pre-line ${isActive ? '[.theme-contrasted_&]:!text-white' : ''}`}
+          >
             {isActive ? 'BEACON\nON' : 'TAP TO\nACTIVATE'}
           </span>
         </button>

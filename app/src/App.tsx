@@ -2,6 +2,10 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import L, { map } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Geolocation } from '@capacitor/geolocation';
+import { Capacitor } from '@capacitor/core';
+import { CapacitorErisSosmap } from 'capacitor-eris-sosmap';
+import type { PluginListenerHandle } from '@capacitor/core';
+import DiagnosticsModal from './components/DiagnosticsModal';
 
 // Auth imports
 import { supabase } from './db/supabaseClient';
@@ -17,6 +21,8 @@ import logo from './assets/small_logo.png';
 import { PRESET_REGIONS, MAP_STYLES } from './utils/MapUtils';
 import SetupProfileScreen from './components/SetupProfileScreen';
 import { useTranslation } from 'react-i18next';
+import LowBatteryGlobal from './components/LowBatteryGlobal';
+import { reportHazard, fetchHazards } from './services/hazardService';
 
 const getWeatherDetails = (code: number) => {
   if (code === 0)
@@ -85,6 +91,11 @@ const getWeatherDetails = (code: number) => {
 };
 
 export default function App() {
+  const [showHazardReportModal, setShowHazardReportModal] = useState(false);
+  const [hazardsList, setHazardsList] = useState<any[]>([]);
+  const hazardLayerGroup = useRef<L.LayerGroup | null>(null);
+  const [showDiagnostics, setShowDiagnostics] = useState(false);
+
   // Internationalisation
   const { t } = useTranslation();
 
@@ -153,6 +164,34 @@ export default function App() {
       setCurrentMapStyle(mapStyleKey);
     }
   }, [visualTheme]);
+
+  useEffect(() => {
+    if (!session) return;
+
+    (CapacitorErisSosmap as any).startMeshNetwork();
+
+    const meshListener = (CapacitorErisSosmap as any).addListener('onMeshMessageReceived', async (data: any) => {
+      console.log("🔥 SOS reçu d'un autre utilisateur ERIS via Mesh :", data.message);
+
+      try {
+        const payload = JSON.parse(data.message);
+
+        if (navigator.onLine) {
+          console.log("J'ai internet, je relaie le SOS vers Supabase !");
+        } else {
+          console.log('Je suis hors-ligne aussi, je relaie le signal à mes voisins !');
+          await (CapacitorErisSosmap as any).broadcastMeshMessage({ message: data.message });
+        }
+      } catch (e) {
+        console.error('Erreur lors de la lecture du message Mesh', e);
+      }
+    });
+
+    return () => {
+      (CapacitorErisSosmap as any).stopMeshNetwork();
+      meshListener.then((listener: PluginListenerHandle) => listener.remove());
+    };
+  }, [session]);
 
   // Check auth session
   useEffect(() => {
@@ -252,32 +291,54 @@ export default function App() {
       }
     });
 
+    // ─── GPS TRACKING (CROSS-PLATFORM FIX) ───
     const startTracking = async () => {
       try {
-        watchId = await Geolocation.watchPosition({ enableHighAccuracy: true, timeout: 10000 }, (position) => {
-          if (position) {
-            const { latitude, longitude, altitude } = position.coords;
+        // Request permissions on native devices before starting
+        if (Capacitor.isNativePlatform()) {
+          const permissions = await Geolocation.checkPermissions();
+          if (permissions.location !== 'granted') {
+            await Geolocation.requestPermissions();
+          }
+        }
 
-            setUserPosition({ lat: latitude, lng: longitude, alt: altitude || 0 });
-            setGpsStatus('Connected');
+        watchId = await Geolocation.watchPosition(
+          {
+            // High accuracy for real GPS on mobile, standard accuracy for web
+            enableHighAccuracy: Capacitor.isNativePlatform(),
+            timeout: 10000,
+            maximumAge: 0,
+          },
+          (position, err) => {
+            if (err) {
+              console.warn('[GPS] Error:', err);
+              return;
+            }
+            if (position) {
+              const { latitude, longitude, altitude } = position.coords;
 
-            if (mapInstance.current) {
-              if (userMarker.current) {
-                userMarker.current.setLatLng([latitude, longitude]);
-              } else {
-                const icon = L.divIcon({
-                  className: '',
-                  html: `<div class="w-[18px] h-[18px] rounded-full border-[3px] border-white [.theme-contrasted_&]:!shadow-none" style="background-color: rgb(var(--eris-position)); box-shadow: 0 0 15px rgba(var(--eris-position), 0.6);"></div>`,
-                  iconSize: [18, 18],
-                  iconAnchor: [9, 9],
-                });
-                userMarker.current = L.marker([latitude, longitude], { icon }).addTo(mapInstance.current);
-                mapInstance.current.setView([latitude, longitude], 15);
+              setUserPosition({ lat: latitude, lng: longitude, alt: altitude || 0 });
+              setGpsStatus('Connected');
+
+              if (mapInstance.current) {
+                if (userMarker.current) {
+                  userMarker.current.setLatLng([latitude, longitude]);
+                } else {
+                  const icon = L.divIcon({
+                    className: '',
+                    html: `<div class="w-[18px] h-[18px] rounded-full border-[3px] border-white [.theme-contrasted_&]:!shadow-none" style="background-color: rgb(var(--eris-position)); box-shadow: 0 0 15px rgba(var(--eris-position), 0.6);"></div>`,
+                    iconSize: [18, 18],
+                    iconAnchor: [9, 9],
+                  });
+                  userMarker.current = L.marker([latitude, longitude], { icon }).addTo(mapInstance.current);
+                  mapInstance.current.setView([latitude, longitude], 15);
+                }
               }
             }
-          }
-        });
-      } catch {
+          },
+        );
+      } catch (error) {
+        console.error('GPS Init Error:', error);
         setGpsStatus('GPS Unavailable');
       }
     };
@@ -374,6 +435,74 @@ export default function App() {
     }
     setShowLayerMenu(false);
   };
+  // Load and display hazards on the map
+  useEffect(() => {
+    if (!mapInstance.current) return;
+
+    // Create the hazard layer group if it doesn't exist
+    if (!hazardLayerGroup.current) {
+      hazardLayerGroup.current = L.layerGroup().addTo(mapInstance.current);
+    }
+
+    const loadHazards = async () => {
+      const hazards = await fetchHazards();
+      setHazardsList(hazards);
+
+      // Clear old markers before drawing new ones
+      hazardLayerGroup.current?.clearLayers();
+
+      hazards.forEach((hazard) => {
+        let iconHtml = '';
+        let colorClass = '';
+
+        switch (hazard.type) {
+          case 'fire':
+            iconHtml = 'local_fire_department';
+            colorClass = 'bg-red-500';
+            break; // Red
+          case 'flood':
+            iconHtml = 'water_drop';
+            colorClass = 'bg-blue-500';
+            break; // Blue
+          case 'road_blocked':
+            iconHtml = 'block';
+            colorClass = 'bg-orange-500';
+            break; // Orange
+          case 'landslide':
+            iconHtml = 'landslide';
+            colorClass = 'bg-purple-500';
+            break; // Purple
+        }
+
+        const icon = L.divIcon({
+          className: '', // Laissez vide pour éviter les styles par défaut de Leaflet
+          html: `<div class="w-8 h-8 rounded-full flex items-center justify-center border-2 border-white shadow-md ${colorClass} [.theme-contrasted_&]:!bg-black [.theme-contrasted_&]:!border-white [.theme-contrasted_&]:!shadow-none">
+            <span class="material-symbols-outlined text-white text-[18px]">${iconHtml}</span>
+          </div>`,
+          iconSize: [32, 32],
+          iconAnchor: [16, 16],
+        });
+
+        if (hazardLayerGroup.current) {
+          L.marker([hazard.lat, hazard.lon], { icon }).addTo(hazardLayerGroup.current);
+        }
+      });
+    };
+
+    loadHazards();
+
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'hazards' }, (payload) => {
+        console.log('[HAZARD] Nouvelle alerte reçue en temps réel !', payload);
+        loadHazards();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [activeTab]);
 
   // Loading screen to prevent UI flash
   if (isInitializing) {
@@ -420,18 +549,30 @@ export default function App() {
 
   return (
     <div className="flex flex-col h-screen w-full bg-eris-bg text-eris-text overflow-hidden font-sans">
-      {/* Header */}
+      {/* GLOBAL BATTERY MONITOR  */}
+      <LowBatteryGlobal />
       <header className="flex justify-between items-center px-5 py-3 bg-eris-bg/95 backdrop-blur-md border-b border-eris-border/50 z-[1000] relative">
         <div className="flex items-center gap-2">
           <img src={logo} alt="ERIS-SOSMap" className="h-7 w-auto object-contain" />
         </div>
         <h1 className="flex-1 text-center text-eris-text text-lg font-bold tracking-wide">ERIS Safety</h1>
-        <button
-          className="bg-eris-danger hover:opacity-90 text-eris-text text-xs font-bold uppercase tracking-wider px-4 py-1.5 rounded-full transition-colors shadow-lg shadow-red-900/20 active:scale-95"
-          onClick={() => setActiveTab('ALERTS')}
-        >
-          SOS
-        </button>
+
+        {/* DIAGNOSTICS BUTTON */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowDiagnostics(true)}
+            className="w-8 h-8 rounded-full bg-eris-surface flex items-center justify-center text-eris-text-subtle hover:text-eris-text transition-colors"
+          >
+            <span className="material-symbols-outlined text-lg">signal_cellular_alt</span>
+          </button>
+
+          <button
+            className="bg-eris-danger hover:opacity-90 text-eris-text text-xs font-bold uppercase tracking-wider px-4 py-1.5 rounded-full transition-colors shadow-lg shadow-red-900/20 active:scale-95"
+            onClick={() => setActiveTab('ALERTS')}
+          >
+            SOS
+          </button>
+        </div>
       </header>
 
       {/* --- SEARCH & OFFLINE BAR --- */}
@@ -577,7 +718,7 @@ export default function App() {
           </div>
         </div>
 
-        {/* --- MAP CONTROLS & LAYERS MENU --- */}
+        {/* --- LAYERS MENU --- */}
         <div className="absolute top-4 right-4 z-[1000] flex flex-col gap-3">
           {/* Layers Menu Container */}
           <div className="relative">
@@ -626,6 +767,15 @@ export default function App() {
             )}
           </div>
 
+          {/* HAZARD REPORT BUTTON ADDED HERE */}
+          <button
+            onClick={() => setShowHazardReportModal(true)}
+            className="w-12 h-12 bg-eris-alert [.theme-dark_&]:bg-orange-400 rounded-full flex items-center justify-center text-white [.theme-contrasted_&]:border-2 [.theme-contrasted_&]:!border-black hover:bg-orange-400 transition-colors shadow-lg shadow-eris-alert/30 active:scale-95"
+            title="Report Hazard"
+          >
+            <span className="material-symbols-outlined [.theme-contrasted_&]:!text-black text-xl">warning</span>
+          </button>
+
           <button
             onClick={() => {
               if (mapInstance.current && userPosition.lat !== 0) {
@@ -638,7 +788,7 @@ export default function App() {
           </button>
         </div>
 
-        {/* Hazard Alert */}
+        {/* Hazard Alert Notification */}
         {showHazardAlert && (
           <div className="absolute bottom-24 left-4 right-20 z-[1000] animate-fade-in">
             <div className="bg-eris-danger/90 [.theme-contrasted_&]:bg-black backdrop-blur-md rounded-2xl p-4 flex items-start gap-3 shadow-[0_8px_30px_rgba(var(--eris-danger),0.3)] [.theme-contrasted_&]:shadow-none border border-white/30 [.theme-contrasted_&]:border-white">
@@ -815,6 +965,82 @@ export default function App() {
             </div>
           </div>
         )}
+
+        {/* ─── HAZARD REPORTING MODAL ADDED HERE ─── */}
+        {showHazardReportModal && (
+          <div className="absolute inset-0 z-[6000] bg-[#0f141e]/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+            <div className="bg-gray-900 border border-gray-700/50 rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-in zoom-in-95 duration-200">
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="text-white text-lg font-bold">Report a Hazard</h3>
+                <button
+                  onClick={() => setShowHazardReportModal(false)}
+                  className="w-8 h-8 flex items-center justify-center bg-gray-800 rounded-full text-gray-400 hover:text-white active:scale-95"
+                >
+                  <span className="material-symbols-outlined text-sm">close</span>
+                </button>
+              </div>
+
+              <p className="text-gray-400 text-xs mb-5 leading-relaxed">
+                Warn other ERIS users about immediate dangers at your current location.
+              </p>
+
+              <div className="grid grid-cols-2 gap-3 mb-2">
+                {[
+                  {
+                    type: 'fire',
+                    icon: 'local_fire_department',
+                    label: 'Wildfire',
+                    color: 'text-red-400 [.theme-contrasted_&]:text-white',
+                    bg: 'bg-red-400/20 [.theme-contrasted_&]:bg-transparent [.theme-contrasted_&]:border [.theme-contrasted_&]:border-white',
+                  },
+                  {
+                    type: 'flood',
+                    icon: 'water_drop',
+                    label: 'Flood',
+                    color: 'text-blue-400 [.theme-contrasted_&]:text-white',
+                    bg: 'bg-blue-400/20 [.theme-contrasted_&]:bg-transparent [.theme-contrasted_&]:border [.theme-contrasted_&]:border-white',
+                  },
+                  {
+                    type: 'road_blocked',
+                    icon: 'block',
+                    label: 'Road Blocked',
+                    color: 'text-orange-400 [.theme-contrasted_&]:text-white',
+                    bg: 'bg-orange-400/20 [.theme-contrasted_&]:bg-transparent [.theme-contrasted_&]:border [.theme-contrasted_&]:border-white',
+                  },
+                  {
+                    type: 'landslide',
+                    icon: 'landslide',
+                    label: 'Landslide',
+                    color: 'text-purple-400 [.theme-contrasted_&]:text-white',
+                    bg: 'bg-purple-400/20 [.theme-contrasted_&]:bg-transparent [.theme-contrasted_&]:border [.theme-contrasted_&]:border-white',
+                  },
+                ].map((hazard) => (
+                  <button
+                    key={hazard.type}
+                    onClick={async () => {
+                      if (userPosition.lat !== 0) {
+                        await reportHazard(session.user.id, hazard.type as any, userPosition.lat, userPosition.lng);
+                        setShowHazardReportModal(false);
+                        // Force a quick refresh of the map tab to show the new marker instantly
+                        setActiveTab('MAP');
+                      }
+                    }}
+                    className="flex flex-col items-center justify-center gap-2 bg-gray-800/40 border border-gray-700/50 hover:bg-gray-700 hover:border-orange-500 rounded-2xl p-4 transition-all active:scale-95"
+                  >
+                    <div
+                      className={`w-10 h-10 rounded-full flex items-center justify-center ${hazard.bg} ${hazard.color}`}
+                    >
+                      <span className="material-symbols-outlined text-2xl">{hazard.icon}</span>
+                    </div>
+                    <span className="text-eris-text-subtle text-xs font-bold">{hazard.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+        {/* DIAGNOSTICS MODAL */}
+        {showDiagnostics && <DiagnosticsModal onClose={() => setShowDiagnostics(false)} gpsStatus={gpsStatus} />}
       </main>
 
       {/* Bottom Navigation */}

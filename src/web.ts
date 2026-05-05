@@ -26,4 +26,16 @@ export class CapacitorErisSosmapWeb extends WebPlugin implements CapacitorErisSo
     console.log('[ERIS-WEB] Hardware fallback complete -> WIFI_HARDWARE_FALLBACK');
     return { success: true, transmissionMethod: 'WIFI_HARDWARE_FALLBACK' };
   }
+
+  async startMeshNetwork(): Promise<void> {
+    console.warn('[ERIS-WEB] startMeshNetwork simulé : Le Mesh nécessite un vrai téléphone.');
+  }
+
+  async stopMeshNetwork(): Promise<void> {
+    console.log('[ERIS-WEB] stopMeshNetwork simulé');
+  }
+
+  async broadcastMeshMessage(options: { message: string }): Promise<void> {
+    console.warn('[ERIS-WEB] Message envoyé dans le vide (Web) :', options.message);
+  }
 }
