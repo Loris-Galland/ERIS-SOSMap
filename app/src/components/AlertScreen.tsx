@@ -231,6 +231,23 @@ export default function AlertScreen() {
     const result = await dispatchSOS(activeUserId, rawPosition, currentBattery, notes);
 
     let isSuccess = result.success;
+
+    if (!navigator.onLine) {
+      isSuccess = false;
+      if (result.localId) {
+        await db.sosQueue.update(result.localId, { status: 'queued' });
+      } else {
+        await db.sosQueue.add({
+          user_id: activeUserId,
+          lat: rawPosition.lat,
+          lon: rawPosition.lng,
+          battery: currentBattery,
+          notes: notes,
+          status: 'queued',
+          timestamp: Date.now(),
+        } as any);
+      }
+    }
     if (Capacitor.getPlatform() === 'web' && !navigator.onLine) {
       isSuccess = false;
     }
