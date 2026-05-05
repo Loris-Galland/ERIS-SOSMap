@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../db/supabaseClient';
-import { dispatchSOS, flushRetryQueue, revokeSOS } from '../services/sosService'; // Added revokeSOS
+import { dispatchSOS, flushRetryQueue, revokeSOS } from '../services/sosService';
 import { db } from '../db/localDb';
 import { useLiveQuery } from 'dexie-react-hooks';
 import SOSHistoryScreen from './SosHistoryScreen';
@@ -8,6 +8,7 @@ import { Geolocation } from '@capacitor/geolocation';
 import { Device } from '@capacitor/device';
 import { useTranslation } from 'react-i18next';
 import DistressSignalScreen from './DistressSignalScreen';
+import { Capacitor } from '@capacitor/core';
 
 // Types
 interface Coords {
@@ -22,6 +23,17 @@ interface RawPosition {
   alt: number;
 }
 
+// Function to get or create a guest ID for users without an account
+const getOrCreateGuestId = () => {
+  let id = localStorage.getItem('eris_guest_id');
+  if (!id) {
+    id = crypto.randomUUID(); // Generate a new UUID for the guest user
+    localStorage.setItem('eris_guest_id', id);
+    localStorage.setItem('eris_is_guest', 'true');
+  }
+  return id;
+};
+
 // Main Component
 export default function AlertScreen() {
   const { t } = useTranslation();
@@ -33,12 +45,6 @@ export default function AlertScreen() {
   const [showHistory, setShowHistory] = useState<boolean>(false);
   const [showBeacon, setShowBeacon] = useState<boolean>(false);
 
-  const [coords, setCoords] = useState<Coords>({
-    lat: '0.0000° N',
-    lon: '0.0000° E',
-    alt: '0 m',
-  });
-
   // States added for backend logic
   const [rawPosition, setRawPosition] = useState<RawPosition>({ lat: 0, lng: 0, alt: 0 });
   const [isSending, setIsSending] = useState<boolean>(false);
@@ -49,16 +55,22 @@ export default function AlertScreen() {
   const [isGracePeriod, setIsGracePeriod] = useState<boolean>(false);
   const [lastAlertIds, setLastAlertIds] = useState<{ supabase?: string; local?: number } | null>(null);
 
+  const [coords, setCoords] = useState<Coords>({
+    lat: '0.0000° N',
+    lon: '0.0000° E',
+    alt: '0 m',
+  });
+
   const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const progressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef<number | null>(null);
-  const graceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null); // Added Grace Timer
+  const graceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const HOLD_DURATION = 3000;
 
   // Live count of queued offline alerts from Dexie
   const queuedCount = useLiveQuery(() => db.sosQueue.where('status').equals('queued').count(), [], 0);
 
-// Native Capacitor GPS Watcher
+  // Native Capacitor GPS Watcher
   useEffect(() => {
     let watchId: string;
 
@@ -71,24 +83,21 @@ export default function AlertScreen() {
 
       // Start native watcher if authorized
       if (permStatus.location === 'granted') {
-        watchId = await Geolocation.watchPosition(
-          { enableHighAccuracy: true, timeout: 10000 },
-          (pos, err) => {
-            if (pos) {
-              setCoords({
-                lat: `${pos.coords.latitude.toFixed(4)}° N`,
-                lon: `${pos.coords.longitude.toFixed(4)}° E`,
-                alt: `${Math.round(pos.coords.altitude ?? 0)} m`,
-              });
-              setRawPosition({
-                lat: pos.coords.latitude,
-                lng: pos.coords.longitude,
-                alt: pos.coords.altitude ?? 0,
-              });
-            }
-            if (err) console.error("GPS Watch Error:", err);
+        watchId = await Geolocation.watchPosition({ enableHighAccuracy: true, timeout: 10000 }, (pos, err) => {
+          if (pos) {
+            setCoords({
+              lat: `${pos.coords.latitude.toFixed(4)}° N`,
+              lon: `${pos.coords.longitude.toFixed(4)}° E`,
+              alt: `${Math.round(pos.coords.altitude ?? 0)} m`,
+            });
+            setRawPosition({
+              lat: pos.coords.latitude,
+              lng: pos.coords.longitude,
+              alt: pos.coords.altitude ?? 0,
+            });
           }
-        );
+          if (err) console.error('GPS Watch Error:', err);
+        });
       }
     };
 
@@ -102,10 +111,16 @@ export default function AlertScreen() {
     };
   }, []);
 
-  // Fetch user ID once from local session to avoid network requests when offline
+  // Fetch user ID: Supabase session OR Guest ID if offline/not logged in
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      setUserId(data.session?.user?.id ?? null);
+      if (data.session?.user?.id) {
+        setUserId(data.session.user.id);
+        localStorage.removeItem('eris_is_guest');
+      } else {
+        // No ID from Supabase, fallback to guest ID
+        setUserId(getOrCreateGuestId());
+      }
     });
   }, []);
 
@@ -168,26 +183,25 @@ export default function AlertScreen() {
     setStatusMessage(t('alert.transmitting'));
     setStatusType(null);
 
-    if (!userId) {
-      setStatusMessage(t('alert.authError'));
-      setStatusType('error');
-      setIsSending(false);
-      setTimeout(() => {
-        setStatusMessage(null);
-        setStatusType(null);
-      }, 4000);
-      return;
-    } // Fallback sync if local profile is missing but internet is available
+    // Make sure you have an ID before sending
+    let activeUserId = userId;
+    if (!activeUserId) {
+      activeUserId = getOrCreateGuestId();
+      setUserId(activeUserId);
+    }
 
-    if (navigator.onLine) {
+    // Only retrieve the profile if it is NOT invited
+    const isGuest = localStorage.getItem('eris_is_guest') === 'true';
+
+    if (navigator.onLine && !isGuest) {
       try {
-        const localProfile = await db.userProfile.get(userId);
+        const localProfile = await db.userProfile.get(activeUserId);
         if (!localProfile) {
           console.log('[ERIS] Local profile missing, fetching from Supabase...');
-          const { data } = await supabase.from('user_profiles').select('*').eq('id', userId).single();
+          const { data } = await supabase.from('user_profiles').select('*').eq('id', activeUserId).single();
           if (data) {
             await db.userProfile.put({
-              id: userId,
+              id: activeUserId,
               firstName: data.first_name || '',
               lastName: data.last_name || '',
               bloodType: data.blood_type || 'Unknown',
@@ -200,10 +214,10 @@ export default function AlertScreen() {
       } catch (e) {
         console.warn('[ERIS] Could not fetch profile before dispatch', e);
       }
-    } // Call SOS service
+    }
 
     // Fetch current battery level natively before dispatching
-    let currentBattery = 100; 
+    let currentBattery = 100;
     try {
       const info = await Device.getBatteryInfo();
       if (info.batteryLevel !== undefined) {
@@ -214,7 +228,12 @@ export default function AlertScreen() {
     }
 
     // Pass currentBattery instead of hardcoded 100
-    const result = await dispatchSOS(userId, rawPosition, currentBattery, notes);
+    const result = await dispatchSOS(activeUserId, rawPosition, currentBattery, notes);
+
+    let isSuccess = result.success;
+    if (Capacitor.getPlatform() === 'web' && !navigator.onLine) {
+      isSuccess = false;
+    }
 
     if (result.success) {
       // Store IDs and launch the grace period popup

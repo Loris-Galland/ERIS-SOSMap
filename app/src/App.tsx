@@ -49,6 +49,16 @@ const getWeatherDetails = (code: number) => {
   return { condition: 'profile.unknown', icon: 'cloud', color: 'text-gray-400', bg: 'bg-gray-400/20' };
 };
 
+// For sending SOS without account
+const getGuestId = () => {
+  let id = localStorage.getItem('eris_guest_id');
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem('eris_guest_id', id);
+  }
+  return id;
+};
+
 export default function App() {
   const [showHazardReportModal, setShowHazardReportModal] = useState(false);
   const [hazardsList, setHazardsList] = useState<any[]>([]);
@@ -105,32 +115,32 @@ export default function App() {
   const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
 
   useEffect(() => {
-      if (!session) return;
+    if (!session) return;
 
-      CapacitorErisSosmap.startMeshNetwork();
+    CapacitorErisSosmap.startMeshNetwork();
 
-      const meshListener = CapacitorErisSosmap.addListener('onMeshMessageReceived', async (data) => {
-        console.log("🔥 SOS reçu d'un autre utilisateur ERIS via Mesh :", data.message);
+    const meshListener = CapacitorErisSosmap.addListener('onMeshMessageReceived', async (data) => {
+      console.log("🔥 SOS reçu d'un autre utilisateur ERIS via Mesh :", data.message);
 
-        try {
-          const payload = JSON.parse(data.message);
+      try {
+        const payload = JSON.parse(data.message);
 
-          if (navigator.onLine) {
-            console.log("J'ai internet, je relaie le SOS vers Supabase !");
-          } else {
-            console.log('Je suis hors-ligne aussi, je relaie le signal à mes voisins !');
-            await CapacitorErisSosmap.broadcastMeshMessage({ message: data.message });
-          }
-        } catch (e) {
-          console.error('Erreur lors de la lecture du message Mesh', e);
+        if (navigator.onLine) {
+          console.log("J'ai internet, je relaie le SOS vers Supabase !");
+        } else {
+          console.log('Je suis hors-ligne aussi, je relaie le signal à mes voisins !');
+          await CapacitorErisSosmap.broadcastMeshMessage({ message: data.message });
         }
-      });
+      } catch (e) {
+        console.error('Erreur lors de la lecture du message Mesh', e);
+      }
+    });
 
-      return () => {
-        CapacitorErisSosmap.stopMeshNetwork();
-        meshListener.then((listener: PluginListenerHandle) => listener.remove());
-      };
-    }, [session]);
+    return () => {
+      CapacitorErisSosmap.stopMeshNetwork();
+      meshListener.then((listener: PluginListenerHandle) => listener.remove());
+    };
+  }, [session]);
 
   // Check auth session
   useEffect(() => {
@@ -453,9 +463,11 @@ export default function App() {
   }
 
   // Show auth screen if not logged in
+  /*
   if (!session) {
     return <AuthScreen />;
   }
+  */
 
   // Search result
   const handleSelectResult = (item: any) => {
@@ -743,7 +755,7 @@ export default function App() {
 
         {activeTab === 'USER' && (
           <div className="absolute inset-0 z-[2000] bg-[#0f141e]">
-            <ProfileScreen onOpenSettings={() => setActiveTab('SETTINGS')} />
+            {session ? <ProfileScreen onOpenSettings={() => setActiveTab('SETTINGS')} /> : <AuthScreen />}
           </div>
         )}
 
@@ -875,9 +887,10 @@ export default function App() {
                     key={hazard.type}
                     onClick={async () => {
                       if (userPosition.lat !== 0) {
-                        await reportHazard(session.user.id, hazard.type as any, userPosition.lat, userPosition.lng);
+                        const currentUserId = session?.user?.id || getGuestId();
+
+                        await reportHazard(currentUserId, hazard.type as any, userPosition.lat, userPosition.lng);
                         setShowHazardReportModal(false);
-                        // Force a quick refresh of the map tab to show the new marker instantly
                         setActiveTab('MAP');
                       }
                     }}
