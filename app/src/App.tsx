@@ -112,6 +112,7 @@ export default function App() {
   // Auth states
   const [session, setSession] = useState<any>(null);
   const [isInitializing, setIsInitializing] = useState(true);
+  const isGuest = localStorage.getItem('eris_is_guest') === 'true';
 
   // App and Map states
   const mapRef = useRef<HTMLDivElement>(null);
@@ -176,32 +177,30 @@ export default function App() {
   }, [visualTheme]);
 
   useEffect(() => {
-    if (!session) return;
+    CapacitorErisSosmap.startMeshNetwork();
 
-    (CapacitorErisSosmap as any).startMeshNetwork();
-
-    const meshListener = (CapacitorErisSosmap as any).addListener('onMeshMessageReceived', async (data: any) => {
+    const meshListener = CapacitorErisSosmap.addListener('onMeshMessageReceived', async (data: any) => {
       console.log("🔥 SOS reçu d'un autre utilisateur ERIS via Mesh :", data.message);
 
       try {
         const payload = JSON.parse(data.message);
 
         if (navigator.onLine) {
-          console.log("J'ai internet, je relaie le SOS vers Supabase !");
+          console.log('I have internet, I will relay the SOS to Supabase!');
         } else {
           console.log('Je suis hors-ligne aussi, je relaie le signal à mes voisins !');
-          await (CapacitorErisSosmap as any).broadcastMeshMessage({ message: data.message });
+          await CapacitorErisSosmap.broadcastMeshMessage({ message: data.message });
         }
       } catch (e) {
-        console.error('Erreur lors de la lecture du message Mesh', e);
+        console.error('Error occurred while reading the Mesh message', e);
       }
     });
 
     return () => {
-      (CapacitorErisSosmap as any).stopMeshNetwork();
+      CapacitorErisSosmap.stopMeshNetwork();
       meshListener.then((listener: PluginListenerHandle) => listener.remove());
     };
-  }, [session]);
+  }, [session, isGuest]);
 
   // Check auth session
   useEffect(() => {
@@ -259,9 +258,17 @@ export default function App() {
     [offlineMode],
   );
 
+  useEffect(() => {
+    if (activeTab === 'MAP') {
+      setTimeout(() => {
+        mapInstance.current?.invalidateSize();
+      }, 100);
+    }
+  }, [activeTab]);
+
   // Initialize map and GPS tracking only if logged in
   useEffect(() => {
-    if (!session || !mapRef.current || mapInstance.current) return;
+    if (!mapRef.current || mapInstance.current) return;
 
     let watchId: string | null = null;
 
@@ -364,7 +371,7 @@ export default function App() {
       userMarker.current = null;
       baseLayerRef.current = null;
     };
-  }, [session]);
+  }, [session, isGuest, activeTab]);
 
   // --- LOCAL DATA CHARGING ---
   useEffect(() => {

@@ -158,8 +158,8 @@ export const dispatchSOS = async (
 
       // Broadcast to local Mesh Network (Bluetooth/Wi-Fi Direct)
       console.log('[ERIS] Offline: Broadcasting SOS to local Mesh Network...');
-      (CapacitorErisSosmap as any).broadcastMeshMessage({ message: meshPayload })
-        .catch((err: any) => console.warn('[ERIS] Mesh broadcast failed:', err));
+      CapacitorErisSosmap.broadcastMeshMessage({ message: meshPayload })
+        .catch((err) => console.warn('[ERIS] Mesh broadcast failed:', err));
 
       return { success: true, method: nativeResult.transmissionMethod, localId };
     }
@@ -176,8 +176,8 @@ export const dispatchSOS = async (
 
     // Broadcast to local Mesh Network even on total failure
     console.log('[ERIS] Total Failure: Broadcasting SOS to local Mesh Network...');
-    (CapacitorErisSosmap as any).broadcastMeshMessage({ message: meshPayload })
-      .catch((err: any) => console.warn('[ERIS] Mesh broadcast failed:', err));
+    CapacitorErisSosmap.broadcastMeshMessage({ message: meshPayload })
+      .catch((err) => console.warn('[ERIS] Mesh broadcast failed:', err));
 
     return { success: false, method: 'QUEUED_FOR_RETRY', localId };
   }
