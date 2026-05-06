@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
-import L from 'leaflet';
-import { createOfflineLayer, PRESET_REGIONS } from '../../utils/MapUtils';
-import OfflineMapViewer from '../../components/OfflineMapViewer';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { PRESET_REGIONS } from '../../utils/MapUtils';
 import AlertModal, { type AlertType } from '../../components/AlertModalProps';
+import OfflineMapViewer from '../../components/OfflineMapViewer';
+import { useDownloadManager } from './hooks/useDownloadManager';
 
 function getRelativeTimeString(timestamp: number, t: any): string {
   const diff = Date.now() - timestamp;
@@ -30,17 +30,10 @@ interface OfflineScreenProps {
 export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScreenProps) {
   const { t } = useTranslation();
 
-  const [downloadedIds, setDownloadedIds] = useState<(number | string)[]>([]);
-  const [customRegions, setCustomRegions] = useState<any[]>([]);
-
-  const [metadata, setMetadata] = useState<Record<number | string, { lastUpdate: number; styles?: string[] }>>({});
   const [activeMenu, setActiveMenu] = useState<number | string | null>(null);
-  const [updatingId, setUpdatingId] = useState<number | string | null>(null);
-  const [progress, setProgress] = useState(0);
   const [viewingRegion, setViewingRegion] = useState<number | string | null>(null);
-  const [storageUsedMB, setStorageUsedMB] = useState(0);
 
-  const [dialog, setDialog] = useState({
+  const defaultDialogState = {
     isOpen: false,
     title: '',
     message: '',
@@ -48,160 +41,46 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
     isConfirm: false,
     confirmText: '',
     onConfirm: () => {},
-  });
+    onCancel: () => {},
+  };
+  const [dialog, setDialog] = useState(defaultDialogState);
 
   const closeDialog = () => setDialog((prev) => ({ ...prev, isOpen: false }));
+  const openDialog = (options: Partial<typeof defaultDialogState>) => {
+    setDialog({ ...defaultDialogState, ...options, isOpen: true });
+  };
+  const showAlert = (title: string, message: string, type: AlertType = 'info') => {
+    openDialog({
+      title,
+      message,
+      type,
+      confirmText: 'OK',
+      onConfirm: () => closeDialog(),
+      onCancel: () => closeDialog(),
+    });
+  };
+
+  // Hook manager integration
+  const {
+    updatingId,
+    progress,
+    downloadedRegions,
+    customRegions,
+    metadata,
+    storageUsedMB,
+    getBoundsForRegion,
+    handleDelete,
+    handleUpdate,
+  } = useDownloadManager({ t, openDialog, closeDialog, showAlert });
 
   const MAX_STORAGE_MB = 1024;
-
-  useEffect(() => {
-    async function calculateRealStorage() {
-      if (navigator.storage && navigator.storage.estimate) {
-        try {
-          const { usage } = await navigator.storage.estimate();
-          const mb = (usage || 0) / (1024 * 1024);
-          setStorageUsedMB(Number(mb.toFixed(1)));
-        } catch (e) {
-          console.error('Erreur de calcul du stockage', e);
-        }
-      }
-    }
-    calculateRealStorage();
-    const interval = setInterval(calculateRealStorage, 5000);
-    return () => clearInterval(interval);
-  }, []);
-
   const progressPercent = Math.min((storageUsedMB / MAX_STORAGE_MB) * 100, 100);
 
-  useEffect(() => {
-    const saved = localStorage.getItem('eris_offline_regions');
-    if (saved) setDownloadedIds(JSON.parse(saved));
-
-    const savedMeta = localStorage.getItem('eris_offline_metadata');
-    if (savedMeta) setMetadata(JSON.parse(savedMeta));
-
-    const savedCustom = localStorage.getItem('eris_custom_regions');
-    if (savedCustom) setCustomRegions(JSON.parse(savedCustom));
-  }, []);
-
-  // Funstion used to get the info of a zone
   const getRegionInfo = (id: number | string) => {
-    // For presets
     if (typeof id === 'number' || (typeof id === 'string' && !id.startsWith('custom_'))) {
-      const preset = PRESET_REGIONS.find((r) => r.id === Number(id));
-      return preset ? { ...preset, isCustom: false } : null;
+      return PRESET_REGIONS.find((r) => r.id === Number(id));
     }
-
-    // For manual zones
-    const custom = customRegions.find((r) => r.id === id);
-    if (custom) {
-      return {
-        name: custom.name,
-        size: custom.size || t('offline.customSize', 'Custom Size'),
-        detail: t('offline.customZone', 'Zone personnalisée'),
-        bounds: L.latLngBounds(custom.bounds.southWest, custom.bounds.northEast),
-        isCustom: true,
-      };
-    }
-    return null;
-  };
-
-  // --- DELETION LOGIC ---
-  const handleDelete = (id: number | string, name: string) => {
-    setDialog({
-      isOpen: true,
-      title: t('offline.confirmDeleteTitle', 'Delete Offline Map'),
-      message: t('offline.confirmDelete', `Are you sure you want to delete ${name}?`).replace('${name}', name),
-      type: 'danger',
-      isConfirm: true,
-      confirmText: t('offline.delete', 'Delete'),
-      onConfirm: () => {
-        closeDialog();
-        const updated = downloadedIds.filter((rid) => rid !== id);
-        setDownloadedIds(updated);
-        localStorage.setItem('eris_offline_regions', JSON.stringify(updated));
-
-        // Keep metadata logic from develop branch
-        const newMeta = { ...metadata };
-        delete newMeta[id];
-        setMetadata(newMeta);
-        localStorage.setItem('eris_offline_metadata', JSON.stringify(newMeta));
-
-        setActiveMenu(null);
-      },
-    });
-  };
-
-  // --- UPDATING LOGIC ---
-  const handleUpdate = (id: number | string, name: string) => {
-    const region = getRegionInfo(id);
-    if (!region) return;
-
-    setUpdatingId(id);
-    setProgress(0);
-    setActiveMenu(null);
-
-    const tempDiv = document.createElement('div');
-    tempDiv.style.cssText = 'width:256px; height:256px; position:fixed; top:-9999px;';
-    document.body.appendChild(tempDiv);
-
-    const tempMap = L.map(tempDiv, { fadeAnimation: false, zoomAnimation: false });
-    tempMap.fitBounds(region.bounds);
-
-    const layer = createOfflineLayer().addTo(tempMap);
-    const control = (L.control as any).savetiles(layer, {
-      zoomlevels: [12, 13, 14, 15, 16, 17],
-      confirm: (_: any, success: () => void) => success(),
-    });
-    control.addTo(tempMap);
-
-    const cleanup = () => {
-      setUpdatingId(null);
-      tempMap.remove();
-      if (document.body.contains(tempDiv)) document.body.removeChild(tempDiv);
-    };
-
-    layer.on('savestart', (e: any) => {
-      const total = e.length || (e._tilesforSave ? e._tilesforSave.length : 0);
-      layer.on('savetileend', () => {
-        const current = (layer as any)._tilesforSave?.length || total;
-        setProgress((prev) => Math.min(prev + 5, 95));
-      });
-    });
-
-    layer.on('saveend', () => {
-      setProgress(100);
-
-      const now = Date.now();
-      setMetadata((prev) => ({
-        ...prev,
-        [id]: { ...prev[id], lastUpdate: now },
-      }));
-
-      const savedMeta = localStorage.getItem('eris_offline_metadata');
-      const currentMeta = savedMeta ? JSON.parse(savedMeta) : {};
-      currentMeta[id] = { ...currentMeta[id], lastUpdate: now };
-      localStorage.setItem('eris_offline_metadata', JSON.stringify(currentMeta));
-
-      setTimeout(() => {
-        setDialog({
-          isOpen: true,
-          title: t('common.success', 'Success'),
-          message: t('offline.updateSuccess', `${name} updated successfully.`).replace('${name}', name),
-          type: 'success',
-          isConfirm: false,
-          confirmText: t('common.great', 'Great !'),
-          onConfirm: () => {
-            closeDialog();
-          },
-        });
-        cleanup();
-      }, 500);
-    });
-
-    tempMap.whenReady(() => {
-      setTimeout(() => control._saveTiles(), 500);
-    });
+    return customRegions.find((r) => r.id === id);
   };
 
   return (
@@ -217,21 +96,24 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
         onCancel={closeDialog}
       />
 
+      {/* Offline map viewer */}
       {viewingRegion !== null &&
         (() => {
+          const bounds = getBoundsForRegion(viewingRegion);
           const regionInfo = getRegionInfo(viewingRegion);
-          if (!regionInfo) return null;
-          const availableStyles = metadata[viewingRegion]?.styles;
+          if (!bounds || !regionInfo) return null;
+
           return (
             <OfflineMapViewer
               name={regionInfo.name}
-              bounds={regionInfo.bounds}
+              bounds={bounds}
               onClose={() => setViewingRegion(null)}
-              availableStyles={availableStyles}
+              availableStyles={metadata[viewingRegion]?.styles}
             />
           );
         })()}
-      {/* ─── HEADER ─── */}
+
+      {/* HEADER */}
       <header className="flex items-center px-6 py-4 bg-eris-bg/90 backdrop-blur-md sticky top-[-2px] z-50">
         <button
           onClick={onBack}
@@ -285,73 +167,79 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
           </h3>
 
           <div className="flex flex-col gap-3">
-            {downloadedIds.length > 0 ? (
-              downloadedIds.map((id) => {
+            {downloadedRegions.length > 0 ? (
+              downloadedRegions.map((id) => {
                 const info = getRegionInfo(id);
                 if (!info) return null;
                 const lastUpdate = metadata[id]?.lastUpdate;
+                const isUpdating = updatingId === id;
+
                 return (
                   <div
                     key={id}
                     onClick={() => {
-                      const isUpdating = updatingId === id;
                       if (!isUpdating) setViewingRegion(id);
                     }}
-                    className="bg-eris-surface-alt/40 border border-eris-border/50 rounded-3xl p-4 flex items-center justify-between shadow-sm animate-fade-in cursor-pointer hover:bg-eris-surface-alt/60 transition-colors"
+                    className="bg-eris-surface-alt/40 border border-eris-border/50 rounded-3xl p-4 flex items-center justify-between shadow-sm cursor-pointer hover:bg-eris-surface-alt/60 transition-colors"
                   >
                     <div className="flex items-center gap-4">
                       <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 bg-eris-success/10 text-eris-success">
-                        <span className="material-symbols-outlined text-xl">offline_pin</span>
+                        <span className="material-symbols-outlined text-xl">{isUpdating ? 'sync' : 'offline_pin'}</span>
                       </div>
                       <div>
                         <h4 className="text-eris-text text-sm font-bold mb-0.5">{info.name}</h4>
                         <p className="text-eris-text-subtle text-[11px] font-medium">
-                          {lastUpdate
-                            ? getRelativeTimeString(lastUpdate, t)
-                            : t('offline.unknownDate', 'Date inconnue')}{' '}
-                          • {info.size}
+                          {isUpdating
+                            ? `${t('download.downloading', 'Updating...')} ${progress}%`
+                            : lastUpdate
+                              ? getRelativeTimeString(lastUpdate, t)
+                              : t('offline.unknownDate', 'Unknown Date')}
+                          {info.size ? ` • ${info.size}` : ''}
                         </p>
                       </div>
                     </div>
 
-                    {/* BOUTON MORE */}
-                    <div className="relative">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setActiveMenu(activeMenu === id ? null : id);
-                        }}
-                        className="text-eris-text-subtle hover:text-eris-text transition-colors w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-700/30"
-                      >
-                        <span className="material-symbols-outlined">more_vert</span>
-                      </button>
+                    {/* Action menu */}
+                    {!isUpdating && (
+                      <div className="relative">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveMenu(activeMenu === id ? null : id);
+                          }}
+                          className="text-eris-text-subtle hover:text-eris-text transition-colors w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-700/30"
+                        >
+                          <span className="material-symbols-outlined">more_vert</span>
+                        </button>
 
-                      {/* MENU ACTIONS */}
-                      {activeMenu === id && (
-                        <div className="absolute right-0 mt-2 w-36 bg-eris-surface border border-eris-border rounded-2xl shadow-2xl z-[3000] overflow-hidden animate-in fade-in zoom-in duration-150">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleUpdate(id, info.name);
-                            }}
-                            className="w-full px-4 py-3 text-left text-xs font-bold text-eris-primary hover:bg-eris-surface-alt flex items-center gap-2 border-b border-eris-border"
-                          >
-                            <span className="material-symbols-outlined text-sm">update</span>{' '}
-                            {t('offline.update', 'Update')}
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDelete(id, info.name);
-                            }}
-                            className="w-full px-4 py-3 text-left text-xs font-bold text-eris-danger hover:bg-eris-surface-alt flex items-center gap-2"
-                          >
-                            <span className="material-symbols-outlined text-sm">delete</span>{' '}
-                            {t('offline.delete', 'Delete')}
-                          </button>
-                        </div>
-                      )}
-                    </div>
+                        {activeMenu === id && (
+                          <div className="absolute right-0 mt-2 w-36 bg-eris-surface border border-eris-border rounded-2xl shadow-2xl z-[3000] overflow-hidden animate-in fade-in zoom-in duration-150">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveMenu(null);
+                                handleUpdate(id, info.name);
+                              }}
+                              className="w-full px-4 py-3 text-left text-xs font-bold text-eris-primary hover:bg-eris-surface-alt flex items-center gap-2 border-b border-eris-border"
+                            >
+                              <span className="material-symbols-outlined text-sm">update</span>{' '}
+                              {t('offline.update', 'Update')}
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveMenu(null);
+                                handleDelete(id, info.name);
+                              }}
+                              className="w-full px-4 py-3 text-left text-xs font-bold text-eris-danger hover:bg-eris-surface-alt flex items-center gap-2"
+                            >
+                              <span className="material-symbols-outlined text-sm">delete</span>{' '}
+                              {t('offline.delete', 'Delete')}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })
