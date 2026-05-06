@@ -136,7 +136,7 @@
     "noMapsFound": "Aucune carte hors-ligne.",
     "downloadPrompt": "Téléchargez une région pour naviguer sans internet.",
     "downloadNewRegion": "Télécharger une région",
-    "downloadInfo": "Permet d'utiliser le réseau ERIS sans accès internet."
+    "downloadInfo": "Le téléchargement de cartes permet d'utiliser le réseau ERIS sans accès internet."
   },
   "history": {
     "title": "Historique SOS",
@@ -190,6 +190,7 @@
     "satelliteTiles": "Les tuiles satellites",
     "storageWarning2": "sont ~2.5x plus lourdes.",
     "selectCustom": "Zone personnalisée",
+    "customArea": "Zone personnalisée",
     "noTiles": "Aucune tuile trouvée. Vérifiez le zoom.",
     "alreadyDownloaded": "Cette zone est déjà téléchargée",
     "errorDownloading": "Erreur de téléchargement. Vérifiez votre connexion.",
