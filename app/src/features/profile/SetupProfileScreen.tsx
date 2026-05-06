@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '../db/supabaseClient';
+import { supabase } from '../../db/supabaseClient';
 import { useTranslation } from 'react-i18next';
 
 interface SetupProfileScreenProps {

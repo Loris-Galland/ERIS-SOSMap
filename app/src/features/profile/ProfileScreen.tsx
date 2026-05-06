@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../db/supabaseClient';
+import { supabase } from '../../db/supabaseClient';
 import { Geolocation } from '@capacitor/geolocation';
 import { Device } from '@capacitor/device';
-import { db } from '../db/localDb';
+import { db } from '../../db/localDb';
 import { useTranslation } from 'react-i18next';
-import AlertModal, { type AlertType } from './AlertModalProps';
+import AlertModal, { type AlertType } from '../../components/AlertModalProps';
 
 interface ProfileScreenProps {
   onOpenSettings: () => void;

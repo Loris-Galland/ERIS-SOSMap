@@ -5,21 +5,21 @@ import { Geolocation } from '@capacitor/geolocation';
 import { Capacitor } from '@capacitor/core';
 import { CapacitorErisSosmap } from 'capacitor-eris-sosmap';
 import type { PluginListenerHandle } from '@capacitor/core';
-import DiagnosticsModal from './components/DiagnosticsModal';
+import DiagnosticsModal from './features/settings/DiagnosticsModal';
 
 // Auth imports
 import { supabase } from './db/supabaseClient';
 
 // UI imports
-import AuthScreen from './components/AuthScreen';
-import OfflineScreen from './components/OfflineScreen';
-import ProfileScreen from './components/ProfileScreen';
-import SettingsScreen from './components/SettingsScreen';
-import AlertScreen from './components/AlertScreen';
-import DownloadMapScreen from './components/DownloadMapScreen';
+import AuthScreen from './features/auth/AuthScreen';
+import OfflineScreen from './features/offline/OfflineScreen';
+import ProfileScreen from './features/profile/ProfileScreen';
+import SettingsScreen from './features/settings/SettingsScreen';
+import AlertScreen from './features/sos/AlertScreen';
+import DownloadMapScreen from './features/offline/DownloadMapScreen';
 import logo from './assets/small_logo.png';
 import { PRESET_REGIONS, MAP_STYLES } from './utils/MapUtils';
-import SetupProfileScreen from './components/SetupProfileScreen';
+import SetupProfileScreen from './features/profile/SetupProfileScreen';
 import { useTranslation } from 'react-i18next';
 import LowBatteryGlobal from './components/LowBatteryGlobal';
 import { reportHazard, fetchHazards } from './services/hazardService';

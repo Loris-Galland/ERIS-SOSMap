@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import L from 'leaflet';
-import { createOfflineLayer, PRESET_REGIONS } from '../utils/MapUtils';
-import OfflineMapViewer from './OfflineMapViewer';
+import { createOfflineLayer, PRESET_REGIONS } from '../../utils/MapUtils';
+import OfflineMapViewer from '../../components/OfflineMapViewer';
 import { useTranslation } from 'react-i18next';
-import AlertModal, { type AlertType } from './AlertModalProps';
+import AlertModal, { type AlertType } from '../../components/AlertModalProps';
 
 function getRelativeTimeString(timestamp: number, t: any): string {
   const diff = Date.now() - timestamp;

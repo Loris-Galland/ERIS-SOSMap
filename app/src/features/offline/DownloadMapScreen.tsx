@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
-import { createOfflineLayer, PRESET_REGIONS, MAP_STYLES } from '../utils/MapUtils';
-import OfflineMapViewer from './OfflineMapViewer';
+import { createOfflineLayer, PRESET_REGIONS, MAP_STYLES } from '../../utils/MapUtils';
+import OfflineMapViewer from '../../components/OfflineMapViewer';
 import { useTranslation } from 'react-i18next';
-import AlertModal, { type AlertType } from './AlertModalProps';
+import AlertModal, { type AlertType } from '../../components/AlertModalProps';
 
 const lonToX = (lon: number, z: number) => Math.floor(((lon + 180) / 360) * Math.pow(2, z));
 const latToY = (lat: number, z: number) => {
