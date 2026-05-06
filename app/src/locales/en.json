@@ -190,6 +190,7 @@
     "satelliteTiles": "Satellite tiles",
     "storageWarning2": "are ~2.5x larger.",
     "selectCustom": "Select Custom Area",
+    "customArea": "Custom Area",
     "noTiles": "No tiles found for this area. Check your zoom levels.",
     "alreadyDownloaded": "This zone is already downloaded",
     "errorDownloading": "Error during downloading. Check your connexion.",

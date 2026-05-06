@@ -190,6 +190,7 @@
     "satelliteTiles": "卫星切片",
     "storageWarning2": "的体积约为2.5倍。",
     "selectCustom": "选择自定义区域",
+    "customArea": "自定义区域",
     "noTiles": "未找到此区域的瓦片。检查您的缩放级别。",
     "alreadyDownloaded": "此区域已下载",
     "errorDownloading": "下载时出错。检查您的连接。",

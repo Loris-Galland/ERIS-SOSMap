@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { supabase } from '../db/supabaseClient';
-import { dispatchSOS, flushRetryQueue, revokeSOS } from '../services/sosService';
-import { db } from '../db/localDb';
+import { supabase } from '../../db/supabaseClient';
+import { dispatchSOS, flushRetryQueue, revokeSOS } from '../../services/sosService';
+import { db } from '../../db/localDb';
 import { useLiveQuery } from 'dexie-react-hooks';
 import SOSHistoryScreen from './SosHistoryScreen';
 import { Geolocation } from '@capacitor/geolocation';
 import { Device } from '@capacitor/device';
 import { useTranslation } from 'react-i18next';
-import DistressSignalScreen from './DistressSignalScreen';
+import DistressSignalScreen from '../../components/DistressSignalScreen';
 import { Capacitor } from '@capacitor/core';
 
 // Types

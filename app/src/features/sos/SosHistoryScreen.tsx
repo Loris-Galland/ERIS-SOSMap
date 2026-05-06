@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../db/supabaseClient';
-import { db } from '../db/localDb';
+import { supabase } from '../../db/supabaseClient';
+import { db } from '../../db/localDb';
 import { useTranslation } from 'react-i18next';
 
 // Unified alert type merging Supabase and local Dexie records
