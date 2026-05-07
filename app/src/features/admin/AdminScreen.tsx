@@ -1,4 +1,18 @@
+// Admin panel entry point -routes to the different admin feature screens
+
+import { useState } from 'react';
+import SOSAlertDashboard from './components/SOSAlertDashboard';
+
+type AdminView = 'home' | 'sos_dashboard';
+
 export default function AdminScreen() {
+  const [view, setView] = useState<AdminView>('home');
+
+  // Route to the SOS dashboard sub-screen
+  if (view === 'sos_dashboard') {
+    return <SOSAlertDashboard onBack={() => setView('home')} />;
+  }
+
   return (
     <div className="flex flex-col h-full w-full bg-eris-bg text-eris-text p-6 pt-12 overflow-y-auto">
       <div className="max-w-md mx-auto w-full">
@@ -20,7 +34,11 @@ export default function AdminScreen() {
         {/* Feature cards — placeholders for upcoming admin US */}
         <div className="flex flex-col gap-4">
 
-          <div className="bg-eris-surface border border-eris-border/50 rounded-2xl p-4 flex items-center gap-4">
+          {/* US38 — active, navigates to dashboard */}
+          <button
+            onClick={() => setView('sos_dashboard')}
+            className="bg-eris-surface border border-eris-border/50 rounded-2xl p-4 flex items-center gap-4 active:scale-[0.98] transition-transform text-left w-full"
+          >
             <span className="material-symbols-outlined text-eris-alert text-2xl">emergency</span>
             <div>
               <p className="font-semibold text-sm">SOS Alert Dashboard</p>
@@ -29,9 +47,10 @@ export default function AdminScreen() {
             <span className="material-symbols-outlined text-eris-text-subtle text-xl ml-auto">
               chevron_right
             </span>
-          </div>
+          </button>
 
-          <div className="bg-eris-surface border border-eris-border/50 rounded-2xl p-4 flex items-center gap-4">
+          {/* Coming soon — non-clickable */}
+          <div className="bg-eris-surface border border-eris-border/50 rounded-2xl p-4 flex items-center gap-4 opacity-50">
             <span className="material-symbols-outlined text-eris-primary text-2xl">group</span>
             <div>
               <p className="font-semibold text-sm">User Management</p>
@@ -42,7 +61,7 @@ export default function AdminScreen() {
             </span>
           </div>
 
-          <div className="bg-eris-surface border border-eris-border/50 rounded-2xl p-4 flex items-center gap-4">
+          <div className="bg-eris-surface border border-eris-border/50 rounded-2xl p-4 flex items-center gap-4 opacity-50">
             <span className="material-symbols-outlined text-eris-success text-2xl">layers</span>
             <div>
               <p className="font-semibold text-sm">Danger Zone Publisher</p>
@@ -53,7 +72,7 @@ export default function AdminScreen() {
             </span>
           </div>
 
-          <div className="bg-eris-surface border border-eris-border/50 rounded-2xl p-4 flex items-center gap-4">
+          <div className="bg-eris-surface border border-eris-border/50 rounded-2xl p-4 flex items-center gap-4 opacity-50">
             <span className="material-symbols-outlined text-eris-text-muted text-2xl">flag</span>
             <div>
               <p className="font-semibold text-sm">Hazard Report Moderation</p>
