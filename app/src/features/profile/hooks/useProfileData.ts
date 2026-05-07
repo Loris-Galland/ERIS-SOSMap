@@ -1,8 +1,8 @@
 /**
  * useProfileData.ts
- * 
- * Custom hook that encapsulates all data fetching, hardware status (GPS/Battery),
+ * * Custom hook that encapsulates all data fetching, hardware status (GPS/Battery),
  * local offline DB syncing (Dexie), and Supabase mutations for the Profile.
+ * Now includes secure account deletion.
  */
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../db/supabaseClient';
@@ -26,6 +26,7 @@ export function useProfileData() {
 
   // ─── UI & ALERT STATES ───
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const defaultDialogState = {
     isOpen: false, title: '', message: '', type: 'info' as AlertType,
@@ -208,8 +209,39 @@ export function useProfileData() {
     }
   };
 
+  const deleteAccount = async () => {
+    setIsDeleting(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (user) {
+        // Clear offline cache
+        if (db.userProfile) await db.userProfile.clear();
+        if (db.emergencyContacts) await db.emergencyContacts.clear();
+
+        // Call Supabase RPC
+        const { error } = await supabase.rpc('delete_user');
+        
+        if (error) {
+          console.error('RPC Error:', error);
+          await supabase.from('user_profiles').delete().eq('id', user.id);
+        }
+      }
+
+      await supabase.auth.signOut();
+      localStorage.removeItem('eris_is_guest');
+      return true;
+    } catch (error) {
+      console.error('Error during account deletion:', error);
+      showAlert(t('common.error', 'Error'), t('profile.deleteAccountError', 'Failed to delete account. Please try again.'), 'danger');
+      return false;
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return {
-    profileData, contacts, userId, location, batteryLevel, isSaving, dialog, closeDialog,
-    saveMedicalInfo, addContact, updateContact, deleteContact
+    profileData, contacts, userId, location, batteryLevel, isSaving, isDeleting, dialog, openDialog, closeDialog,
+    saveMedicalInfo, addContact, updateContact, deleteContact, deleteAccount
   };
 }
