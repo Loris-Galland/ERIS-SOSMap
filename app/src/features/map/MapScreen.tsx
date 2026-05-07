@@ -6,7 +6,6 @@ import { useWeather } from './hooks/useWeather';
 import { useHazards } from './hooks/useHazards';
 import { useMapLayers } from './hooks/useMapLayers';
 import DiagnosticsModal from '../../features/settings/DiagnosticsModal';
-import logo from '../../assets/small_logo.png';
 import { PRESET_REGIONS, MAP_STYLES } from '../../utils/MapUtils';
 
 interface MapScreenProps {
@@ -56,13 +55,8 @@ export default function MapScreen({ isActive, visualTheme, session, onNavigateTo
   const { currentWeather, setCurrentWeather, showWeatherReport, setShowWeatherReport, fetchWeather } =
     useWeather(offlineMode);
 
-  const {
-    showHazardAlert,
-    setShowHazardAlert,
-    showHazardReportModal,
-    setShowHazardReportModal,
-    handleReportHazard,
-  } = useHazards({ mapInstance, isActive });
+  const { showHazardAlert, setShowHazardAlert, showHazardReportModal, setShowHazardReportModal, handleReportHazard } =
+    useHazards({ mapInstance, isActive });
 
   // Fetch weather when GPS position changes
   useEffect(() => {
@@ -134,9 +128,7 @@ export default function MapScreen({ isActive, visualTheme, session, onNavigateTo
       const searchLower = searchQuery.toLowerCase();
 
       if (offlineMode || !navigator.onLine) {
-        const localResults = localSearchableRegions.filter((r) =>
-          r.display_name.toLowerCase().includes(searchLower)
-        );
+        const localResults = localSearchableRegions.filter((r) => r.display_name.toLowerCase().includes(searchLower));
         setSearchResults(localResults);
         setIsSearching(false);
         return;
@@ -144,14 +136,12 @@ export default function MapScreen({ isActive, visualTheme, session, onNavigateTo
 
       try {
         const res = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=4`
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=4`,
         );
         const data = await res.json();
         setSearchResults(data);
       } catch {
-        const localResults = localSearchableRegions.filter((r) =>
-          r.display_name.toLowerCase().includes(searchLower)
-        );
+        const localResults = localSearchableRegions.filter((r) => r.display_name.toLowerCase().includes(searchLower));
         setSearchResults(localResults);
       } finally {
         setIsSearching(false);
@@ -168,7 +158,7 @@ export default function MapScreen({ isActive, visualTheme, session, onNavigateTo
     const bbox = item.boundingbox;
     const bounds = L.latLngBounds(
       [parseFloat(bbox[0]), parseFloat(bbox[2])],
-      [parseFloat(bbox[1]), parseFloat(bbox[3])]
+      [parseFloat(bbox[1]), parseFloat(bbox[3])],
     );
 
     const exactLat = item.lat ? parseFloat(item.lat) : bounds.getCenter().lat;
@@ -195,7 +185,6 @@ export default function MapScreen({ isActive, visualTheme, session, onNavigateTo
 
   return (
     <div className="relative w-full h-full">
-
       {/* ─── CARTE LEAFLET ─── */}
       <div ref={mapRef} className="absolute inset-0 z-0" />
 
@@ -245,9 +234,7 @@ export default function MapScreen({ isActive, visualTheme, session, onNavigateTo
               : 'bg-eris-surface-alt border border-eris-border text-eris-text-muted'
           }`}
         >
-          <span className="material-symbols-outlined text-xl">
-            {offlineMode ? 'cloud_off' : 'cloud_download'}
-          </span>
+          <span className="material-symbols-outlined text-xl">{offlineMode ? 'cloud_off' : 'cloud_download'}</span>
         </button>
       </div>
 
@@ -280,11 +267,15 @@ export default function MapScreen({ isActive, visualTheme, session, onNavigateTo
       </div>
 
       {/* ─── WEATHER WIDGET ─── */}
-      <div className="absolute top-[220px] left-4 z-[1000]">
+      <div className="absolute top-[190px] left-4 z-[1000]">
         <div className="bg-eris-surface/80 backdrop-blur-md border border-eris-border/50 rounded-2xl p-2.5 shadow-xl flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${currentWeather.bg} ${currentWeather.color}`}>
-              <span className={`material-symbols-outlined text-lg ${currentWeather.icon === 'sync' ? 'animate-spin' : ''}`}>
+            <div
+              className={`w-8 h-8 rounded-full flex items-center justify-center ${currentWeather.bg} ${currentWeather.color}`}
+            >
+              <span
+                className={`material-symbols-outlined text-lg ${currentWeather.icon === 'sync' ? 'animate-spin' : ''}`}
+              >
                 {currentWeather.icon}
               </span>
             </div>
@@ -422,19 +413,67 @@ export default function MapScreen({ isActive, visualTheme, session, onNavigateTo
               </button>
             </div>
             <p className="text-eris-text-muted text-xs mb-5 leading-relaxed">
-              {t('weather.reportHelp', 'Help others by reporting the current weather conditions at your exact location.')}
+              {t(
+                'weather.reportHelp',
+                'Help others by reporting the current weather conditions at your exact location.',
+              )}
             </p>
             <div className="grid grid-cols-3 gap-3 mb-2">
               {[
-                { condition: 'weather.clear', icon: 'sunny', color: 'text-eris-weather-clear', bg: 'bg-eris-weather-clear/20' },
-                { condition: 'weather.partlyCloudy', icon: 'partly_cloudy_day', color: 'text-eris-weather-partly', bg: 'bg-eris-weather-partly/20' },
-                { condition: 'weather.cloudy', icon: 'cloud', color: 'text-eris-weather-cloudy', bg: 'bg-eris-weather-cloudy/20' },
-                { condition: 'weather.windy', icon: 'air', color: 'text-eris-weather-windy', bg: 'bg-eris-weather-windy/20' },
-                { condition: 'weather.rain', icon: 'rainy', color: 'text-eris-weather-rainy', bg: 'bg-eris-weather-rainy/20' },
-                { condition: 'weather.storm', icon: 'thunderstorm', color: 'text-eris-weather-storm', bg: 'bg-eris-weather-storm/20' },
-                { condition: 'weather.hail', icon: 'grain', color: 'text-eris-weather-hail', bg: 'bg-eris-weather-hail/20' },
-                { condition: 'weather.snow', icon: 'weather_snowy', color: 'text-eris-weather-snow', bg: 'bg-eris-weather-snow/20' },
-                { condition: 'weather.fog', icon: 'foggy', color: 'text-eris-weather-fog', bg: 'bg-eris-weather-fog/20' },
+                {
+                  condition: 'weather.clear',
+                  icon: 'sunny',
+                  color: 'text-eris-weather-clear',
+                  bg: 'bg-eris-weather-clear/20',
+                },
+                {
+                  condition: 'weather.partlyCloudy',
+                  icon: 'partly_cloudy_day',
+                  color: 'text-eris-weather-partly',
+                  bg: 'bg-eris-weather-partly/20',
+                },
+                {
+                  condition: 'weather.cloudy',
+                  icon: 'cloud',
+                  color: 'text-eris-weather-cloudy',
+                  bg: 'bg-eris-weather-cloudy/20',
+                },
+                {
+                  condition: 'weather.windy',
+                  icon: 'air',
+                  color: 'text-eris-weather-windy',
+                  bg: 'bg-eris-weather-windy/20',
+                },
+                {
+                  condition: 'weather.rain',
+                  icon: 'rainy',
+                  color: 'text-eris-weather-rainy',
+                  bg: 'bg-eris-weather-rainy/20',
+                },
+                {
+                  condition: 'weather.storm',
+                  icon: 'thunderstorm',
+                  color: 'text-eris-weather-storm',
+                  bg: 'bg-eris-weather-storm/20',
+                },
+                {
+                  condition: 'weather.hail',
+                  icon: 'grain',
+                  color: 'text-eris-weather-hail',
+                  bg: 'bg-eris-weather-hail/20',
+                },
+                {
+                  condition: 'weather.snow',
+                  icon: 'weather_snowy',
+                  color: 'text-eris-weather-snow',
+                  bg: 'bg-eris-weather-snow/20',
+                },
+                {
+                  condition: 'weather.fog',
+                  icon: 'foggy',
+                  color: 'text-eris-weather-fog',
+                  bg: 'bg-eris-weather-fog/20',
+                },
               ].map((w) => (
                 <button
                   key={w.condition}
@@ -473,17 +512,45 @@ export default function MapScreen({ isActive, visualTheme, session, onNavigateTo
             </p>
             <div className="grid grid-cols-2 gap-3 mb-2">
               {[
-                { type: 'fire', icon: 'local_fire_department', label: 'Wildfire', color: 'text-red-400 [.theme-contrasted_&]:text-white', bg: 'bg-red-400/20 [.theme-contrasted_&]:bg-transparent [.theme-contrasted_&]:border [.theme-contrasted_&]:border-white' },
-                { type: 'flood', icon: 'water_drop', label: 'Flood', color: 'text-blue-400 [.theme-contrasted_&]:text-white', bg: 'bg-blue-400/20 [.theme-contrasted_&]:bg-transparent [.theme-contrasted_&]:border [.theme-contrasted_&]:border-white' },
-                { type: 'road_blocked', icon: 'block', label: 'Road Blocked', color: 'text-orange-400 [.theme-contrasted_&]:text-white', bg: 'bg-orange-400/20 [.theme-contrasted_&]:bg-transparent [.theme-contrasted_&]:border [.theme-contrasted_&]:border-white' },
-                { type: 'landslide', icon: 'landslide', label: 'Landslide', color: 'text-purple-400 [.theme-contrasted_&]:text-white', bg: 'bg-purple-400/20 [.theme-contrasted_&]:bg-transparent [.theme-contrasted_&]:border [.theme-contrasted_&]:border-white' },
+                {
+                  type: 'fire',
+                  icon: 'local_fire_department',
+                  label: 'Wildfire',
+                  color: 'text-red-400 [.theme-contrasted_&]:text-white',
+                  bg: 'bg-red-400/20 [.theme-contrasted_&]:bg-transparent [.theme-contrasted_&]:border [.theme-contrasted_&]:border-white',
+                },
+                {
+                  type: 'flood',
+                  icon: 'water_drop',
+                  label: 'Flood',
+                  color: 'text-blue-400 [.theme-contrasted_&]:text-white',
+                  bg: 'bg-blue-400/20 [.theme-contrasted_&]:bg-transparent [.theme-contrasted_&]:border [.theme-contrasted_&]:border-white',
+                },
+                {
+                  type: 'road_blocked',
+                  icon: 'block',
+                  label: 'Road Blocked',
+                  color: 'text-orange-400 [.theme-contrasted_&]:text-white',
+                  bg: 'bg-orange-400/20 [.theme-contrasted_&]:bg-transparent [.theme-contrasted_&]:border [.theme-contrasted_&]:border-white',
+                },
+                {
+                  type: 'landslide',
+                  icon: 'landslide',
+                  label: 'Landslide',
+                  color: 'text-purple-400 [.theme-contrasted_&]:text-white',
+                  bg: 'bg-purple-400/20 [.theme-contrasted_&]:bg-transparent [.theme-contrasted_&]:border [.theme-contrasted_&]:border-white',
+                },
               ].map((hazard) => (
                 <button
                   key={hazard.type}
-                  onClick={() => handleReportHazard(currentUserId, hazard.type as any, userPosition.lat, userPosition.lng)}
+                  onClick={() =>
+                    handleReportHazard(currentUserId, hazard.type as any, userPosition.lat, userPosition.lng)
+                  }
                   className="flex flex-col items-center justify-center gap-2 bg-gray-800/40 border border-gray-700/50 hover:bg-gray-700 hover:border-orange-500 rounded-2xl p-4 transition-all active:scale-95"
                 >
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${hazard.bg} ${hazard.color}`}>
+                  <div
+                    className={`w-10 h-10 rounded-full flex items-center justify-center ${hazard.bg} ${hazard.color}`}
+                  >
                     <span className="material-symbols-outlined text-2xl">{hazard.icon}</span>
                   </div>
                   <span className="text-eris-text-subtle text-xs font-bold">{hazard.label}</span>
@@ -495,9 +562,7 @@ export default function MapScreen({ isActive, visualTheme, session, onNavigateTo
       )}
 
       {/* ─── DIAGNOSTICS ─── */}
-      {showDiagnostics && (
-        <DiagnosticsModal onClose={() => setShowDiagnostics(false)} gpsStatus={gpsStatus} />
-      )}
+      {showDiagnostics && <DiagnosticsModal onClose={() => setShowDiagnostics(false)} gpsStatus={gpsStatus} />}
     </div>
   );
 }
