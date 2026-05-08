@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 import SOSAlertDashboard from './components/SOSAlertDashboard';
+import UserManagementScreen from './components/UserManagementScreen';
 
-type AdminView = 'home' | 'sos_dashboard';
+type AdminView = 'home' | 'sos_dashboard' | 'user_management';
 
 export default function AdminScreen() {
   const [view, setView] = useState<AdminView>('home');
@@ -11,6 +12,10 @@ export default function AdminScreen() {
   // Route to the SOS dashboard sub-screen
   if (view === 'sos_dashboard') {
     return <SOSAlertDashboard onBack={() => setView('home')} />;
+  }
+  // Route to the User Management sub-screen
+  if (view === 'user_management') {
+    return <UserManagementScreen onBack={() => setView('home')} />;
   }
 
   return (
@@ -34,7 +39,7 @@ export default function AdminScreen() {
         {/* Feature cards — placeholders for upcoming admin US */}
         <div className="flex flex-col gap-4">
 
-          {/* US38 — active, navigates to dashboard */}
+          {/* Navigates to dashboard */}
           <button
             onClick={() => setView('sos_dashboard')}
             className="bg-eris-surface border border-eris-border/50 rounded-2xl p-4 flex items-center gap-4 active:scale-[0.98] transition-transform text-left w-full"
@@ -49,17 +54,18 @@ export default function AdminScreen() {
             </span>
           </button>
 
-          {/* Coming soon — non-clickable */}
-          <div className="bg-eris-surface border border-eris-border/50 rounded-2xl p-4 flex items-center gap-4 opacity-50">
+          {/* Navigates to User management*/}
+          <button
+            onClick={() => setView('user_management')}
+            className="bg-eris-surface border border-eris-border/50 rounded-2xl p-4 flex items-center gap-4 active:scale-[0.98] transition-transform text-left w-full"
+          >
             <span className="material-symbols-outlined text-eris-primary text-2xl">group</span>
             <div>
               <p className="font-semibold text-sm">User Management</p>
               <p className="text-eris-text-muted text-xs">Users & roles</p>
             </div>
-            <span className="material-symbols-outlined text-eris-text-subtle text-xl ml-auto">
-              chevron_right
-            </span>
-          </div>
+            <span className="material-symbols-outlined text-eris-text-subtle text-xl ml-auto">chevron_right</span>
+          </button>
 
           <div className="bg-eris-surface border border-eris-border/50 rounded-2xl p-4 flex items-center gap-4 opacity-50">
             <span className="material-symbols-outlined text-eris-success text-2xl">layers</span>
