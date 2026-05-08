@@ -113,7 +113,9 @@
     "addContactError": "Lỗi khi thêm liên hệ",
     "deleteContactError": "Lỗi khi xóa",
     "updateContactError": "Lỗi khi cập nhật",
-    "confirmDelete": "Bạn có chắc chắn muốn xóa liên hệ này không?"
+    "confirmDelete": "Bạn có chắc chắn muốn xóa liên hệ này không?",
+    "deleteAccountBtn": "Xóa tài khoản của tôi",
+    "deleting": "Đang xóa..."
   },
   "offline": {
     "title": "Bản đồ ngoại tuyến",
@@ -218,10 +220,14 @@
   "offlineViewer": {
     "offlineMode": "Chế độ ngoại tuyến",
     "mapType": "Loại bản đồ",
-    "viewingLocal": "Đang xem dữ liệu cục bộ"
+    "viewingLocal": "Đang xem dữ liệu cục bộ",
+    "notDownloaded": "Chưa tải xuống"
   },
   "mapStyles": {
     "dark": "Tối",
+    "light": "Chế độ sáng",
+    "contrast": "Độ tương phản cao",
+    "terrain": "Địa hình",
     "satellite": "Vệ tinh",
     "topo": "Địa hình",
     "streets": "Đường phố"
@@ -238,5 +244,27 @@
     "snow": "Tuyết",
     "windy": "Có gió",
     "hail": "Mưa đá"
+  },
+  "diagnostics": {
+    "title": "Chẩn đoán hệ thống",
+    "internet": "Internet (Đám mây)",
+    "connect": "Đã kết nối qua ${network}",
+    "offline": "Ngoại tuyến",
+    "mesh": "Bộ chuyển tiếp lưới cục bộ",
+    "node": "Đang lắng nghe các nút ERIS lân cận",
+    "gps": "Phần cứng GPS",
+    "power": "Nguồn",
+    "charging": "(Đang sạc)",
+    "sosCloud": "Tín hiệu SOS của bạn sẽ được gửi đi toàn cầu đến ERIS Cloud.",
+    "sosMesh": "Không có internet. Tín hiệu SOS của bạn sẽ dựa vào Mạng lưới cục bộ và tin nhắn SMS dự phòng."
+  },
+  "lowBattery": {
+    "low": "Pin yếu",
+    "remaining": "Còn lại",
+    "extendLife": "Để kéo dài thời lượng pin:",
+    "powerSave": "Bật Chế độ tiết kiệm pin trên điện thoại của bạn.",
+    "closeBackground": "Đóng thủ công các ứng dụng chạy nền không sử dụng.",
+    "lowerBrightness": "Giảm độ sáng màn hình của bạn.",
+    "dismiss": "Đóng cửa sổ"
   }
 }

@@ -19,7 +19,7 @@
     "alertSent": "Alerte envoyée !",
     "cancelAvailable": "Annulation possible (5s)",
     "cancelBtn": "ANNULER",
-    "triggerTitle": "Déclencher l'Alerte SOS",
+    "triggerTitle": "Lancer l'Alerte SOS",
     "triggerSubtitle": "Avertit immédiatement les secours locaux",
     "pendingAlerts": "alerte(s) en attente — sera envoyée au retour du réseau.",
     "sending": "ENVOI...",
@@ -113,7 +113,9 @@
     "addContactError": "Erreur lors de l'ajout",
     "deleteContactError": "Erreur lors de la suppression",
     "updateContactError": "Erreur lors de la mise à jour",
-    "confirmDelete": "Voulez-vous vraiment supprimer ce contact ?"
+    "confirmDelete": "Voulez-vous vraiment supprimer ce contact ?",
+    "deleteAccountBtn": "Supprimer mon compte",
+    "deleting": "Suppression en cours..."
   },
   "offline": {
     "title": "Cartes Hors-ligne",
@@ -218,10 +220,14 @@
   "offlineViewer": {
     "offlineMode": "Mode Hors-ligne",
     "mapType": "Type de carte",
-    "viewingLocal": "Affichage des données locales"
+    "viewingLocal": "Affichage des données locales",
+    "notDownloaded": "Non Téléchargé"
   },
   "mapStyles": {
     "dark": "Sombre",
+    "light": "Clair",
+    "contrasted": "Contrasté",
+    "terrain": "Terrain",
     "satellite": "Satellite",
     "topo": "Topographique",
     "streets": "Rues"
@@ -238,5 +244,27 @@
     "snow": "Neige",
     "windy": "Venteux",
     "hail": "Grêle"
+  },
+  "diagnostics": {
+    "title": "Diagnostics système",
+    "internet": "Internet (Cloud)",
+    "connect": "Connecté via ${network}",
+    "offline": "Hors ligne",
+    "mesh": "Relais Mesh local",
+    "node": "Écoute des nœuds ERIS à proximité",
+    "gps": "Matériel GPS",
+    "power": "Batterie",
+    "charging": "(En charge)",
+    "sosCloud": "Votre SOS sera diffusé globalement via le cloud ERIS.",
+    "sosMesh": "Pas de connexion internet. Votre SOS utilisera le réseau maillé local et une solution de repli par SMS."
+  },
+  "lowBattery": {
+    "low": "Batterie faible",
+    "remaining": "Restant",
+    "extendLife": "Pour prolonger l'autonomie de la batterie :",
+    "powerSave": "Activez le mode économie d'énergie de votre téléphone.",
+    "closeBackground": "Fermez manuellement les applications en arrière-plan inutilisées.",
+    "lowerBrightness": "Réduisez la luminosité de votre écran.",
+    "dismiss": "Fermer"
   }
 }

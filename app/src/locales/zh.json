@@ -113,7 +113,9 @@
     "addContactError": "添加联系人时出错",
     "deleteContactError": "删除联系人时出错",
     "updateContactError": "更新联系人时出错",
-    "confirmDelete": "您确定要删除此联系人吗？"
+    "confirmDelete": "您确定要删除此联系人吗？",
+    "deleteAccountBtn": "刪除我的帳戶",
+    "deleting": "正在刪除…"
   },
   "offline": {
     "title": "离线地图",
@@ -218,10 +220,14 @@
   "offlineViewer": {
     "offlineMode": "离线模式",
     "mapType": "地图类型",
-    "viewingLocal": "查看本地数据"
+    "viewingLocal": "查看本地数据",
+    "notDownloaded": "未下載"
   },
   "mapStyles": {
     "dark": "深色",
+    "light": "淺色模式",
+    "contrast": "高對比",
+    "terrain": "地形",
     "satellite": "卫星",
     "topo": "地形",
     "streets": "街道"
@@ -238,5 +244,27 @@
     "snow": "雪",
     "windy": "有风",
     "hail": "冰雹"
+  },
+  "diagnostics": {
+    "title": "系統診斷",
+    "internet": "網際網路（雲端）",
+    "connect": "透過 ${network} 連結",
+    "offline": "離線",
+    "mesh": "本地網狀中繼",
+    "node": "正在監聽附近的 ERIS 節點",
+    "gps": "GPS 硬體",
+    "power": "電源",
+    "charging": "（充電中）",
+    "sosCloud": "您的 SOS 請求將全球同步至 ERIS 雲端平台",
+    "sosMesh": "無網路連線。您的 SOS 請求將依賴本地網狀網路和簡訊回退"
+  },
+  "lowBattery": {
+    "low": "電量低",
+    "remaining": "剩餘電量",
+    "extendLife": "延長電池續航力：",
+    "powerSave": "開啟手機的省電模式。",
+    "closeBackground": "手動關閉未使用的背景應用程式。",
+    "lowerBrightness": "降低螢幕亮度。",
+    "dismiss": "關閉"
   }
 }

@@ -73,7 +73,7 @@ export default function OfflineMapViewer({ name, bounds, onClose, availableStyle
   return (
     <div className="fixed inset-0 z-[6000] bg-eris-bg flex flex-col animate-in slide-in-from-bottom duration-300">
       {/* Internal header for Map view */}
-      <header className="flex justify-between items-center px-6 py-4 bg-eris-bg/90 backdrop-blur-md z-10">
+      <header className="flex justify-between items-center px-6 pb-4 pt-[70px] bg-eris-bg/95 backdrop-blur-md z-[2000] shrink-0 border-b border-eris-border shadow-lg">
         <div className="flex items-center gap-3">
           <button
             onClick={onClose}
@@ -146,7 +146,7 @@ export default function OfflineMapViewer({ name, bounds, onClose, availableStyle
                           <span>{t(`mapStyles.${key}`, style.name)}</span>
                           {!isAvailable && (
                             <span className="text-[9px] font-normal italic">
-                              {t('offlineViewer.notDownloaded', 'Non téléchargé')}
+                              {t('offlineViewer.notDownloaded', 'Not downloaded')}
                             </span>
                           )}
                         </div>

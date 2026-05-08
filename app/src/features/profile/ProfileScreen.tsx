@@ -110,13 +110,13 @@ export default function ProfileScreen({ onOpenSettings }: ProfileScreenProps) {
           className="w-full flex items-center justify-center gap-2 py-3.5 bg-eris-danger/10 text-eris-danger font-bold rounded-2xl border border-eris-danger/20 active:scale-95 transition-all disabled:opacity-50"
         >
           <span className="material-symbols-outlined text-xl">delete_forever</span>
-          {isDeleting ? t('profile.deleting', 'Deleting...') : t('profile.deleteAccountBtn', 'Delete My Account')}
+          {isDeleting ? t('profile.deleting', 'Deleting...') : t('profile.deleteAccountBtn', 'Delete my account')}
         </button>
 
         {/* Standard Logout Button (Neutral Color) */}
         <button
           onClick={handleLogout}
-          className="w-full flex items-center justify-center gap-2 py-3.5 bg-eris-surface-alt/60 text-eris-text font-semibold rounded-2xl border border-eris-border/50 hover:bg-eris-surface-alt active:scale-95 transition-all"
+          className="w-full flex items-center justify-center gap-2 py-3.5 bg-eris-alert/20 text-eris-alert font-semibold rounded-2xl border border-eris-border/50 hover:bg-eris-surface-alt active:scale-95 transition-all"
         >
           <span className="material-symbols-outlined text-xl">logout</span>
           {t('profile.logout', 'Sign Out')}

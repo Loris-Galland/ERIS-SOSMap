@@ -93,7 +93,7 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
           const newCustomRegion = {
             id: customId,
             name: customName.trim(),
-            size: t('download.customArea', 'Custom Area'),
+            size: 'Custom Area',
             bounds: {
               southWest: [bounds.getSouthWest().lat, bounds.getSouthWest().lng],
               northEast: [bounds.getNorthEast().lat, bounds.getNorthEast().lng],

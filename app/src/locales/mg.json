@@ -113,7 +113,9 @@
     "addContactError": "Misy olana ny fampidirana",
     "deleteContactError": "Misy olana ny famafana",
     "updateContactError": "Misy olana ny fanavaozana",
-    "confirmDelete": "Tena te hamafa an'ity ve ianao?"
+    "confirmDelete": "Tena te hamafa an'ity ve ianao?",
+    "deleteAccountBtn": "Fafao ny kaontiko",
+    "deleting": "Mamafa..."
   },
   "offline": {
     "title": "Sarintany offline",
@@ -218,10 +220,14 @@
   "offlineViewer": {
     "offlineMode": "Tsy misy internet",
     "mapType": "Karazana sarintany",
-    "viewingLocal": "Mijery angona eto an-toerana"
+    "viewingLocal": "Mijery angona eto an-toerana",
+    "notDownloaded": "Tsy voasintona"
   },
   "mapStyles": {
     "dark": "Maizina",
+    "light": "Fomba Fahazavana",
+    "contrast": "Fifanintonana Avo",
+    "terrain": "Terrain",
     "satellite": "Zanabolana",
     "topo": "Tany",
     "streets": "Làlana"
@@ -238,5 +244,27 @@
     "snow": "Oram-panala",
     "windy": "Mandrivotra",
     "hail": "Havandra"
+  },
+  "diagnostics": {
+    "title": "Diagnostics Rafitra",
+    "internet": "Internet (Cloud)",
+    "connect": "Mifandray amin'ny alàlan'ny ${network}",
+    "offline": "Offline",
+    "mesh": "Local Mesh Relay",
+    "node": "Mihaino ireo nodes ERIS akaiky",
+    "gps": "GPS Hardware",
+    "power": "Power",
+    "charging": "(Mamandrika)",
+    "sosCloud": "Halefa maneran-tany any amin'ny ERIS Cloud ny SOS-nao.",
+    "sosMesh": "Tsy misy aterineto. Hiantehitra amin'ny Local Mesh sy SMS Fallback ny SOS-nao."
+  },
+  "lowBattery": {
+    "low": "Batterie Ambany",
+    "remaining": "Sisa",
+    "extendLife": "Mba hanalavana ny androm-piainan'ny bateria:",
+    "powerSave": "Ampandehano ny Mode Fitsitsiana Herinaratra amin'ny findainao.",
+    "closeBackground": "Akatony tanana ireo fampiharana ambadika tsy ampiasaina.",
+    "lowerBrightness": "Ampidino ny famirapiratry ny efijerinao.",
+    "dismiss": "Esory"
   }
 }
