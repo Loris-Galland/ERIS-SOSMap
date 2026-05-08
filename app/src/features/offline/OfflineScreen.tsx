@@ -80,7 +80,14 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
     if (typeof id === 'number' || (typeof id === 'string' && !id.startsWith('custom_'))) {
       return PRESET_REGIONS.find((r) => r.id === Number(id));
     }
-    return customRegions.find((r) => r.id === id);
+    const custom = customRegions.find((r) => r.id === id);
+    if (custom) {
+      return {
+        ...custom,
+        size: t('download.customArea', 'Custom Area'),
+      };
+    }
+    return null;
   };
 
   return (

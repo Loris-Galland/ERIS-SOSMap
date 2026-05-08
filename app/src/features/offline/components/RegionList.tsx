@@ -43,6 +43,7 @@ export default function RegionList({
             const isDownloaded = downloadedIds.some((r) => String(r) === String(region.id));
             const isDownloadingThis = String(downloadingId) === String(region.id);
             const isCustom = typeof region.id === 'string' && region.id.startsWith('custom');
+            const displaySize = isCustom ? t('download.customArea', 'Custom Area') : region.size || '';
 
             return (
               <div
@@ -72,7 +73,7 @@ export default function RegionList({
                         ? `${t('download.downloading', 'Downloading...')} ${progress}%`
                         : isDownloaded
                           ? t('download.available', 'Available Offline')
-                          : `${region.size || ''}   ${t('download.mapData', 'Map & Navigation Data')}`}
+                          : `${displaySize}   ${t('download.mapData', 'Map & Navigation Data')}`}
                     </p>
                   </div>
                 </div>

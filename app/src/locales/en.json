@@ -113,7 +113,9 @@
     "addContactError": "Error adding contact",
     "deleteContactError": "Error deleting contact",
     "updateContactError": "Error updating contact",
-    "confirmDelete": "Are you sure you want to delete this contact?"
+    "confirmDelete": "Are you sure you want to delete this contact?",
+    "deleteAccountBtn": "Delete my account",
+    "deleting": "Deleting..."
   },
   "offline": {
     "title": "Offline Maps",
@@ -218,10 +220,14 @@
   "offlineViewer": {
     "offlineMode": "Offline Mode",
     "mapType": "Map Type",
-    "viewingLocal": "Viewing Local Data"
+    "viewingLocal": "Viewing Local Data",
+    "notDownloaded": "Not Downloaded"
   },
   "mapStyles": {
     "dark": "Dark",
+    "light": "Light Mode",
+    "contrasted": "Hight Contrast",
+    "terrain": "Terrain",
     "satellite": "Satellite",
     "topo": "Topographic",
     "streets": "Streets"
@@ -238,5 +244,27 @@
     "snow": "Snow",
     "windy": "Windy",
     "hail": "Hail"
+  },
+  "diagnostics": {
+    "title": "System Diagnostics",
+    "internet": "Internet (Cloud)",
+    "connect": "Connected via ${network}",
+    "offline": "Offline",
+    "mesh": "Local Mesh Relay",
+    "node": "Listening for nearby ERIS nodes",
+    "gps": "GPS Hardware",
+    "power": "Power",
+    "charging": "(Charging)",
+    "sosCloud": "Your SOS will be dispatched globally to the ERIS Cloud.",
+    "sosMesh": "No internet. Your SOS will rely on Local Mesh and SMS Fallback."
+  },
+  "lowBattery": {
+    "low": "Low Battery",
+    "remaining": "Remaining",
+    "extendLife": "To extend battery life:",
+    "powerSave": "Turn on your phone's Power Saving Mode.",
+    "closeBackground": "Manually close unused background apps.",
+    "lowerBrightness": "Lower your screen brightness.",
+    "dismiss": "Dismiss"
   }
 }

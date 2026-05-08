@@ -74,9 +74,14 @@ export default function DiagnosticsModal({ onClose, gpsStatus }: DiagnosticsModa
                     : 'signal_disconnected'}
               </span>
               <div>
-                <div className="text-eris-text text-sm font-bold">Internet (Cloud)</div>
+                <div className="text-eris-text text-sm font-bold">{t('diagnostics.internet', 'Internet (Cloud)')}</div>
                 <div className="text-eris-text-muted text-xs">
-                  {networkInfo.connected ? `Connected via ${networkInfo.type.toUpperCase()}` : 'Offline'}
+                  {networkInfo.connected
+                    ? t('diagnostics.connect', 'Connected via ${network}').replace(
+                        '${network}',
+                        networkInfo.type.toUpperCase(),
+                      )
+                    : t('diagnostics.offline', 'Offline')}
                 </div>
               </div>
             </div>
@@ -90,8 +95,10 @@ export default function DiagnosticsModal({ onClose, gpsStatus }: DiagnosticsModa
             <div className="flex items-center gap-3">
               <span className="material-symbols-outlined text-2xl text-eris-primary">bluetooth_drive</span>
               <div>
-                <div className="text-eris-text text-sm font-bold">Local Mesh Relay</div>
-                <div className="text-eris-text-muted text-xs">Listening for nearby ERIS nodes</div>
+                <div className="text-eris-text text-sm font-bold">{t('diagnostics.mesh', 'Local Mesh Relay')}</div>
+                <div className="text-eris-text-muted text-xs">
+                  {t('diagnostics.node', 'Listening for nearby ERIS nodes')}
+                </div>
               </div>
             </div>
             <div className="w-3 h-3 rounded-full bg-eris-primary shadow-[0_0_10px_rgba(car(--eris-primary),0.5)] [.theme-contrasted_&]:shadow-none animate-pulse" />
@@ -106,7 +113,7 @@ export default function DiagnosticsModal({ onClose, gpsStatus }: DiagnosticsModa
                 my_location
               </span>
               <div>
-                <div className="text-eris-text text-sm font-bold">GPS Hardware</div>
+                <div className="text-eris-text text-sm font-bold">{t('diagnostics.gps', 'GPS Hardware')}</div>
                 <div className="text-eris-text-muted text-xs">{gpsStatus}</div>
               </div>
             </div>
@@ -124,9 +131,9 @@ export default function DiagnosticsModal({ onClose, gpsStatus }: DiagnosticsModa
                 {batteryInfo.isCharging ? 'battery_charging_full' : 'battery_full'}
               </span>
               <div>
-                <div className="text-eris-text text-sm font-bold">Power</div>
+                <div className="text-eris-text text-sm font-bold">{t('diagnostics.power', 'Power')}</div>
                 <div className="text-eris-text-muted text-xs">
-                  {batteryInfo.level}% {batteryInfo.isCharging ? '(Charging)' : ''}
+                  {batteryInfo.level}% {batteryInfo.isCharging ? t('diagnostics.charging', '(Charging)') : ''}
                 </div>
               </div>
             </div>
@@ -136,8 +143,8 @@ export default function DiagnosticsModal({ onClose, gpsStatus }: DiagnosticsModa
 
         <p className="text-eris-text-muted text-xs text-center mt-6">
           {networkInfo.connected
-            ? 'Your SOS will be dispatched globally to the ERIS Cloud.'
-            : 'No internet. Your SOS will rely on Local Mesh and SMS Fallback.'}
+            ? t('diagnostics.sosCloud', 'Your SOS will be dispatched globally to the ERIS Cloud.')
+            : t('diagnostics.sosMesh', 'No internet. Your SOS will rely on Local Mesh and SMS Fallback.')}
         </p>
       </div>
     </div>
