@@ -401,7 +401,7 @@ export default function MapScreen({ isActive, visualTheme, session, onNavigateTo
 
       {/* ─── WEATHER REPORT MODAL ─── */}
       {showWeatherReport && (
-        <div className="absolute inset-0 z-[6000] bg-eris-bg/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+        <div className="absolute inset-0 z-[18000] bg-eris-bg/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="bg-eris-surface border border-eris-border/50 rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-in zoom-in-95 duration-200">
             <div className="flex justify-between items-center mb-2">
               <h3 className="text-eris-text text-lg font-bold">{t('weather.reportWeather', 'Report Weather')}</h3>
@@ -496,7 +496,7 @@ export default function MapScreen({ isActive, visualTheme, session, onNavigateTo
 
       {/* ─── HAZARD REPORT MODAL ─── */}
       {showHazardReportModal && (
-        <div className="absolute inset-0 z-[6000] bg-[#0f141e]/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+        <div className="absolute inset-0 z-[18000] bg-[#0f141e]/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="bg-gray-900 border border-gray-700/50 rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-in zoom-in-95 duration-200">
             <div className="flex justify-between items-center mb-2">
               <h3 className="text-white text-lg font-bold">Report a Hazard</h3>
