@@ -78,7 +78,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
   const { isLoading: isPoisLoading } = usePOIs({ mapInstance, activeFilters });
 
   const toggleFilter = (category: POICategory) => {
-    setActiveFilters((prev) => (prev.includes(category) ? prev.filter((c) => c !== category) : [...prev, category]));
+    setActiveFilters((prev) => (prev.includes(category) ? [] : [category]));
   };
 
   // Admin SOS markers overlay — US40
@@ -274,6 +274,9 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
       >
         {[
           { id: 'hospital', label: t('poi.hospital', 'Hospitals'), icon: 'local_hospital', color: 'text-red-500' },
+          { id: 'clinic', label: t('poi.clinic', 'Clinics'), icon: 'medical_services', color: 'text-red-400' },
+          { id: 'pharmacy', label: t('poi.pharmacy', 'Pharmacies'), icon: 'local_pharmacy', color: 'text-emerald-500' },
+          { id: 'aed', label: t('poi.aed', 'AEDs'), icon: 'monitor_heart', color: 'text-rose-600' },
           { id: 'police', label: t('poi.police', 'Police'), icon: 'local_police', color: 'text-blue-500' },
           {
             id: 'fire_station',
@@ -282,13 +285,15 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
             color: 'text-orange-500',
           },
           { id: 'shelter', label: t('poi.shelter', 'Shelters'), icon: 'night_shelter', color: 'text-green-500' },
+          { id: 'water', label: t('poi.water', 'Water'), icon: 'water_drop', color: 'text-cyan-500' },
+          { id: 'gas', label: t('poi.gas', 'Gas Stations'), icon: 'local_gas_station', color: 'text-slate-600' },
         ].map((filter) => {
           const isSelected = activeFilters.includes(filter.id as POICategory);
           return (
             <button
               key={filter.id}
               onClick={() => toggleFilter(filter.id as POICategory)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold whitespace-nowrap transition-all shadow-sm active:scale-95 ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold whitespace-nowrap transition-all shadow-sm active:scale-95 shrink-0 ${
                 isSelected
                   ? 'bg-eris-surface border-eris-primary text-eris-text'
                   : 'bg-eris-surface-alt/80 border-eris-border/50 text-eris-text-muted hover:bg-gray-700'
@@ -310,23 +315,39 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
         )}
       </div>
 
-      {/* ─── LOCATION CARD ─── */}
+      {/* ─── LOCATION AND WEATHER ─── */}
       <div className="absolute top-[120px] left-4 z-[1000] flex flex-col gap-3 items-start">
-        {/* 1. LOCATION WIDGET */}
+        {/* LOCATION WIDGET */}
         {!isLocationExpanded ? (
           <button
             onClick={() => setIsLocationExpanded(true)}
-            className="w-12 h-12 bg-eris-surface/90 backdrop-blur-md border border-eris-border/50 rounded-full flex items-center justify-center text-eris-text-muted hover:text-eris-text transition-colors shadow-lg active:scale-95"
+            className={`w-12 h-12 backdrop-blur-md border border-eris-border/50 rounded-full flex items-center justify-center transition-colors shadow-lg active:scale-95 ${
+              gpsStatus === 'Connected'
+                ? 'bg-eris-success/20'
+                : gpsStatus === 'Locating...'
+                  ? 'bg-yellow-500/20'
+                  : 'bg-eris-danger/20'
+            }`}
             title="Expand Location"
           >
             <div className="relative flex items-center justify-center">
-              {/* Tiny status dot indicator */}
-              <span
-                className={`material-symbols-outlined text-xl ${
-                  gpsStatus === 'Connected' ? 'text-eris-success' : 'text-yellow-500 animate-pulse'
-                }`}
-              >
-                satellite_alt
+              {/* Satellite status-indicator */}
+              <span className={gpsStatus === 'Locating...' ? 'animate-pulse' : ''}>
+                <span
+                  className={`material-symbols-outlined text-xl transition-all block ${
+                    gpsStatus === 'Connected'
+                      ? 'text-eris-success'
+                      : gpsStatus === 'Locating...'
+                        ? 'text-eris-alert animate-spin'
+                        : 'text-eris-danger'
+                  }`}
+                >
+                  {gpsStatus === 'Connected'
+                    ? 'satellite_alt'
+                    : gpsStatus === 'Locating...'
+                      ? 'sync'
+                      : 'location_disabled'}
+                </span>
               </span>
             </div>
           </button>
@@ -361,11 +382,11 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
           </div>
         )}
 
-        {/* 2. WEATHER WIDGET */}
+        {/* WEATHER WIDGET */}
         {!isWeatherExpanded ? (
           <button
             onClick={() => setIsWeatherExpanded(true)}
-            className="w-12 h-12 bg-eris-surface/90 backdrop-blur-md border border-eris-border/50 rounded-full flex items-center justify-center transition-colors shadow-lg active:scale-95"
+            className={`w-12 h-12 backdrop-blur-md border border-eris-border/50 rounded-full flex items-center justify-center transition-colors shadow-lg active:scale-95 ${currentWeather.bg}`}
             title="Expand Weather"
           >
             <span

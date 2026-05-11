@@ -74,7 +74,7 @@ export function useGPS({ mapInstance, isActive }: UseGPSProps) {
         watchId = await Geolocation.watchPosition(
           {
             enableHighAccuracy: true,
-            timeout: 10000,
+            timeout: 30000,
             maximumAge: 0,
           },
           (position, err) => {

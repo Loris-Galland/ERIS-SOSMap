@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 
-export type POICategory = 'hospital' | 'police' | 'fire_station' | 'shelter';
+export type POICategory = 
+  | 'hospital' | 'police' | 'fire_station' | 'shelter' 
+  | 'pharmacy' | 'water' | 'gas' | 'aed' | 'clinic';
 
 interface UsePOIsProps {
   mapInstance: React.MutableRefObject<L.Map | null>;
@@ -14,66 +16,103 @@ const POI_ICONS: Record<POICategory, { icon: string; color: string; bg: string }
   police: { icon: 'local_police', color: 'text-blue-600', bg: 'bg-white' },
   fire_station: { icon: 'local_fire_department', color: 'text-orange-500', bg: 'bg-white' },
   shelter: { icon: 'night_shelter', color: 'text-green-600', bg: 'bg-white' },
+  pharmacy: { icon: 'local_pharmacy', color: 'text-emerald-500', bg: 'bg-white' },
+  water: { icon: 'water_drop', color: 'text-cyan-500', bg: 'bg-white' },
+  gas: { icon: 'local_gas_station', color: 'text-slate-600', bg: 'bg-white' },
+  aed: { icon: 'monitor_heart', color: 'text-rose-600', bg: 'bg-white' },
+  clinic: { icon: 'medical_services', color: 'text-red-400', bg: 'bg-white' },
 };
 
 export function usePOIs({ mapInstance, activeFilters }: UsePOIsProps) {
   const [isLoading, setIsLoading] = useState(false);
   const markersLayer = useRef<L.LayerGroup | null>(null);
-
-  // Initialize the LayerGroup once
-  useEffect(() => {
-    if (mapInstance.current && !markersLayer.current) {
-      markersLayer.current = L.layerGroup().addTo(mapInstance.current);
-    }
-  }, [mapInstance.current]);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const fetchPOIs = async () => {
-    if (!mapInstance.current || !markersLayer.current) return;
+    if (!mapInstance.current) return;
+
+    // Zoom limit
+    if (mapInstance.current.getZoom() < 12) {
+        console.warn('Zoomed out too far to fetch POIs. Zoom in closer.');
+      setIsLoading(false);
+      if (markersLayer.current) markersLayer.current.clearLayers();
+      return; 
+    }
     
-    // Clear existing markers
+    // Create layer if it doesn't exist
+    if (!markersLayer.current) {
+      markersLayer.current = L.layerGroup().addTo(mapInstance.current);
+    }
+    
+    // Clear old markers
     markersLayer.current.clearLayers();
 
     if (activeFilters.length === 0) return;
 
     setIsLoading(true);
 
-    // Get the current visible boundaries of the map
+    // Cancel any pending fetch before starting a new one
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+    const { signal } = abortControllerRef.current;
+
     const bounds = mapInstance.current.getBounds();
     const bbox = `${bounds.getSouth()},${bounds.getWest()},${bounds.getNorth()},${bounds.getEast()}`;
 
-    // Build the Overpass query based on active filters
     let query = `[out:json][timeout:25];(`;
-    if (activeFilters.includes('hospital')) query += `node["amenity"="hospital"](${bbox});`;
-    if (activeFilters.includes('police')) query += `node["amenity"="police"](${bbox});`;
-    if (activeFilters.includes('fire_station')) query += `node["amenity"="fire_station"](${bbox});`;
+    if (activeFilters.includes('hospital')) query += `nwr["amenity"="hospital"](${bbox});`;
+    if (activeFilters.includes('police')) query += `nwr["amenity"="police"](${bbox});`;
+    if (activeFilters.includes('fire_station')) query += `nwr["amenity"="fire_station"](${bbox});`;
     if (activeFilters.includes('shelter')) {
-      query += `node["amenity"="social_facility"]["social_facility"="shelter"](${bbox});`;
-      query += `node["social_facility"="shelter"](${bbox});`; // Backup tag
+      query += `nwr["amenity"="social_facility"]["social_facility"="shelter"](${bbox});`;
+      query += `nwr["social_facility"="shelter"](${bbox});`; 
+      query += `nwr["amenity"="shelter"](${bbox});`; 
     }
-    query += `);out body;>;out skel qt;`;
+    if (activeFilters.includes('pharmacy')) query += `nwr["amenity"="pharmacy"](${bbox});`;
+    if (activeFilters.includes('water')) query += `nwr["amenity"="drinking_water"](${bbox});`;
+    if (activeFilters.includes('gas')) query += `nwr["amenity"="fuel"](${bbox});`;
+    if (activeFilters.includes('aed')) query += `nwr["emergency"="defibrillator"](${bbox});`;
+    if (activeFilters.includes('clinic')) query += `nwr["amenity"="clinic"](${bbox});`;
+    query += `);out center;`;
 
     try {
-      const response = await fetch('https://overpass-api.de/api/interpreter', {
-        method: 'POST',
-        body: query,
+      const encodedQuery = encodeURIComponent(query);
+      
+      const response = await fetch(`https://overpass-api.de/api/interpreter?data=${encodedQuery}`, {
+        method: 'GET',
+        signal, 
       });
+
+      if (!response.ok) {
+        throw new Error(`Overpass API Error: ${response.status}`);
+      }
+
       const data = await response.json();
 
-      data.elements.forEach((node: any) => {
-        if (node.type !== 'node') return;
+      data.elements.forEach((element: any) => {
+        const lat = element.lat || element.center?.lat;
+        const lon = element.lon || element.center?.lon;
 
-        // Determine category for the icon
+        
+        if (!lat || !lon) return;
+
         let category: POICategory | null = null;
-        if (node.tags?.amenity === 'hospital') category = 'hospital';
-        else if (node.tags?.amenity === 'police') category = 'police';
-        else if (node.tags?.amenity === 'fire_station') category = 'fire_station';
-        else if (node.tags?.social_facility === 'shelter') category = 'shelter';
+        if (element.tags?.amenity === 'hospital') category = 'hospital';
+        else if (element.tags?.amenity === 'police') category = 'police';
+        else if (element.tags?.amenity === 'fire_station') category = 'fire_station';
+        else if (element.tags?.social_facility === 'shelter' || element.tags?.amenity === 'shelter') category = 'shelter';
+        else if (element.tags?.amenity === 'pharmacy') category = 'pharmacy';
+        else if (element.tags?.amenity === 'drinking_water') category = 'water';
+        else if (element.tags?.amenity === 'fuel') category = 'gas';
+        else if (element.tags?.emergency === 'defibrillator') category = 'aed';
+        else if (element.tags?.amenity === 'clinic') category = 'clinic';
 
         if (!category) return;
 
         const style = POI_ICONS[category];
         
-        // Create a beautiful HTML icon using Tailwind and Material Symbols
         const customIcon = L.divIcon({
           className: 'custom-poi-marker',
           html: `
@@ -87,32 +126,35 @@ export function usePOIs({ mapInstance, activeFilters }: UsePOIsProps) {
           popupAnchor: [0, -40],
         });
 
-        // Add to map with a popup containing the name
-        const name = node.tags?.name || 'Unknown Facility';
-        L.marker([node.lat, node.lon], { icon: customIcon })
+        let name = element.tags?.name;
+        if (!name) {
+           if (category === 'water') name = 'Drinking Water';
+           else if (category === 'aed') name = 'Defibrillator (AED)';
+           else name = 'Unknown Facility';
+        }
+
+        L.marker([lat, lon], { icon: customIcon })
           .bindPopup(`<strong class="text-sm font-sans">${name}</strong>`)
           .addTo(markersLayer.current!);
       });
-    } catch (error) {
-      console.error("Failed to fetch POIs", error);
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        console.log('Fetch aborted.');
+      } else {
+        console.error("Failed to fetch POIs:", error);
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Refetch when filters change or when the map stops moving
+  // Refetch ONLY when filters change
   useEffect(() => {
-    if (!mapInstance.current) return;
-    
     fetchPOIs();
-
-    const handleMoveEnd = () => fetchPOIs();
-    mapInstance.current.on('moveend', handleMoveEnd);
-
     return () => {
-      mapInstance.current?.off('moveend', handleMoveEnd);
+      if (abortControllerRef.current) abortControllerRef.current.abort();
     };
-  }, [activeFilters, mapInstance.current]);
+  }, [activeFilters]);
 
   return { isLoading };
 }
