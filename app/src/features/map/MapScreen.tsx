@@ -30,6 +30,8 @@ const getGuestId = () => {
 export default function MapScreen({ isActive, visualTheme, session, isAdmin, onNavigateToAlerts }: MapScreenProps) {
   const { t } = useTranslation();
   const mapRef = useRef<HTMLDivElement | null>(null);
+  const [isMapReady, setIsMapReady] = useState(false);
+  const currentUserId = session?.user?.id || getGuestId();
 
   const [offlineMode, setOfflineMode] = useState(false);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
@@ -61,8 +63,17 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
   const { currentWeather, setCurrentWeather, showWeatherReport, setShowWeatherReport, fetchWeather } =
     useWeather(offlineMode);
 
-  const { showHazardAlert, setShowHazardAlert, showHazardReportModal, setShowHazardReportModal, handleReportHazard } =
-    useHazards({ mapInstance, isActive });
+  // Passing isAdmin and fetching the modal states/functions
+  const {
+    showHazardAlert,
+    setShowHazardAlert,
+    showHazardReportModal,
+    setShowHazardReportModal,
+    handleReportHazard,
+    hazardToDelete,
+    setHazardToDelete,
+    handleDeleteHazard,
+  } = useHazards({ mapInstance, isActive, isAdmin, isMapReady });
 
   const { isLoading: isPoisLoading } = usePOIs({ mapInstance, activeFilters });
 
@@ -102,6 +113,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
     if (isActive) {
       setTimeout(() => {
         mapInstance.current?.invalidateSize();
+        setIsMapReady(true);
       }, 100);
     }
   }, [isActive]);
@@ -114,7 +126,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
     const customRegs = savedCustom ? JSON.parse(savedCustom) : [];
     const formattedCustom = customRegs.map((r: any) => ({
       place_id: r.id,
-      display_name: `${r.name}, Zone personnalisée`,
+      display_name: `${r.name}, Custom zone`,
       boundingbox: [r.bounds.southWest[0], r.bounds.northEast[0], r.bounds.southWest[1], r.bounds.northEast[1]],
       isOffline: true,
     }));
@@ -123,7 +135,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
     const downloadedIds = savedOffline ? JSON.parse(savedOffline) : [];
     const downloadedPresets = PRESET_REGIONS.filter((pr) => downloadedIds.includes(pr.id)).map((pr) => ({
       place_id: pr.id.toString(),
-      display_name: `${pr.name}, Zone enregistrée`,
+      display_name: `${pr.name}, Saved zone`,
       boundingbox: [
         pr.bounds.getSouthWest().lat,
         pr.bounds.getNorthEast().lat,
@@ -200,11 +212,9 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
     setSearchResults([]);
   };
 
-  const currentUserId = session?.user?.id || getGuestId();
-
   return (
     <div className="relative w-full h-full">
-      {/* ─── CARTE LEAFLET ─── */}
+      {/* ─── LEAFLET MAP ─── */}
       <div ref={mapRef} className="absolute inset-0 z-0" />
 
       {/* ─── SEARCH & OFFLINE BAR ─── */}
@@ -474,7 +484,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
           )}
         </div>
 
-        {/* // Report hazard button */}
+        {/* Report hazard button */}
         <button
           onClick={() => setShowHazardReportModal(true)}
           className="w-12 h-12 bg-eris-alert [.theme-dark_&]:bg-orange-400 rounded-full flex items-center justify-center text-white [.theme-contrasted_&]:border-2 [.theme-contrasted_&]:!border-black hover:bg-orange-400 transition-colors shadow-lg shadow-eris-alert/30 active:scale-95"
@@ -483,7 +493,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
           <span className="material-symbols-outlined [.theme-contrasted_&]:!text-black text-xl">warning</span>
         </button>
 
-        {/* // Re-center on my location button */}
+        {/* Re-center on my location button */}
         <button
           onClick={() => {
             if (mapInstance.current && userPosition.lat !== 0) {
@@ -686,6 +696,37 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
                   <span className="text-eris-text-subtle text-xs font-bold">{hazard.label}</span>
                 </button>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── HAZARD DELETE CONFIRMATION MODAL ─── */}
+      {hazardToDelete && (
+        <div className="absolute inset-0 z-[19000] bg-[#0f141e]/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-gray-900 border border-gray-700/50 rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-white text-lg font-bold flex items-center gap-2">
+                <span className="material-symbols-outlined text-red-500">warning</span>
+                {t('hazard.deleteTitle', 'Delete Alert')}
+              </h3>
+            </div>
+            <p className="text-gray-300 text-sm mb-6 leading-relaxed">
+              {t('hazard.deleteConfirm', 'Are you sure you want to permanently delete this hazard alert?')}
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setHazardToDelete(null)}
+                className="flex-1 py-3 bg-gray-800 text-white rounded-xl font-bold hover:bg-gray-700 transition-colors"
+              >
+                {t('common.cancel', 'Cancel')}
+              </button>
+              <button
+                onClick={handleDeleteHazard}
+                className="flex-1 py-3 bg-red-500/20 border border-red-500/50 text-red-400 rounded-xl font-bold hover:bg-red-500 hover:text-white transition-colors"
+              >
+                {t('common.delete', 'Delete')}
+              </button>
             </div>
           </div>
         </div>

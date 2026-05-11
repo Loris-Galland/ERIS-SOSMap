@@ -66,3 +66,22 @@ export const fetchHazards = async () => {
   const localHazards = await db.hazards.where('synced').equals('false').toArray();
   return [...remoteHazards, ...localHazards];
 };
+
+export const removeHazard = async (uuid: string) => {
+  try {
+    if (navigator.onLine) {
+      // Delete from Supabase 
+      const { error } = await supabase.from('hazards').delete().eq('id', uuid);
+      if (error) throw error;
+    }
+  } catch (error) {
+    console.warn('[HAZARD] Offline mode or error deleting from Supabase:', error);
+  }
+
+  // Delete from local Dexie DB
+  try {
+    await db.hazards.filter(hazard => hazard.uuid === uuid).delete();
+  } catch (err) {
+    await db.hazards.delete(uuid as any); 
+  }
+};
