@@ -63,6 +63,24 @@ export const fetchHazards = async () => {
   }
 
   // Combine remote hazards with the local ones that haven't been synced yet
-  const localHazards = await db.hazards.where('synced').equals('false').toArray();
+  const localHazards = await db.hazards.filter(hazard => hazard.synced === false).toArray();
   return [...remoteHazards, ...localHazards];
+};
+
+export const removeHazard = async (uuid: string) => {
+  try {
+    if (navigator.onLine) {
+      // Delete from Supabase 
+      const { error } = await supabase.from('hazards').delete().eq('id', uuid);
+      if (error) throw error;
+    }
+  } catch (error) {
+    console.warn('[HAZARD] Impossible de supprimer sur Supabase (mode hors-ligne ?)', error);
+  }
+
+  try {
+    await db.hazards.where('uuid').equals(uuid).delete();
+  } catch (err) {
+    await db.hazards.delete(uuid as any); 
+  }
 };
