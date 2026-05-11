@@ -3,6 +3,8 @@ import { Geolocation } from '@capacitor/geolocation';
 import { Capacitor } from '@capacitor/core';
 import L from 'leaflet';
 
+const CACHE_KEY = 'sosmap_last_location';
+
 interface UserPosition {
   lat: number;
   lng: number;
@@ -15,7 +17,17 @@ interface UseGPSProps {
 }
 
 export function useGPS({ mapInstance, isActive }: UseGPSProps) {
-  const [userPosition, setUserPosition] = useState<UserPosition>({ lat: 0, lng: 0, alt: 0 });
+  const [userPosition, setUserPosition] = useState<UserPosition>(() => {
+    const cached = localStorage.getItem(CACHE_KEY);
+    if (cached) {
+      try {
+        return JSON.parse(cached);
+      } catch (e) {
+        console.error('Failed to parse cached location', e);
+      }
+    }
+    return { lat: 0, lng: 0, alt: 0 };
+  });
   const [gpsStatus, setGpsStatus] = useState('Locating...');
   const userMarker = useRef<L.Marker | null>(null);
 
@@ -23,6 +35,35 @@ export function useGPS({ mapInstance, isActive }: UseGPSProps) {
     if (!isActive) return;
 
     let watchId: string | null = null;
+
+    const updateMarker = (lat: number, lng: number, shouldSetView: boolean) => {
+      if (!mapInstance.current) return;
+
+      if (userMarker.current) {
+        userMarker.current.setLatLng([lat, lng]);
+      } else {
+        const icon = L.divIcon({
+          className: '',
+          html: `<div class="w-[18px] h-[18px] rounded-full border-[3px] border-white [.theme-contrasted_&]:!shadow-none" style="background-color: rgb(var(--eris-position)); box-shadow: 0 0 15px rgba(var(--eris-position), 0.6);"></div>`,
+          iconSize: [18, 18],
+          iconAnchor: [9, 9],
+        });
+        userMarker.current = L.marker([lat, lng], { icon }).addTo(mapInstance.current);
+        if (shouldSetView) {
+          mapInstance.current.setView([lat, lng], 15);
+        }
+      }
+    };
+
+    if (!userMarker.current) {
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          updateMarker(parsed.lat, parsed.lng, true);
+        } catch (e) { }
+      }
+    }
 
     const startTracking = async () => {
       try {
@@ -43,24 +84,14 @@ export function useGPS({ mapInstance, isActive }: UseGPSProps) {
             }
             if (position) {
               const { latitude, longitude, altitude } = position.coords;
+              const newPosition = { lat: latitude, lng: longitude, alt: altitude || 0 };
 
-              setUserPosition({ lat: latitude, lng: longitude, alt: altitude || 0 });
+              setUserPosition(newPosition);
               setGpsStatus('Connected');
 
-              if (mapInstance.current) {
-                if (userMarker.current) {
-                  userMarker.current.setLatLng([latitude, longitude]);
-                } else {
-                  const icon = L.divIcon({
-                    className: '',
-                    html: `<div class="w-[18px] h-[18px] rounded-full border-[3px] border-white [.theme-contrasted_&]:!shadow-none" style="background-color: rgb(var(--eris-position)); box-shadow: 0 0 15px rgba(var(--eris-position), 0.6);"></div>`,
-                    iconSize: [18, 18],
-                    iconAnchor: [9, 9],
-                  });
-                  userMarker.current = L.marker([latitude, longitude], { icon }).addTo(mapInstance.current);
-                  mapInstance.current.setView([latitude, longitude], 15);
-                }
-              }
+              localStorage.setItem(CACHE_KEY, JSON.stringify(newPosition));
+
+              updateMarker(latitude, longitude, !userMarker.current);
             }
           },
         );
@@ -75,6 +106,9 @@ export function useGPS({ mapInstance, isActive }: UseGPSProps) {
     return () => {
       if (watchId) {
         Geolocation.clearWatch({ id: watchId });
+      }
+      if (userMarker.current && mapInstance.current) {
+        mapInstance.current.removeLayer(userMarker.current);
       }
       userMarker.current = null;
     };

@@ -8,6 +8,7 @@ import { useMapLayers } from './hooks/useMapLayers';
 import DiagnosticsModal from '../../features/settings/DiagnosticsModal';
 import { PRESET_REGIONS, MAP_STYLES } from '../../utils/MapUtils';
 import { useSOSMarkersAdmin } from '../../features/admin/hooks/useSOSMarkersAdmin';
+import { usePOIs, type POICategory } from './hooks/usePOIs';
 
 interface MapScreenProps {
   isActive: boolean;
@@ -32,6 +33,9 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
 
   const [offlineMode, setOfflineMode] = useState(false);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
+  const [activeFilters, setActiveFilters] = useState<POICategory[]>([]);
+  const [isLocationExpanded, setIsLocationExpanded] = useState(false);
+  const [isWeatherExpanded, setIsWeatherExpanded] = useState(false);
   const [previewArea, setPreviewArea] = useState<{
     id: string;
     name: string;
@@ -60,13 +64,18 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
   const { showHazardAlert, setShowHazardAlert, showHazardReportModal, setShowHazardReportModal, handleReportHazard } =
     useHazards({ mapInstance, isActive });
 
-  
-    // Admin SOS markers overlay — US40
-    useSOSMarkersAdmin({
-      mapInstance,
-      isActive,
-      isAdmin,
-    });
+  const { isLoading: isPoisLoading } = usePOIs({ mapInstance, activeFilters });
+
+  const toggleFilter = (category: POICategory) => {
+    setActiveFilters((prev) => (prev.includes(category) ? prev.filter((c) => c !== category) : [...prev, category]));
+  };
+
+  // Admin SOS markers overlay — US40
+  useSOSMarkersAdmin({
+    mapInstance,
+    isActive,
+    isAdmin,
+  });
 
   // Fetch weather when GPS position changes
   useEffect(() => {
@@ -248,67 +257,157 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
         </button>
       </div>
 
-      {/* ─── LOCATION CARD ─── */}
-      <div className="absolute top-20 left-4 z-[1000] pointer-events-none flex flex-col gap-2">
-        <div className="bg-eris-surface/80 backdrop-blur-md border border-eris-border/50 rounded-2xl p-4 shadow-xl">
-          <div className="flex items-center gap-2 mb-2">
-            <span
-              className={`w-2 h-2 rounded-full ${
-                gpsStatus === 'Connected'
-                  ? 'bg-eris-success'
-                  : 'bg-yellow-500 [.theme-contrasted_&]:!bg-gray-500 animate-pulse'
+      {/* ─── POI FILTER PILLS (Google Maps Style) ─── */}
+      <div
+        className="absolute top-[80px] left-0 w-full z-[9998] flex gap-2 overflow-x-auto pb-1 px-4 mask-fade-edges [&::-webkit-scrollbar]:hidden"
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+      >
+        {[
+          { id: 'hospital', label: t('poi.hospital', 'Hospitals'), icon: 'local_hospital', color: 'text-red-500' },
+          { id: 'police', label: t('poi.police', 'Police'), icon: 'local_police', color: 'text-blue-500' },
+          {
+            id: 'fire_station',
+            label: t('poi.fire', 'Fire Stations'),
+            icon: 'local_fire_department',
+            color: 'text-orange-500',
+          },
+          { id: 'shelter', label: t('poi.shelter', 'Shelters'), icon: 'night_shelter', color: 'text-green-500' },
+        ].map((filter) => {
+          const isSelected = activeFilters.includes(filter.id as POICategory);
+          return (
+            <button
+              key={filter.id}
+              onClick={() => toggleFilter(filter.id as POICategory)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold whitespace-nowrap transition-all shadow-sm active:scale-95 ${
+                isSelected
+                  ? 'bg-eris-surface border-eris-primary text-eris-text'
+                  : 'bg-eris-surface-alt/80 border-eris-border/50 text-eris-text-muted hover:bg-gray-700'
               }`}
-            />
-            <span className="text-eris-text-muted text-xs font-semibold">{gpsStatus}</span>
+            >
+              <span className={`material-symbols-outlined text-[16px] ${isSelected ? filter.color : 'text-inherit'}`}>
+                {filter.icon}
+              </span>
+              {filter.label}
+            </button>
+          );
+        })}
+
+        {/* Loading spinner while fetching from Overpass */}
+        {isPoisLoading && (
+          <div className="flex items-center justify-center px-2">
+            <span className="material-symbols-outlined animate-spin text-eris-text-muted text-sm">sync</span>
           </div>
-          {userPosition.lat !== 0 ? (
-            <>
-              <div className="text-eris-text text-sm font-mono font-medium">
-                {userPosition.lat.toFixed(4)}° N, {userPosition.lng.toFixed(4)}° E
-              </div>
-              <div className="text-eris-text-subtle text-[11px] mt-1">
-                {t('alert.altitude', 'Altitude')}: {userPosition.alt.toFixed(0)}m
-              </div>
-            </>
-          ) : (
-            <div className="text-eris-text-muted text-sm">{t('profile.locating', 'Acquiring position...')}</div>
-          )}
-        </div>
+        )}
       </div>
 
-      {/* ─── WEATHER WIDGET ─── */}
-      <div className="absolute top-[190px] left-4 z-[1000]">
-        <div className="bg-eris-surface/80 backdrop-blur-md border border-eris-border/50 rounded-2xl p-2.5 shadow-xl flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center ${currentWeather.bg} ${currentWeather.color}`}
-            >
+      {/* ─── LOCATION CARD ─── */}
+      <div className="absolute top-[120px] left-4 z-[1000] flex flex-col gap-3 items-start">
+        {/* 1. LOCATION WIDGET */}
+        {!isLocationExpanded ? (
+          <button
+            onClick={() => setIsLocationExpanded(true)}
+            className="w-12 h-12 bg-eris-surface/90 backdrop-blur-md border border-eris-border/50 rounded-full flex items-center justify-center text-eris-text-muted hover:text-eris-text transition-colors shadow-lg active:scale-95"
+            title="Expand Location"
+          >
+            <div className="relative flex items-center justify-center">
+              {/* Tiny status dot indicator */}
               <span
-                className={`material-symbols-outlined text-lg ${currentWeather.icon === 'sync' ? 'animate-spin' : ''}`}
+                className={`material-symbols-outlined text-xl ${
+                  gpsStatus === 'Connected' ? 'text-eris-success' : 'text-yellow-500 animate-pulse'
+                }`}
               >
-                {currentWeather.icon}
+                satellite_alt
               </span>
             </div>
-            <div>
-              <div className="text-eris-text font-bold text-sm leading-none">{currentWeather.temp}°C</div>
-              <div className="text-eris-text-muted text-[9px] uppercase tracking-wider mt-0.5">
-                {t(currentWeather.condition)}
+          </button>
+        ) : (
+          <div
+            onClick={() => setIsLocationExpanded(false)}
+            className="bg-eris-surface/80 backdrop-blur-md border border-eris-border/50 rounded-2xl p-4 shadow-xl cursor-pointer hover:bg-eris-surface/90 transition-colors"
+            title="Click to minimize"
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  gpsStatus === 'Connected'
+                    ? 'bg-eris-success'
+                    : 'bg-yellow-500 [.theme-contrasted_&]:!bg-gray-500 animate-pulse'
+                }`}
+              />
+              <span className="text-eris-text-muted text-xs font-semibold flex-1">{gpsStatus}</span>
+            </div>
+            {userPosition.lat !== 0 ? (
+              <>
+                <div className="text-eris-text text-sm font-mono font-medium">
+                  {userPosition.lat.toFixed(4)}° N, {userPosition.lng.toFixed(4)}° E
+                </div>
+                <div className="text-eris-text-subtle text-[11px] mt-1">
+                  {t('alert.altitude', 'Altitude')}: {userPosition.alt.toFixed(0)}m
+                </div>
+              </>
+            ) : (
+              <div className="text-eris-text-muted text-sm">{t('profile.locating', 'Acquiring position...')}</div>
+            )}
+          </div>
+        )}
+
+        {/* 2. WEATHER WIDGET */}
+        {!isWeatherExpanded ? (
+          <button
+            onClick={() => setIsWeatherExpanded(true)}
+            className="w-12 h-12 bg-eris-surface/90 backdrop-blur-md border border-eris-border/50 rounded-full flex items-center justify-center transition-colors shadow-lg active:scale-95"
+            title="Expand Weather"
+          >
+            <span
+              className={`material-symbols-outlined text-xl ${currentWeather.color} ${
+                currentWeather.icon === 'sync' ? 'animate-spin' : ''
+              }`}
+            >
+              {currentWeather.icon}
+            </span>
+          </button>
+        ) : (
+          <div
+            onClick={() => setIsWeatherExpanded(false)}
+            className="bg-eris-surface/80 backdrop-blur-md border border-eris-border/50 rounded-2xl p-2.5 shadow-xl flex items-center gap-4 cursor-pointer hover:bg-eris-surface/90 transition-colors"
+            title="Click to minimize"
+          >
+            <div className="flex items-center gap-2">
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center ${currentWeather.bg} ${currentWeather.color}`}
+              >
+                <span
+                  className={`material-symbols-outlined text-lg ${currentWeather.icon === 'sync' ? 'animate-spin' : ''}`}
+                >
+                  {currentWeather.icon}
+                </span>
+              </div>
+              <div>
+                <div className="text-eris-text font-bold text-sm leading-none flex justify-between items-center">
+                  {currentWeather.temp}°C
+                </div>
+                <div className="text-eris-text-muted text-[9px] uppercase tracking-wider mt-0.5">
+                  {t(currentWeather.condition)}
+                </div>
               </div>
             </div>
+            <div className="w-px h-6 bg-gray-700/50" />
+            <button
+              onClick={(e) => {
+                e.stopPropagation(); // Prevents minimizing the widget when clicking "Report"
+                setShowWeatherReport(true);
+              }}
+              className="w-8 h-8 rounded-full bg-eris-surface-alt/80 flex items-center justify-center text-eris-text-muted hover:text-eris-text hover:bg-gray-700 transition-colors active:scale-95"
+              title={t('weather.reportWeather', 'Report Weather')}
+            >
+              <span className="material-symbols-outlined text-sm">edit_location_alt</span>
+            </button>
           </div>
-          <div className="w-px h-6 bg-gray-700/50" />
-          <button
-            onClick={() => setShowWeatherReport(true)}
-            className="w-8 h-8 rounded-full bg-eris-surface-alt/80 flex items-center justify-center text-eris-text-muted hover:text-eris-text hover:bg-gray-700 transition-colors active:scale-95"
-            title={t('weather.reportWeather', 'Report Weather')}
-          >
-            <span className="material-symbols-outlined text-sm">edit_location_alt</span>
-          </button>
-        </div>
+        )}
       </div>
 
       {/* ─── LAYER MENU + CONTROLS ─── */}
-      <div className="absolute top-20 right-4 z-[10000] flex flex-col gap-3">
+      <div className="absolute top-[120px] right-4 z-[10000] flex flex-col gap-3">
         <div className="relative">
           <button
             onClick={() => setShowLayerMenu(!showLayerMenu)}
