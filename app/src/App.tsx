@@ -16,8 +16,10 @@ import SettingsScreen from './features/settings/SettingsScreen';
 import SetupProfileScreen from './features/profile/SetupProfileScreen';
 import MapScreen from './features/map/MapScreen';
 import LowBatteryGlobal from './components/LowBatteryGlobal';
+import AdminScreen from './features/admin/AdminScreen';
+import { useAdmin } from './features/admin/hooks/useAdmin';
 
-export type ActiveTab = 'MAP' | 'ALERTS' | 'OFFLINE' | 'USER' | 'SETTINGS' | 'DOWNLOAD_MAP' | 'PROFILE_SETUP';
+export type ActiveTab = 'MAP' | 'ALERTS' | 'OFFLINE' | 'USER' | 'SETTINGS' | 'DOWNLOAD_MAP' | 'PROFILE_SETUP' | 'ADMIN';
 
 export default function App() {
   const { t } = useTranslation();
@@ -26,6 +28,7 @@ export default function App() {
   const [session, setSession] = useState<any>(null);
   const [isInitializing, setIsInitializing] = useState(true);
   const isGuest = localStorage.getItem('eris_is_guest') === 'true';
+  const { isAdmin } = useAdmin(session);
 
   // ─── NAVIGATION ───
   const [activeTab, setActiveTab] = useState<ActiveTab>('ALERTS');
@@ -149,15 +152,16 @@ export default function App() {
 
       {/* ─── MAIN CONTENT ─── */}
       <main className="flex-1 relative overflow-hidden">
-        {/* MAP — always mounted to keep GPS active in background */}
-        <div className={`absolute inset-0 ${activeTab === 'MAP' ? 'z-10' : 'z-0 pointer-events-none'}`}>
-          <MapScreen
-            isActive={activeTab === 'MAP'}
-            visualTheme={visualTheme}
-            session={session}
-            onNavigateToAlerts={() => setActiveTab('ALERTS')}
-          />
-        </div>
+              {/* MAP — always mounted to keep GPS active in background */}
+      <div className={`absolute inset-0 ${activeTab === 'MAP' ? 'z-10' : 'z-0 pointer-events-none'}`}>
+        <MapScreen
+          isActive={activeTab === 'MAP'}
+          visualTheme={visualTheme}
+          session={session}
+          isAdmin={isAdmin}
+          onNavigateToAlerts={() => setActiveTab('ALERTS')}
+        />
+      </div>
 
         {activeTab === 'ALERTS' && (
           <div className="absolute inset-0 z-20 bg-eris-bg">
@@ -203,6 +207,12 @@ export default function App() {
           </div>
         )}
 
+          {activeTab === 'ADMIN' && isAdmin && (
+          <div className="absolute inset-0 z-20 bg-eris-bg">
+            <AdminScreen />
+          </div>
+        )}
+
         {/* DIAGNOSTICS MODAL */}
         {showDiagnostics && <DiagnosticsModal onClose={() => setShowDiagnostics(false)} gpsStatus={gpsStatus} />}
       </main>
@@ -215,6 +225,7 @@ export default function App() {
             { id: 'MAP', icon: 'map', label: t('nav.map', 'Map') },
             { id: 'OFFLINE', icon: 'cloud_download', label: t('nav.offline', 'Offline') },
             { id: 'USER', icon: 'person', label: t('nav.profile', 'Profile') },
+            ...(isAdmin ? [{ id: 'ADMIN' as const, icon: 'admin_panel_settings', label: 'Admin' }] : []),
           ] as const
         ).map(({ id, icon, label }) => {
           const isActive = activeTab === id;

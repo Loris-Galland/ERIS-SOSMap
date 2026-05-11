@@ -7,11 +7,13 @@ import { useHazards } from './hooks/useHazards';
 import { useMapLayers } from './hooks/useMapLayers';
 import DiagnosticsModal from '../../features/settings/DiagnosticsModal';
 import { PRESET_REGIONS, MAP_STYLES } from '../../utils/MapUtils';
+import { useSOSMarkersAdmin } from '../../features/admin/hooks/useSOSMarkersAdmin';
 
 interface MapScreenProps {
   isActive: boolean;
   visualTheme: string;
   session: any;
+  isAdmin: boolean;
   onNavigateToAlerts: () => void;
 }
 
@@ -24,7 +26,7 @@ const getGuestId = () => {
   return id;
 };
 
-export default function MapScreen({ isActive, visualTheme, session, onNavigateToAlerts }: MapScreenProps) {
+export default function MapScreen({ isActive, visualTheme, session, isAdmin, onNavigateToAlerts }: MapScreenProps) {
   const { t } = useTranslation();
   const mapRef = useRef<HTMLDivElement | null>(null);
 
@@ -57,6 +59,14 @@ export default function MapScreen({ isActive, visualTheme, session, onNavigateTo
 
   const { showHazardAlert, setShowHazardAlert, showHazardReportModal, setShowHazardReportModal, handleReportHazard } =
     useHazards({ mapInstance, isActive });
+
+  
+    // Admin SOS markers overlay — US40
+    useSOSMarkersAdmin({
+      mapInstance,
+      isActive,
+      isAdmin,
+    });
 
   // Fetch weather when GPS position changes
   useEffect(() => {
