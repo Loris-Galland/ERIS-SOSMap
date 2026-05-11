@@ -152,15 +152,16 @@ export default function App() {
 
       {/* ─── MAIN CONTENT ─── */}
       <main className="flex-1 relative overflow-hidden">
-        {/* MAP — always mounted to keep GPS active in background */}
-        <div className={`absolute inset-0 ${activeTab === 'MAP' ? 'z-10' : 'z-0 pointer-events-none'}`}>
-          <MapScreen
-            isActive={activeTab === 'MAP'}
-            visualTheme={visualTheme}
-            session={session}
-            onNavigateToAlerts={() => setActiveTab('ALERTS')}
-          />
-        </div>
+              {/* MAP — always mounted to keep GPS active in background */}
+      <div className={`absolute inset-0 ${activeTab === 'MAP' ? 'z-10' : 'z-0 pointer-events-none'}`}>
+        <MapScreen
+          isActive={activeTab === 'MAP'}
+          visualTheme={visualTheme}
+          session={session}
+          isAdmin={isAdmin}
+          onNavigateToAlerts={() => setActiveTab('ALERTS')}
+        />
+      </div>
 
         {activeTab === 'ALERTS' && (
           <div className="absolute inset-0 z-20 bg-eris-bg">
