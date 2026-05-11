@@ -289,6 +289,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
           { id: 'gas', label: t('poi.gas', 'Gas Stations'), icon: 'local_gas_station', color: 'text-slate-600' },
         ].map((filter) => {
           const isSelected = activeFilters.includes(filter.id as POICategory);
+          const showSpinner = isSelected && isPoisLoading;
           return (
             <button
               key={filter.id}
@@ -299,8 +300,13 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
                   : 'bg-eris-surface-alt/80 border-eris-border/50 text-eris-text-muted hover:bg-gray-700'
               }`}
             >
-              <span className={`material-symbols-outlined text-[16px] ${isSelected ? filter.color : 'text-inherit'}`}>
-                {filter.icon}
+              {/* If loading, show spinning arrows. Otherwise, show normal icon */}
+              <span
+                className={`material-symbols-outlined text-[16px] transition-all ${
+                  isSelected ? filter.color : 'text-inherit'
+                } ${showSpinner ? 'animate-spin' : ''}`}
+              >
+                {showSpinner ? 'sync' : filter.icon}
               </span>
               {filter.label}
             </button>
