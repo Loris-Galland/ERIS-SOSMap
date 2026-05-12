@@ -1,13 +1,16 @@
 // Admin user list with role management
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useUserManagement } from '../hooks/useUserManagement';
 import type { AdminUser } from '../hooks/useUserManagement';
 
 // Formats an ISO date to a short readable string
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-US', {
-    month: 'short', day: 'numeric', year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
   });
 }
 
@@ -18,6 +21,7 @@ interface UserCardProps {
 
 // Individual user card with admin role toggle — US42
 function UserCard({ user, onToggleAdmin }: UserCardProps) {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
@@ -38,7 +42,6 @@ function UserCard({ user, onToggleAdmin }: UserCardProps) {
 
   return (
     <div className="bg-eris-surface border border-eris-border/50 rounded-2xl p-4 flex flex-col gap-3">
-
       {/* User info */}
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-full bg-eris-primary/10 flex items-center justify-center flex-shrink-0">
@@ -47,15 +50,17 @@ function UserCard({ user, onToggleAdmin }: UserCardProps) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <p className="font-semibold text-sm truncate">
-              {user.first_name || 'Unknown'} {user.last_name || ''}
+              {user.first_name || t('admin.unknownUser', 'Unknown')} {user.last_name || ''}
             </p>
             {user.is_admin && (
               <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-eris-danger/10 text-eris-danger border border-eris-danger/30 flex-shrink-0">
-                ADMIN
+                {t('admin.adminBadge', 'ADMIN')}
               </span>
             )}
           </div>
-          <p className="text-eris-text-muted text-xs">Joined {formatDate(user.created_at)}</p>
+          <p className="text-eris-text-muted text-xs">
+            {t('admin.joined', 'Joined ')} {formatDate(user.created_at)}
+          </p>
         </div>
       </div>
 
@@ -64,15 +69,21 @@ function UserCard({ user, onToggleAdmin }: UserCardProps) {
         <div className="flex flex-col gap-2">
           <p className="text-xs text-eris-alert font-medium">
             {user.is_admin
-              ? `Revoke admin role from ${user.first_name}?`
-              : `Grant admin role to ${user.first_name}?`}
+              ? t('admin.revokePrompt', {
+                  name: user.first_name,
+                  defaultValue: `Revoke admin role from ${user.first_name}?`,
+                })
+              : t('admin.grantPrompt', {
+                  name: user.first_name,
+                  defaultValue: `Grant admin role to ${user.first_name}?`,
+                })}
           </p>
           <div className="flex gap-2">
             <button
               onClick={handleCancel}
               className="flex-1 bg-eris-surface border border-eris-border/50 text-eris-text-muted text-xs font-bold py-2 rounded-xl active:scale-95 transition-transform"
             >
-              Cancel
+              {t('common.cancel', 'Cancel')}
             </button>
             <button
               onClick={handleToggle}
@@ -83,7 +94,7 @@ function UserCard({ user, onToggleAdmin }: UserCardProps) {
                   : 'bg-eris-success/10 border border-eris-success/30 text-eris-success'
               }`}
             >
-              {loading ? 'Saving...' : 'Confirm'}
+              {loading ? t('admin.saving', 'Saving...') : t('common.confirm', 'Confirm')}
             </button>
           </div>
         </div>
@@ -99,7 +110,7 @@ function UserCard({ user, onToggleAdmin }: UserCardProps) {
           <span className="material-symbols-outlined text-sm align-middle mr-1">
             {user.is_admin ? 'remove_moderator' : 'add_moderator'}
           </span>
-          {user.is_admin ? 'Revoke Admin' : 'Grant Admin'}
+          {user.is_admin ? t('admin.revokeBtn', 'Revoke Admin') : t('admin.grantBtn', 'Grant Admin')}
         </button>
       )}
     </div>
@@ -111,6 +122,7 @@ interface UserManagementScreenProps {
 }
 
 export default function UserManagementScreen({ onBack }: UserManagementScreenProps) {
+  const { t } = useTranslation();
   const { users, loading, error, toggleAdminRole, refetch } = useUserManagement();
   const [search, setSearch] = useState('');
 
@@ -123,7 +135,6 @@ export default function UserManagementScreen({ onBack }: UserManagementScreenPro
 
   return (
     <div className="flex flex-col h-full w-full bg-eris-bg text-eris-text">
-
       {/* Header */}
       <div className="flex items-center gap-3 px-5 py-4 border-b border-eris-border/50">
         <button
@@ -135,7 +146,9 @@ export default function UserManagementScreen({ onBack }: UserManagementScreenPro
         <div className="flex-1">
           <h2 className="font-bold text-base">User Management</h2>
           <p className="text-eris-text-muted text-xs">
-            {loading ? 'Loading...' : `${users.length} users — ${adminCount} admin${adminCount !== 1 ? 's' : ''}`}
+            {loading
+              ? t('admin.loading', 'Loading...')
+              : t('admin.usersStats', { total: users.length, adminCount: adminCount })}
           </p>
         </div>
         <button
@@ -154,7 +167,7 @@ export default function UserManagementScreen({ onBack }: UserManagementScreenPro
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by name..."
+            placeholder={t('admin.searchUsers', 'Search by name...')}
             className="flex-1 bg-transparent text-sm text-eris-text placeholder:text-eris-text-subtle outline-none"
           />
           {search && (
@@ -175,14 +188,15 @@ export default function UserManagementScreen({ onBack }: UserManagementScreenPro
 
         {error && (
           <div className="bg-eris-danger/10 border border-eris-danger/30 rounded-2xl p-4 text-eris-danger text-sm">
-            Error loading users: {error}
+            {t('admin.errorUsers', 'Error loading users:')}
+            {error}
           </div>
         )}
 
         {!loading && filtered.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 gap-3">
             <span className="material-symbols-outlined text-eris-text-subtle text-4xl">group_off</span>
-            <p className="text-eris-text-muted text-sm">No users found</p>
+            <p className="text-eris-text-muted text-sm">{t('admin.noUsers', 'No users found')}</p>
           </div>
         )}
 

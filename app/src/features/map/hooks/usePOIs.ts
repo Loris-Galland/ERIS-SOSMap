@@ -11,16 +11,16 @@ interface UsePOIsProps {
 }
 
 // Custom icons for each category
-const POI_ICONS: Record<POICategory, { icon: string; color: string; bg: string }> = {
-  hospital: { icon: 'local_hospital', color: 'text-red-500', bg: 'bg-white' },
-  police: { icon: 'local_police', color: 'text-blue-600', bg: 'bg-white' },
-  fire_station: { icon: 'local_fire_department', color: 'text-orange-500', bg: 'bg-white' },
-  shelter: { icon: 'night_shelter', color: 'text-green-600', bg: 'bg-white' },
-  pharmacy: { icon: 'local_pharmacy', color: 'text-emerald-500', bg: 'bg-white' },
-  water: { icon: 'water_drop', color: 'text-cyan-500', bg: 'bg-white' },
-  gas: { icon: 'local_gas_station', color: 'text-slate-600', bg: 'bg-white' },
-  aed: { icon: 'monitor_heart', color: 'text-rose-600', bg: 'bg-white' },
-  clinic: { icon: 'medical_services', color: 'text-red-400', bg: 'bg-white' },
+const POI_ICONS: Record<POICategory, { icon: string; color: string; bg: string; border: string }> = {
+  hospital: { icon: 'local_hospital', color: 'text-hospital', bg: 'bg-poi-bg', border: 'border-hospital'},
+  police: { icon: 'local_police', color: 'text-police', bg: 'bg-poi-bg', border: 'border-police'},
+  fire_station: { icon: 'local_fire_department', color: 'text-fire-station', bg: 'bg-poi-bg', border: 'border-fire-station'},
+  shelter: { icon: 'night_shelter', color: 'text-shelter', bg: 'bg-poi-bg', border: 'border-shelter'},
+  pharmacy: { icon: 'local_pharmacy', color: 'text-pharmacie', bg: 'bg-poi-bg', border: 'border-pharmacie'},
+  water: { icon: 'water_drop', color: 'text-water-source', bg: 'bg-poi-bg', border: 'border-water-source'},
+  gas: { icon: 'local_gas_station', color: 'text-gas-station', bg: 'bg-poi-bg', border: 'border-gas-station'},
+  aed: { icon: 'monitor_heart', color: 'text-aed', bg: 'bg-poi-bg', border: 'border-aed'},
+  clinic: { icon: 'medical_services', color: 'text-clinic', bg: 'bg-poi-bg', border: 'border-clinic'},
 };
 
 export function usePOIs({ mapInstance, activeFilters }: UsePOIsProps) {
@@ -33,7 +33,7 @@ export function usePOIs({ mapInstance, activeFilters }: UsePOIsProps) {
 
     // Zoom limit
     if (mapInstance.current.getZoom() < 12) {
-        console.warn('Zoomed out too far to fetch POIs. Zoom in closer.');
+      console.warn('Zoomed out too far to fetch POIs. Zoom in closer.');
       setIsLoading(false);
       if (markersLayer.current) markersLayer.current.clearLayers();
       return; 
@@ -58,7 +58,7 @@ export function usePOIs({ mapInstance, activeFilters }: UsePOIsProps) {
     abortControllerRef.current = new AbortController();
     const { signal } = abortControllerRef.current;
 
-    const bounds = mapInstance.current.getBounds();
+    const bounds = mapInstance.current.getBounds().pad(0.5);
     const bbox = `${bounds.getSouth()},${bounds.getWest()},${bounds.getNorth()},${bounds.getEast()}`;
 
     let query = `[out:json][timeout:25];(`;
@@ -116,10 +116,11 @@ export function usePOIs({ mapInstance, activeFilters }: UsePOIsProps) {
         const customIcon = L.divIcon({
           className: 'custom-poi-marker',
           html: `
-            <div class="w-8 h-8 rounded-full ${style.bg} border-2 border-gray-200 shadow-lg flex items-center justify-center">
+            <div class="w-8 h-8 rounded-full bg-poi-bg border-2 ${style.border} shadow-lg flex items-center justify-center">
               <span class="material-symbols-outlined text-[18px] ${style.color}">${style.icon}</span>
             </div>
-            <div class="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-white drop-shadow-md"></div>
+            <div class="absolute -bottom-[9px] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[12px] border-t-transparent [.theme-contrasted_&]:border-t-black drop-shadow-md -z-10"></div>
+            <div class="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] ${style.border} [.theme-contrasted_&]:border-t-white drop-shadow-md"></div>
           `,
           iconSize: [32, 40],
           iconAnchor: [16, 40],

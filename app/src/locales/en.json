@@ -3,7 +3,8 @@
     "alerts": "Alerts",
     "map": "Map",
     "offline": "Offline",
-    "profile": "Profile"
+    "profile": "Profile",
+    "admin": "Admin"
   },
   "alert": {
     "cancelMessage": "SOS Alert Cancelled",
@@ -266,5 +267,69 @@
     "closeBackground": "Manually close unused background apps.",
     "lowerBrightness": "Lower your screen brightness.",
     "dismiss": "Dismiss"
+  },
+  "poi": {
+    "hospital": "Hospitals",
+    "clinic": "Clinics",
+    "pharmacy": "Pharmacies",
+    "aed": "Defibrillators (AED)",
+    "police": "Police",
+    "fire": "Fire Stations",
+    "shelter": "Shelters",
+    "water": "Drinking Water",
+    "gas": "Gas Stations"
+  },
+  "hazard": {
+    "deleteTitle": "Delete Alert",
+    "deleteConfirm": "Are you sure you want to permanently delete this hazard alert?"
+  },
+  "common": {
+    "cancel": "Cancel",
+    "delete": "Delete"
+  },
+  "admin": {
+    "panelTitle": "Admin Panel",
+    "panelSubtitle": "Restricted access — administrator only",
+    "sosTitle": "SOS Alert Dashboard",
+    "sosDesc": "Real-time alert monitoring",
+    "usersTitle": "User Management",
+    "usersDesc": "Users & roles",
+    "dangerZone": "Danger Zone Publisher",
+    "dangerZoneDesc": "Publish official hazard zones",
+    "hazardMod": "Hazard Report Moderation",
+    "hazardModDesc": "Approve / reject user reports",
+
+    "loading": "Loading...",
+    "sosStats": "{{total}} total — {{pending}} pending",
+    "statusAll": "All",
+    "statusPending": "Pending",
+    "statusInProgress": "In Progress",
+    "statusResolved": "Resolved",
+    "statusDelivered": "Delivered",
+    "statusQueued": "Queued",
+    "statusUnknown": "Unknown",
+    "openMaps": "Open in Maps",
+    "medInfo": "Medical Info",
+    "bloodType": "Blood type:",
+    "allergies": "Allergies:",
+    "conditions": "Conditions:",
+    "currentState": "Current state:",
+    "markInProgress": "Mark In Progress",
+    "markResolved": "Mark Resolved",
+    "errorAlerts": "Error loading alerts:",
+    "noAlerts": "No alerts for this filter",
+
+    "usersStats": "{{total}} users — {{adminCount}} admin(s)",
+    "searchUsers": "Search by name...",
+    "unknownUser": "Unknown",
+    "joined": "Joined",
+    "adminBadge": "ADMIN",
+    "revokePrompt": "Revoke admin role from {{name}}?",
+    "grantPrompt": "Grant admin role to {{name}}?",
+    "saving": "Saving...",
+    "revokeBtn": "Revoke Admin",
+    "grantBtn": "Grant Admin",
+    "errorUsers": "Error loading users:",
+    "noUsers": "No users found"
   }
 }

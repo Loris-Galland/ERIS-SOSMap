@@ -3,7 +3,8 @@
     "alerts": "Alertes",
     "map": "Carte",
     "offline": "Hors-ligne",
-    "profile": "Profil"
+    "profile": "Profil",
+    "admin": "Admin"
   },
   "alert": {
     "cancelMessage": "Alerte SOS annulée",
@@ -266,5 +267,69 @@
     "closeBackground": "Fermez manuellement les applications en arrière-plan inutilisées.",
     "lowerBrightness": "Réduisez la luminosité de votre écran.",
     "dismiss": "Fermer"
+  },
+  "poi": {
+    "hospital": "Hôpitaux",
+    "clinic": "Cliniques",
+    "pharmacy": "Pharmacies",
+    "aed": "Défibrillateurs",
+    "police": "Police",
+    "fire": "Pompiers",
+    "shelter": "Abris d'urgence",
+    "water": "Eau potable",
+    "gas": "Stations-service"
+  },
+  "hazard": {
+    "deleteTitle": "Supprimer l'alerte",
+    "deleteConfirm": "Êtes-vous sûr de vouloir supprimer définitivement cette alerte de danger ?"
+  },
+  "common": {
+    "cancel": "Annuler",
+    "delete": "Supprimer"
+  },
+  "admin": {
+    "panelTitle": "Panneau d'administration",
+    "panelSubtitle": "Accès restreint — administrateurs uniquement",
+    "sosTitle": "Tableau de bord SOS",
+    "sosDesc": "Surveillance des alertes en temps réel",
+    "usersTitle": "Gestion des utilisateurs",
+    "usersDesc": "Utilisateurs et rôles",
+    "dangerZone": "Éditeur de zones de danger",
+    "dangerZoneDesc": "Publier des zones à risque officielles",
+    "hazardMod": "Modération des signalements",
+    "hazardModDesc": "Approuver / rejeter les signalements",
+
+    "loading": "Chargement...",
+    "sosStats": "{{total}} au total — {{pending}} en attente",
+    "statusAll": "Tout",
+    "statusPending": "En attente",
+    "statusInProgress": "En cours",
+    "statusResolved": "Résolu",
+    "statusDelivered": "Délivré",
+    "statusQueued": "Dans la file",
+    "statusUnknown": "Inconnu",
+    "openMaps": "Ouvrir dans Maps",
+    "medInfo": "Infos Médicales",
+    "bloodType": "Groupe sanguin :",
+    "allergies": "Allergies :",
+    "conditions": "Conditions :",
+    "currentState": "État actuel :",
+    "markInProgress": "Marquer en cours",
+    "markResolved": "Marquer comme résolu",
+    "errorAlerts": "Erreur lors du chargement des alertes :",
+    "noAlerts": "Aucune alerte pour ce filtre",
+
+    "usersStats": "{{total}} utilisateurs — {{adminCount}} admin(s)",
+    "searchUsers": "Rechercher par nom...",
+    "unknownUser": "Inconnu",
+    "joined": "Inscrit le",
+    "adminBadge": "ADMIN",
+    "revokePrompt": "Retirer le rôle d'admin de {{name}} ?",
+    "grantPrompt": "Accorder le rôle d'admin à {{name}} ?",
+    "saving": "Enregistrement...",
+    "revokeBtn": "Révoquer l'Admin",
+    "grantBtn": "Nommer Admin",
+    "errorUsers": "Erreur lors du chargement des utilisateurs :",
+    "noUsers": "Aucun utilisateur trouvé"
   }
 }
