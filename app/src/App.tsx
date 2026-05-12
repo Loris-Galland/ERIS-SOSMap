@@ -225,7 +225,9 @@ export default function App() {
             { id: 'MAP', icon: 'map', label: t('nav.map', 'Map') },
             { id: 'OFFLINE', icon: 'cloud_download', label: t('nav.offline', 'Offline') },
             { id: 'USER', icon: 'person', label: t('nav.profile', 'Profile') },
-            ...(isAdmin ? [{ id: 'ADMIN' as const, icon: 'admin_panel_settings', label: 'Admin' }] : []),
+            ...(isAdmin
+              ? [{ id: 'ADMIN' as const, icon: 'admin_panel_settings', label: t('nav.admin', 'Admin') }]
+              : []),
           ] as const
         ).map(({ id, icon, label }) => {
           const isActive = activeTab === id;

@@ -21,15 +21,25 @@
   --eris-success: 74 222 128; /* #4ade80 (green-400) */
   --eris-position: 59 130 246;
   --eris-alert: 234 179 8; /* (yellow-500) */
-  --eris-weather-clear: 250 204 21; /* Jaune soleil (yellow-400) */
-  --eris-weather-partly: 125 211 252; /* Bleu ciel doux (sky-300) */
-  --eris-weather-cloudy: 148 163 184; /* Gris bleuté (slate-400) */
-  --eris-weather-rainy: 59 130 246; /* Bleu pluie (blue-500) */
-  --eris-weather-hail: 34 211 238; /* Cyan glacé (cyan-400) */
-  --eris-weather-fog: 156 163 175; /* Gris brumeux (gray-400) */
-  --eris-weather-storm: 139 92 246; /* Violet orage (violet-500) */
-  --eris-weather-snow: 226 232 240; /* Blanc cassé / Neige (slate-200) */
-  --eris-weather-windy: 34 197 94; /* Vert vif (green-500) */
+  --eris-weather-clear: 250 204 21; /* (yellow-400) */
+  --eris-weather-partly: 125 211 252; /* (sky-300) */
+  --eris-weather-cloudy: 148 163 184; /* (slate-400) */
+  --eris-weather-rainy: 59 130 246; /* (blue-500) */
+  --eris-weather-hail: 34 211 238; /*cyan-400) */
+  --eris-weather-fog: 156 163 175; /* (gray-400) */
+  --eris-weather-storm: 139 92 246; /* (violet-500) */
+  --eris-weather-snow: 226 232 240; /* (slate-200) */
+  --eris-weather-windy: 34 197 94; /* (green-500) */
+  --poi-bg: 255 255 255; /* #ffffff */
+  --hospital: 239 68 68; /* #ef4444 (red-500) */
+  --clinic: 248 113 113; /* #f87171 (red-400) */
+  --pharmacie: 16 185 129; /* #10b981 (emerald-500) */
+  --aed: 225 29 72; /* #e11d48 (rose-600) */
+  --police: 37 99 235; /* #2563eb (blue-600) */
+  --fire-station: 249 115 22; /* #f97316 (orange-500) */
+  --shelter: 22 163 74; /* #16a34a (green-600) */
+  --water-source: 6 182 212; /* #06b6d4 (cyan-500) */
+  --gas-station: 71 85 105; /* #475569 (slate-600) */
 }
 
 /* Light theme */
@@ -55,6 +65,16 @@
   --eris-weather-storm: 124 58 237; /* Violet profond (violet-600) */
   --eris-weather-snow: 148 163 184; /* Bleu-Gris "Glace" (slate-400) -> Parfait sur fond blanc ! */
   --eris-weather-windy: 22 163 74; /* Vert sapin (green-600) */
+  --poi-bg: 255 255 255; /* #ffffff */
+  --hospital: 239 68 68; /* #ef4444 (red-500) */
+  --clinic: 248 113 113; /* #f87171 (red-400) */
+  --pharmacie: 16 185 129; /* #10b981 (emerald-500) */
+  --aed: 225 29 72; /* #e11d48 (rose-600) */
+  --police: 37 99 235; /* #2563eb (blue-600) */
+  --fire-station: 249 115 22; /* #f97316 (orange-500) */
+  --shelter: 22 163 74; /* #16a34a (green-600) */
+  --water-source: 6 182 212; /* #06b6d4 (cyan-500) */
+  --gas-station: 71 85 105; /* #475569 (slate-600) */
 }
 
 /* Contrasted theme */
@@ -80,6 +100,16 @@
   --eris-weather-storm: 255 255 255; /* #ffffff */
   --eris-weather-snow: 255 255 255; /* #ffffff */
   --eris-weather-windy: 255 255 255; /* #ffffff */
+  --poi-bg: 255 255 255; /* #ffffff */
+  --hospital: 0 0 0; /* #000000 */
+  --clinic: 0 0 0; /* #000000 */
+  --pharmacie: 0 0 0; /* #000000 */
+  --aed: 0 0 0; /* #000000 */
+  --police: 0 0 0; /* #000000 */
+  --fire-station: 0 0 0; /* #000000 */
+  --shelter: 0 0 0; /* #000000 */
+  --water-source: 0 0 0; /* #000000 */
+  --gas-station: 0 0 0; /* #000000 */
 }
 
 .theme-contrasted .bg-eris-primary,

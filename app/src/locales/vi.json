@@ -3,7 +3,8 @@
     "alerts": "Cảnh báo",
     "map": "Bản đồ",
     "offline": "Ngoại tuyến",
-    "profile": "Hồ sơ"
+    "profile": "Hồ sơ",
+    "admin": "Quản trị viên"
   },
   "alert": {
     "cancelMessage": "Đã hủy Cảnh báo SOS",
@@ -266,5 +267,69 @@
     "closeBackground": "Đóng thủ công các ứng dụng chạy nền không sử dụng.",
     "lowerBrightness": "Giảm độ sáng màn hình của bạn.",
     "dismiss": "Đóng cửa sổ"
+  },
+  "poi": {
+    "hospital": "Bệnh viện",
+    "clinic": "Phòng khám",
+    "pharmacy": "Nhà thuốc",
+    "aed": "Máy khử rung tim (AED)",
+    "police": "Cảnh sát",
+    "fire": "Trạm cứu hỏa",
+    "shelter": "Nơi trú ẩn",
+    "water": "Nước uống",
+    "gas": "Trạm xăng"
+  },
+  "hazard": {
+    "deleteTitle": "Xóa cảnh báo",
+    "deleteConfirm": "Bạn có chắc chắn muốn xóa vĩnh viễn cảnh báo nguy hiểm này không?"
+  },
+  "common": {
+    "cancel": "Hủy",
+    "delete": "Xóa"
+  },
+  "admin": {
+    "panelTitle": "Bảng điều khiển quản trị",
+    "panelSubtitle": "Quyền truy cập hạn chế — chỉ dành cho quản trị viên",
+    "sosTitle": "Bảng cảnh báo SOS",
+    "sosDesc": "Giám sát cảnh báo theo thời gian thực",
+    "usersTitle": "Quản lý người dùng",
+    "usersDesc": "Người dùng & vai trò",
+    "dangerZone": "Xuất bản vùng nguy hiểm",
+    "dangerZoneDesc": "Công bố các khu vực nguy hiểm chính thức",
+    "hazardMod": "Kiểm duyệt báo cáo",
+    "hazardModDesc": "Phê duyệt / từ chối báo cáo của người dùng",
+
+    "loading": "Đang tải...",
+    "sosStats": "Tổng cộng {{total}} — {{pending}} đang chờ",
+    "statusAll": "Tất cả",
+    "statusPending": "Đang chờ",
+    "statusInProgress": "Đang xử lý",
+    "statusResolved": "Đã giải quyết",
+    "statusDelivered": "Đã giao",
+    "statusQueued": "Đang xếp hàng",
+    "statusUnknown": "Không xác định",
+    "openMaps": "Mở trong Bản đồ",
+    "medInfo": "Thông tin y tế",
+    "bloodType": "Nhóm máu:",
+    "allergies": "Dị ứng:",
+    "conditions": "Tình trạng bệnh:",
+    "currentState": "Trạng thái hiện tại:",
+    "markInProgress": "Đánh dấu đang xử lý",
+    "markResolved": "Đánh dấu đã giải quyết",
+    "errorAlerts": "Lỗi khi tải cảnh báo:",
+    "noAlerts": "Không có cảnh báo nào cho bộ lọc này",
+
+    "usersStats": "{{total}} người dùng — {{adminCount}} quản trị viên",
+    "searchUsers": "Tìm kiếm theo tên...",
+    "unknownUser": "Không xác định",
+    "joined": "Đã tham gia",
+    "adminBadge": "QUẢN TRỊ VIÊN",
+    "revokePrompt": "Thu hồi quyền quản trị của {{name}}?",
+    "grantPrompt": "Cấp quyền quản trị cho {{name}}?",
+    "saving": "Đang lưu...",
+    "revokeBtn": "Thu hồi quyền quản trị",
+    "grantBtn": "Cấp quyền quản trị",
+    "errorUsers": "Lỗi khi tải người dùng:",
+    "noUsers": "Không tìm thấy người dùng"
   }
 }

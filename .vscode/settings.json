@@ -1,4 +1,13 @@
 {
+  "java.project.importHint": "whenNeeded",
+  "files.exclude": {
+    "android/": true,
+    "ios/": true
+  },
+  "java.diagnostics.filter": {
+    "ignore": ["android/**/*.java"]
+  },
+  "liveServer.settings.multiRootWorkspaceName": "ERIS-SOSMap",
   "deno.enablePaths": [
     "supabase/functions"
   ],

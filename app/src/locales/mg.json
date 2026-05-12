@@ -3,7 +3,8 @@
     "alerts": "Fampandrenesana",
     "map": "Sarintany",
     "offline": "Tsy misy internet",
-    "profile": "Mombamomba"
+    "profile": "Mombamomba",
+    "admin": "Mpitantana"
   },
   "alert": {
     "cancelMessage": "Nofoanana ny fanairana SOS",
@@ -266,5 +267,69 @@
     "closeBackground": "Akatony tanana ireo fampiharana ambadika tsy ampiasaina.",
     "lowerBrightness": "Ampidino ny famirapiratry ny efijerinao.",
     "dismiss": "Esory"
+  },
+  "poi": {
+    "hospital": "Hopitaly",
+    "clinic": "Klinika",
+    "pharmacy": "Farmasia",
+    "aed": "Defibrilatera (AED)",
+    "police": "Polisy",
+    "fire": "Mpamonjy voina",
+    "shelter": "Fialofana",
+    "water": "Rano fisotro",
+    "gas": "Toben-tsolika"
+  },
+  "hazard": {
+    "deleteTitle": "Fafao ny fampitandremana",
+    "deleteConfirm": "Tena te hamafa tanteraka ity fampitandremana loza ity ve ianao?"
+  },
+  "common": {
+    "cancel": "Ajanony",
+    "delete": "Fafao"
+  },
+  "admin": {
+    "panelTitle": "Tontonan'ny Mpandrindra",
+    "panelSubtitle": "Fidirana voafetra — ho an'ny mpandrindra ihany",
+    "sosTitle": "Tontonana Fanairana SOS",
+    "sosDesc": "Fanaraha-maso ny fanairana amin'ny fotoana tena izy",
+    "usersTitle": "Fitantanana ny Mpampiasa",
+    "usersDesc": "Mpampiasa sy andraikitra",
+    "dangerZone": "Famoahana Faritra Mampidi-doza",
+    "dangerZoneDesc": "Mamoaka faritra atahorana ofisialy",
+    "hazardMod": "Fandanjalanjana ny Tatitra",
+    "hazardModDesc": "Mankato / mandà ny tatitry ny mpampiasa",
+
+    "loading": "Eo am-pikarohana...",
+    "sosStats": "{{total}} mitambatra — {{pending}} miandry",
+    "statusAll": "Rehetra",
+    "statusPending": "Miandry",
+    "statusInProgress": "Eo am-pikarakarana",
+    "statusResolved": "Voavaha",
+    "statusDelivered": "Voaray",
+    "statusQueued": "Ao anaty filaharana",
+    "statusUnknown": "Tsy fantatra",
+    "openMaps": "Sokafy ao amin'ny Maps",
+    "medInfo": "Fanazavana ara-pahasalamana",
+    "bloodType": "Sokajin-drà:",
+    "allergies": "Mahazaka (Allergie):",
+    "conditions": "Aretina:",
+    "currentState": "Toetrany ankehitriny:",
+    "markInProgress": "Mariho ho eo am-pikarakarana",
+    "markResolved": "Mariho ho voavaha",
+    "errorAlerts": "Nisy olana teo am-pikarohana fanairana:",
+    "noAlerts": "Tsy misy fanairana amin'ity sivana ity",
+
+    "usersStats": "Mpampiasa {{total}} — mpandrindra {{adminCount}}",
+    "searchUsers": "Mitady amin'ny anarana...",
+    "unknownUser": "Tsy fantatra",
+    "joined": "Niditra ny",
+    "adminBadge": "MPANDRINDRA",
+    "revokePrompt": "Esory ny andraikitry ny mpandrindra amin'i {{name}}?",
+    "grantPrompt": "Omeo andraikitra mpandrindra i {{name}}?",
+    "saving": "Eo am-piraketana...",
+    "revokeBtn": "Esory ny maha Mpandrindra",
+    "grantBtn": "Atao Mpandrindra",
+    "errorUsers": "Nisy olana teo am-pikarohana mpampiasa:",
+    "noUsers": "Tsy misy mpampiasa hita"
   }
 }

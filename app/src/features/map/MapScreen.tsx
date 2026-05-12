@@ -273,20 +273,60 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         {[
-          { id: 'hospital', label: t('poi.hospital', 'Hospitals'), icon: 'local_hospital', color: 'text-red-500' },
-          { id: 'clinic', label: t('poi.clinic', 'Clinics'), icon: 'medical_services', color: 'text-red-400' },
-          { id: 'pharmacy', label: t('poi.pharmacy', 'Pharmacies'), icon: 'local_pharmacy', color: 'text-emerald-500' },
-          { id: 'aed', label: t('poi.aed', 'AEDs'), icon: 'monitor_heart', color: 'text-rose-600' },
-          { id: 'police', label: t('poi.police', 'Police'), icon: 'local_police', color: 'text-blue-500' },
+          {
+            id: 'hospital',
+            label: t('poi.hospital', 'Hospitals'),
+            icon: 'local_hospital',
+            color: 'text-red-500 [.theme-contrasted_&]:!text-white',
+          },
+          {
+            id: 'clinic',
+            label: t('poi.clinic', 'Clinics'),
+            icon: 'medical_services',
+            color: 'text-red-400 [.theme-contrasted_&]:!text-white',
+          },
+          {
+            id: 'pharmacy',
+            label: t('poi.pharmacy', 'Pharmacies'),
+            icon: 'local_pharmacy',
+            color: 'text-emerald-500 [.theme-contrasted_&]:!text-white',
+          },
+          {
+            id: 'aed',
+            label: t('poi.aed', 'AEDs'),
+            icon: 'monitor_heart',
+            color: 'text-rose-600 [.theme-contrasted_&]:!text-white',
+          },
+          {
+            id: 'police',
+            label: t('poi.police', 'Police'),
+            icon: 'local_police',
+            color: 'text-blue-500 [.theme-contrasted_&]:!text-white',
+          },
           {
             id: 'fire_station',
             label: t('poi.fire', 'Fire Stations'),
             icon: 'local_fire_department',
-            color: 'text-orange-500',
+            color: 'text-orange-500 [.theme-contrasted_&]:!text-white',
           },
-          { id: 'shelter', label: t('poi.shelter', 'Shelters'), icon: 'night_shelter', color: 'text-green-500' },
-          { id: 'water', label: t('poi.water', 'Water'), icon: 'water_drop', color: 'text-cyan-500' },
-          { id: 'gas', label: t('poi.gas', 'Gas Stations'), icon: 'local_gas_station', color: 'text-slate-600' },
+          {
+            id: 'shelter',
+            label: t('poi.shelter', 'Shelters'),
+            icon: 'night_shelter',
+            color: 'text-green-500 [.theme-contrasted_&]:!text-white',
+          },
+          {
+            id: 'water',
+            label: t('poi.water', 'Water'),
+            icon: 'water_drop',
+            color: 'text-cyan-500 [.theme-contrasted_&]:!text-white',
+          },
+          {
+            id: 'gas',
+            label: t('poi.gas', 'Gas Stations'),
+            icon: 'local_gas_station',
+            color: 'text-slate-600 [.theme-contrasted_&]:!text-white',
+          },
         ].map((filter) => {
           const isSelected = activeFilters.includes(filter.id as POICategory);
           const showSpinner = isSelected && isPoisLoading;
@@ -297,7 +337,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold whitespace-nowrap transition-all shadow-sm active:scale-95 shrink-0 ${
                 isSelected
                   ? 'bg-eris-surface border-eris-primary text-eris-text'
-                  : 'bg-eris-surface-alt/80 border-eris-border/50 text-eris-text-muted hover:bg-gray-700'
+                  : 'bg-eris-surface-alt/80 [.theme-contrasted_&]:bg-eris-surface-alt/90 border-eris-border/50 text-eris-text-muted hover:bg-gray-700'
               }`}
             >
               {/* If loading, show spinning arrows. Otherwise, show normal icon */}
@@ -329,10 +369,10 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
             onClick={() => setIsLocationExpanded(true)}
             className={`w-12 h-12 backdrop-blur-md border border-eris-border/50 rounded-full flex items-center justify-center transition-colors shadow-lg active:scale-95 ${
               gpsStatus === 'Connected'
-                ? 'bg-eris-success/20'
+                ? 'bg-eris-success/20 [.theme-contrasted_&]:bg-eris-surface'
                 : gpsStatus === 'Locating...'
-                  ? 'bg-yellow-500/20'
-                  : 'bg-eris-danger/20'
+                  ? 'bg-yellow-500/20 [.theme-contrasted_&]:bg-gray-500'
+                  : 'bg-eris-danger/20 [.theme-contrasted_&]:bg-gray-500'
             }`}
             title="Expand Location"
           >
@@ -392,7 +432,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
         {!isWeatherExpanded ? (
           <button
             onClick={() => setIsWeatherExpanded(true)}
-            className={`w-12 h-12 backdrop-blur-md border border-eris-border/50 rounded-full flex items-center justify-center transition-colors shadow-lg active:scale-95 ${currentWeather.bg}`}
+            className={`w-12 h-12 backdrop-blur-md border border-eris-border/50 rounded-full flex items-center justify-center transition-colors shadow-lg active:scale-95 ${currentWeather.bg} [.theme-contrasted_&]:bg-eris-surface`}
             title="Expand Weather"
           >
             <span

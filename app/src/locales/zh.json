@@ -3,7 +3,8 @@
     "alerts": "警报",
     "map": "地图",
     "offline": "离线",
-    "profile": "个人资料"
+    "profile": "个人资料",
+    "admin": "管理者"
   },
   "alert": {
     "cancelMessage": "已取消 SOS 警报",
@@ -266,5 +267,69 @@
     "closeBackground": "手動關閉未使用的背景應用程式。",
     "lowerBrightness": "降低螢幕亮度。",
     "dismiss": "關閉"
+  },
+  "poi": {
+    "hospital": "医院",
+    "clinic": "诊所",
+    "pharmacy": "药房",
+    "aed": "除颤器 (AED)",
+    "police": "警察局",
+    "fire": "消防站",
+    "shelter": "避难所",
+    "water": "饮用水",
+    "gas": "加油站"
+  },
+  "hazard": {
+    "deleteTitle": "删除警报",
+    "deleteConfirm": "您确定要永久删除此危险警报吗？"
+  },
+  "common": {
+    "cancel": "取消",
+    "delete": "删除"
+  },
+  "admin": {
+    "panelTitle": "管理面板",
+    "panelSubtitle": "受限访问 — 仅限管理员",
+    "sosTitle": "SOS 警报仪表板",
+    "sosDesc": "实时警报监控",
+    "usersTitle": "用户管理",
+    "usersDesc": "用户与角色",
+    "dangerZone": "危险区域发布",
+    "dangerZoneDesc": "发布官方危险区域",
+    "hazardMod": "危险报告审核",
+    "hazardModDesc": "批准 / 拒绝用户报告",
+
+    "loading": "加载中...",
+    "sosStats": "共 {{total}} 条 — {{pending}} 条待处理",
+    "statusAll": "全部",
+    "statusPending": "待处理",
+    "statusInProgress": "处理中",
+    "statusResolved": "已解决",
+    "statusDelivered": "已送达",
+    "statusQueued": "排队中",
+    "statusUnknown": "未知",
+    "openMaps": "在地图中打开",
+    "medInfo": "医疗信息",
+    "bloodType": "血型：",
+    "allergies": "过敏：",
+    "conditions": "病史：",
+    "currentState": "当前状态：",
+    "markInProgress": "标记为处理中",
+    "markResolved": "标记为已解决",
+    "errorAlerts": "加载警报时出错：",
+    "noAlerts": "此过滤器下没有警报",
+
+    "usersStats": "{{total}} 名用户 — {{adminCount}} 名管理员",
+    "searchUsers": "按姓名搜索...",
+    "unknownUser": "未知",
+    "joined": "加入时间",
+    "adminBadge": "管理员",
+    "revokePrompt": "撤销 {{name}} 的管理员角色？",
+    "grantPrompt": "授予 {{name}} 管理员角色？",
+    "saving": "保存中...",
+    "revokeBtn": "撤销管理员",
+    "grantBtn": "授予管理员",
+    "errorUsers": "加载用户时出错：",
+    "noUsers": "未找到用户"
   }
 }
