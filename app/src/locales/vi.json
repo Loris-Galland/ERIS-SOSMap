@@ -231,7 +231,8 @@
     "terrain": "Địa hình",
     "satellite": "Vệ tinh",
     "topo": "Địa hình",
-    "streets": "Đường phố"
+    "streets": "Đường phố",
+    "refresh": "Làm mới bản đồ"
   },
   "weather": {
     "reportWeather": "Báo cáo thời tiết",

@@ -49,6 +49,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [localSearchableRegions, setLocalSearchableRegions] = useState<any[]>([]);
 
   // ─── HOOKS ───
@@ -118,6 +119,25 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
     }
   }, [isActive]);
 
+  // Safely clear POIs when leaving to prevent 0-pixel boundary crashes
+  useEffect(() => {
+    if (!isActive) {
+      // THE FIX: As soon as the page starts to change, instantly empty the pills.
+      // This kills the usePOIs hook instantly so it never tries to fetch on a hidden map.
+      setActiveFilters([]);
+    } else {
+      // RETURNING TO PAGE: Wait for mobile CSS tab animations to finish, then resize.
+      const timer = setTimeout(() => {
+        if (mapInstance.current) {
+          mapInstance.current.invalidateSize(true);
+        }
+        setIsMapReady(true);
+      }, 350);
+
+      return () => clearTimeout(timer);
+    }
+  }, [isActive]);
+
   // Load local regions for offline search
   useEffect(() => {
     if (!isActive) return;
@@ -182,6 +202,45 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
     return () => clearTimeout(delayDebounceFn);
   }, [searchQuery, offlineMode, localSearchableRegions]);
 
+  // ─── SOFT REFRESH FUNCTION ───
+  const handleSoftRefresh = () => {
+    setIsRefreshing(true);
+
+    if (mapInstance.current) {
+      mapInstance.current.invalidateSize(true);
+    }
+
+    setTimeout(() => {
+      if (userPosition.lat !== 0) {
+        fetchWeather(userPosition.lat, userPosition.lng);
+      }
+
+      if (activeFilters.length > 0) {
+        const currentFilters = [...activeFilters];
+        setActiveFilters([]);
+
+        setTimeout(() => {
+          setActiveFilters(currentFilters);
+
+          // Apply the Map Jolt to force fresh data fetch on refresh
+          if (mapInstance.current) {
+            mapInstance.current.panBy([1, 1], { animate: false });
+            setTimeout(() => {
+              mapInstance.current?.panBy([-1, -1], { animate: false });
+            }, 50);
+          }
+        }, 50);
+      } else {
+        // Even if no pills are active, fire a moveend to refresh background layers
+        mapInstance.current?.fire('moveend');
+      }
+    }, 150);
+
+    setTimeout(() => {
+      setIsRefreshing(false);
+    }, 800);
+  };
+
   // Handle search result selection
   const handleSelectResult = (item: any) => {
     if (!mapInstance.current) return;
@@ -217,7 +276,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
       {/* ─── LEAFLET MAP ─── */}
       <div ref={mapRef} className="absolute inset-0 z-0" />
 
-      {/* ─── SEARCH & OFFLINE BAR ─── */}
+      {/* ─── SEARCH & REFRESH BAR ─── */}
       <div className="flex items-center px-4 py-3 bg-eris-bg/80 backdrop-blur-md z-[9999] gap-3 absolute top-0 left-0 right-0">
         <div className="relative flex-1">
           <div className="flex items-center bg-eris-surface-alt/60 border border-eris-border/50 rounded-full px-4 py-2.5 gap-2 shadow-inner">
@@ -255,15 +314,16 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
           )}
         </div>
 
+        {/* ─── REFRESH BUTTON ─── */}
         <button
-          onClick={() => setOfflineMode((v) => !v)}
-          className={`flex items-center justify-center w-11 h-11 rounded-full transition-colors shadow-lg ${
-            offlineMode
-              ? 'bg-eris-primary text-eris-text shadow-blue-900/30'
-              : 'bg-eris-surface-alt border border-eris-border text-eris-text-muted'
-          }`}
+          onClick={handleSoftRefresh}
+          disabled={isRefreshing}
+          className="flex items-center justify-center w-11 h-11 rounded-full transition-colors shadow-lg bg-eris-surface-alt border border-eris-border text-eris-text-muted hover:bg-gray-700 hover:text-eris-text active:scale-95"
+          title={t('refresh', 'Refresh Map')}
         >
-          <span className="material-symbols-outlined text-xl">{offlineMode ? 'cloud_off' : 'cloud_download'}</span>
+          <span className={`material-symbols-outlined text-xl ${isRefreshing ? 'animate-spin text-eris-primary' : ''}`}>
+            refresh
+          </span>
         </button>
       </div>
 
