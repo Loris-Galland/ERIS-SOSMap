@@ -122,11 +122,8 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
   // Safely clear POIs when leaving to prevent 0-pixel boundary crashes
   useEffect(() => {
     if (!isActive) {
-      // THE FIX: As soon as the page starts to change, instantly empty the pills.
-      // This kills the usePOIs hook instantly so it never tries to fetch on a hidden map.
       setActiveFilters([]);
     } else {
-      // RETURNING TO PAGE: Wait for mobile CSS tab animations to finish, then resize.
       const timer = setTimeout(() => {
         if (mapInstance.current) {
           mapInstance.current.invalidateSize(true);
@@ -231,7 +228,6 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
           }
         }, 50);
       } else {
-        // Even if no pills are active, fire a moveend to refresh background layers
         mapInstance.current?.fire('moveend');
       }
     }, 150);
