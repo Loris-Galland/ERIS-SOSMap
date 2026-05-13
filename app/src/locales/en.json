@@ -231,7 +231,8 @@
     "terrain": "Terrain",
     "satellite": "Satellite",
     "topo": "Topographic",
-    "streets": "Streets"
+    "streets": "Streets",
+    "refresh": "Refresh Map"
   },
   "weather": {
     "reportWeather": "Report Weather",

@@ -231,7 +231,8 @@
     "terrain": "Terrain",
     "satellite": "Zanabolana",
     "topo": "Tany",
-    "streets": "Làlana"
+    "streets": "Làlana",
+    "refresh": "Havaozy ny Sarintany"
   },
   "weather": {
     "reportWeather": "Ilazao ny toetr'andro",

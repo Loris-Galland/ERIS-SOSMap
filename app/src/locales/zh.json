@@ -231,7 +231,8 @@
     "terrain": "地形",
     "satellite": "卫星",
     "topo": "地形",
-    "streets": "街道"
+    "streets": "街道",
+    "refresh": "刷新地圖"
   },
   "weather": {
     "reportWeather": "报告天气",
