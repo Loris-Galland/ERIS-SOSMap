@@ -228,6 +228,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
           }
         }, 50);
       } else {
+        // Even if no pills are active, fire a moveend to refresh background layers
         mapInstance.current?.fire('moveend');
       }
     }, 150);
