@@ -7,3 +7,4 @@ app/dist/
 .DS_Store
 dist
 dist/
+app/src/test/

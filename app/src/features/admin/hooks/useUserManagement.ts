@@ -1,5 +1,3 @@
-// Fetches all registered users and handles admin role promotion/revocation
-
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../db/supabaseClient';
 
@@ -17,6 +15,7 @@ export function useUserManagement() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Fetch all users from the database
   const fetchUsers = async () => {
     setLoading(true);
     const { data, error } = await supabase
@@ -32,20 +31,29 @@ export function useUserManagement() {
     setLoading(false);
   };
 
-  // Toggle admin role for a given user
   const toggleAdminRole = async (userId: string, currentIsAdmin: boolean) => {
-    const { error } = await supabase
+    setUsers((prev) =>
+      prev.map((u) => (u.id === userId ? { ...u, is_admin: !currentIsAdmin } : u))
+    );
+
+    const { data, error } = await supabase
       .from('user_profiles')
       .update({ is_admin: !currentIsAdmin })
-      .eq('id', userId);
+      .eq('id', userId)
+      .select();
 
-    if (!error) {
-      // Optimistic update
+    if (error || !data || data.length === 0) {
+      console.error("Failed to update admin role. Might be blocked by RLS policies.", error);
+
       setUsers((prev) =>
-        prev.map((u) => (u.id === userId ? { ...u, is_admin: !currentIsAdmin } : u))
+        prev.map((u) => (u.id === userId ? { ...u, is_admin: currentIsAdmin } : u))
       );
+      
+      alert("Failed to update role. Please check Supabase RLS policies.");
+      return false;
     }
-    return !error;
+
+    return true;
   };
 
   useEffect(() => {
