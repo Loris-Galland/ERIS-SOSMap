@@ -332,5 +332,38 @@
     "grantBtn": "Atao Mpandrindra",
     "errorUsers": "Nisy olana teo am-pikarohana mpampiasa:",
     "noUsers": "Tsy misy mpampiasa hita"
+  },
+  "fall": {
+    "detectedTitle": "HITA FAHABOSESANA",
+    "detectedMessage": "Alerte SOS automatique ho alefa miaraka amin'ny toeranareo ao anatin'ny...",
+    "imFine": "TSARA AHO — FOANA",
+    "sendNow": "HANDEFA SOS IZAO"
+  },
+  "crash": {
+    "detectedTitle": "HITA LOZA FIARA",
+    "detectedMessage": "Loza fiara no hita. Alerte SOS automatique ho alefa ao anatin'ny...",
+    "imFine": "TSARA AHO — FOANA",
+    "sendNow": "HANDEFA SOS IZAO"
+  },
+  "risk": {
+    "suddenStop": {
+      "title": "Noharihariana fijanonana tampoka",
+      "desc": "Nijanona tampoka ny fihetsiketsehana haingana. Tsara ve ianao?"
+    },
+    "fallConfirmed": {
+      "title": "Noharihariana fahabosesana",
+      "desc": "Nahita endri-pahabosesana ny fampitan-tsaino. Tsara ve ianao?"
+    },
+    "crashConfirmed": {
+      "title": "Hita loza fiara",
+      "desc": "Nahita fampihetsena mahery tamin'ny hafaingana lehibe ny fitaovana. Tsara ve ianao?"
+    },
+    "prolongedImmobility": {
+      "title": "Tsy misy fihetsiketsehana hita",
+      "desc": "Nijanona ela loatra ianao. Tsara ve ianao?"
+    },
+    "iAmOk": "Tsara aho — Hifindra",
+    "sendSOS": "Handefa SOS",
+    "autoSOS": "SOS ho lasa amin'ny {{seconds}}s"
   }
 }

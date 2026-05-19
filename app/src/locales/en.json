@@ -332,5 +332,38 @@
     "grantBtn": "Grant Admin",
     "errorUsers": "Error loading users:",
     "noUsers": "No users found"
+  },
+  "fall": {
+    "detectedTitle": "FALL DETECTED",
+    "detectedMessage": "An automatic SOS alert will be sent with your location in...",
+    "imFine": "I'M FINE — CANCEL",
+    "sendNow": "SEND SOS NOW"
+  },
+  "crash": {
+    "detectedTitle": "CRASH DETECTED",
+    "detectedMessage": "A vehicle crash was detected. An automatic SOS alert will be sent in...",
+    "imFine": "I'M OK — CANCEL",
+    "sendNow": "SEND SOS NOW"
+  },
+  "risk": {
+    "suddenStop": {
+      "title": "Sudden Stop Detected",
+      "desc": "High-speed movement stopped abruptly. Are you OK?"
+    },
+    "fallConfirmed": {
+      "title": "Fall Detected",
+      "desc": "A fall pattern was detected by your device sensors. Are you OK?"
+    },
+    "crashConfirmed": {
+      "title": "Vehicle Crash Detected",
+      "desc": "A severe impact at high speed was detected by your device. Are you OK?"
+    },
+    "prolongedImmobility": {
+      "title": "No Movement Detected",
+      "desc": "You have been stationary for an unusual amount of time. Are you OK?"
+    },
+    "iAmOk": "I'm OK — Dismiss",
+    "sendSOS": "Send SOS",
+    "autoSOS": "Auto SOS in {{seconds}}s"
   }
 }

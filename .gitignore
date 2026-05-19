@@ -2,6 +2,15 @@
 dist
 node_modules
 
+# Environment & secrets
+.env*
+
+# Claude Code — local config only, agents/settings.json can be committed
+.claude/settings.local.json
+
+# Claude project documentation (local only)
+CLAUDE.md
+
 # iOS files
 Pods
 Podfile.lock

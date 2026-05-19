@@ -1,4 +1,5 @@
 import Dexie, { type Table } from 'dexie';
+import type { RiskEventRecord } from '../features/risk/types';
 
 // Define the structure for SOS alerts waiting for network sync
 export interface PendingSOS {
@@ -48,16 +49,25 @@ export class ErisLocalDB extends Dexie {
   userProfile!: Table<LocalUserProfile>;
   emergencyContacts!: Table<any, string>;
   hazards!: Table<HazardAlert>;
+  riskEvents!: Table<RiskEventRecord>;
 
   constructor() {
     super('ErisLocalDB');
-    
-    // Update to version 4 and add the hazards table
+
     this.version(4).stores({
       sosQueue: '++id, status, timestamp, user_id',
       userProfile: 'id',
       emergencyContacts: 'id, user_id',
       hazards: '++id, uuid, type, synced, timestamp'
+    });
+
+    // Version 5 — add riskEvents table for AI risk detection audit history
+    this.version(5).stores({
+      sosQueue:          '++id, status, timestamp, user_id',
+      userProfile:       'id',
+      emergencyContacts: 'id, user_id',
+      hazards:           '++id, uuid, type, synced, timestamp',
+      riskEvents:        '++id, pattern, level, detectedAt, dismissed',
     });
   }
 }
