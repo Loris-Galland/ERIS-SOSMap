@@ -13,6 +13,8 @@ import { useFallDetection } from '../sos/hooks/useFallDetection';
 import FallDetectionModal from '../../components/FallDetectionModal';
 import { dispatchSOS } from '../../services/sosService';
 import { useCrashDetection } from '../sos/hooks/useCrashDetection';
+import { useInactivityMonitoring } from '../sos/hooks/useInactivityMonitoring';
+import InactivityModal from '../../components/InactivityModal';
 
 interface MapScreenProps {
   isActive: boolean;
@@ -58,6 +60,9 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
 
   // Fall detection state
   const [showFallModal, setShowFallModal] = useState(false);
+
+  // Inactivity monitoring state
+  const [showInactivityModal, setShowInactivityModal] = useState(false);
 
   // ─── HOOKS ───
   const { mapInstance, showLayerMenu, setShowLayerMenu, currentMapStyle, changeMapStyle } = useMapLayers({
@@ -131,7 +136,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
           currentUserId,
           { lat: userPosition.lat, lng: userPosition.lng, alt: userPosition.alt },
           100,
-          'AUTOMATIC FALL DETECTED',
+          'AUTOMATIC FALL/CRASH DETECTED',
         );
         console.log('SOS SENT AUTOMATICALLY!');
         onNavigateToAlerts();
@@ -142,7 +147,42 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
     } else {
       console.warn('Cannot send SOS: No GPS location available.');
       alert(t('fall.noGps', 'Cannot send SOS: Acquiring position...'));
-      onNavigateToAlerts(); // fallback: go to SOS screen to try again
+      onNavigateToAlerts();
+    }
+  };
+
+  // --- Logic for Inactivity Monitoring ---
+  const handleInactivityDetected = useCallback(() => {
+    console.log('🚨 PROLONGED INACTIVITY DETECTED!');
+    setShowInactivityModal(true);
+  }, []);
+
+  const { resetTimer: resetInactivityTimer } = useInactivityMonitoring(handleInactivityDetected, true);
+
+  const handleInactivityCancel = () => {
+    setShowInactivityModal(false);
+    resetInactivityTimer(); // Restart the clock because the user is fine
+  };
+
+  const handleInactivitySOS = async () => {
+    setShowInactivityModal(false);
+
+    // Check if we have a valid position
+    if (userPosition.lat !== 0 && userPosition.lng !== 0) {
+      try {
+        await dispatchSOS(
+          currentUserId,
+          { lat: userPosition.lat, lng: userPosition.lng, alt: userPosition.alt },
+          100,
+          'AUTOMATIC SOS: PROLONGED INACTIVITY DETECTED',
+        );
+        onNavigateToAlerts();
+      } catch (error) {
+        console.error('Failed to send SOS:', error);
+      }
+    } else {
+      console.warn('Cannot send SOS: No GPS location available.');
+      onNavigateToAlerts();
     }
   };
 
@@ -897,6 +937,9 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
 
       {/* ─── FALL DETECTION MODAL ─── */}
       {showFallModal && <FallDetectionModal onCancel={() => setShowFallModal(false)} onConfirmSOS={handleSOSConfirm} />}
+
+      {/* ─── INACTIVITY MODAL ─── */}
+      {showInactivityModal && <InactivityModal onCancel={handleInactivityCancel} onConfirmSOS={handleInactivitySOS} />}
     </div>
   );
 }
