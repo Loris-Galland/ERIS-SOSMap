@@ -68,7 +68,10 @@
     "connected": "Connecté",
     "searching": "Recherche...",
     "runTest": "Lancer le test réseau",
-    "logoutBtn": "Se déconnecter du système ERIS"
+    "logoutBtn": "Se déconnecter du système ERIS",
+    "sensorsTitle": "Capteurs de l'appareil",
+    "shake_sos_title": "Secouer pour SOS",
+    "shake_sos_desc": "Envoie automatiquement un SOS si l'appareil est secoué"
   },
   "auth": {
     "title": "Accès Sécurisé",
@@ -332,5 +335,10 @@
     "grantBtn": "Nommer Admin",
     "errorUsers": "Erreur lors du chargement des utilisateurs :",
     "noUsers": "Aucun utilisateur trouvé"
+  },
+  "shake": {
+    "banner_title": "Envoi du SOS dans {{seconds}}s",
+    "banner_badge": "Secouement",
+    "banner_cancel": "ANNULER L'ENVOI"
   }
 }

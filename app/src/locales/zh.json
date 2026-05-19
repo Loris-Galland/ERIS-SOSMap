@@ -68,7 +68,10 @@
     "connected": "已连接",
     "searching": "正在搜索...",
     "runTest": "运行网络测试",
-    "logoutBtn": "登出 ERIS 系统"
+    "logoutBtn": "登出 ERIS 系统",
+    "sensorsTitle": "设备传感器",
+    "shake_sos_title": "摇一摇发送 SOS",
+    "shake_sos_desc": "搖晃設備時自動發送SOS求救訊號"
   },
   "auth": {
     "title": "安全访问",
@@ -332,5 +335,10 @@
     "grantBtn": "授予管理员",
     "errorUsers": "加载用户时出错：",
     "noUsers": "未找到用户"
+  },
+  "shake": {
+    "banner_title": "{{seconds}}秒内发送 SOS",
+    "banner_badge": "硬件摇晃",
+    "banner_cancel": "取消发送"
   }
 }

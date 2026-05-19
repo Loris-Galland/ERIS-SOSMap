@@ -17,6 +17,7 @@
     "@capacitor/core": "^8.3.0",
     "@capacitor/device": "^8.0.2",
     "@capacitor/geolocation": "^8.2.0",
+    "@capacitor/motion": "^8.0.0",
     "@capacitor/network": "^8.0.1",
     "@capgo/capacitor-flash": "^8.0.27",
     "@supabase/supabase-js": "^2.103.3",
@@ -29,7 +30,10 @@
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-i18next": "^17.0.6",
-    "react-leaflet": "^5.0.0"
+    "react-leaflet": "^5.0.0",
+    "test": "^3.3.0",
+    "testing-library": "^0.0.2",
+    "transmission": "^0.4.10"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
