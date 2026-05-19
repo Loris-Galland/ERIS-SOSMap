@@ -6,32 +6,23 @@
  */
 
 import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 interface FallDetectionModalProps {
   onCancel: () => void;
   onConfirmSOS: () => void;
-  type?: 'fall' | 'crash';
 }
 
-export default function FallDetectionModal({ onCancel, onConfirmSOS, type = 'fall' }: FallDetectionModalProps) {
+export default function FallDetectionModal({ onCancel, onConfirmSOS }: FallDetectionModalProps) {
   const { t } = useTranslation();
   const [countdown, setCountdown] = useState(15);
 
-  const isCrash = type === 'crash';
-  const icon    = isCrash ? 'car_crash' : 'personal_injury';
-  const title   = isCrash
-    ? t('crash.detectedTitle', 'CRASH DETECTED')
-    : t('fall.detectedTitle', 'FALL DETECTED');
-  const message = isCrash
-    ? t('crash.detectedMessage', 'A vehicle crash was detected. An automatic SOS alert will be sent in...')
-    : t('fall.detectedMessage', 'An automatic SOS alert will be sent with your location in...');
-
-  // Start siren audio and the auto-SOS countdown on mount
   useEffect(() => {
+    // Play a loud alert sound here
     const audio = new Audio('/siren.mp3');
     audio.loop = true;
-    audio.play().catch(() => console.warn('[ERIS] Audio autoplay blocked by browser'));
+    audio.play().catch(() => console.log('Audio autoplay blocked'));
 
     const timer = setInterval(() => {
       setCountdown((prev) => {
@@ -59,6 +50,13 @@ export default function FallDetectionModal({ onCancel, onConfirmSOS, type = 'fal
 
       <h1 className="text-white text-3xl font-black text-center mb-2">{title}</h1>
       <p className="text-red-200 text-center mb-8">{message}</p>
+        <span className="material-symbols-outlined text-white text-5xl">personal_injury</span>
+      </div>
+
+      <h1 className="text-white text-3xl font-black text-center mb-2">{t('fall.detectedTitle', 'FALL DETECTED')}</h1>
+      <p className="text-red-200 text-center mb-8">
+        {t('fall.detectedMessage', 'An automatic SOS alert will be sent with your location in...')}
+      </p>
 
       <div className="text-white text-8xl font-black mb-12 tabular-nums">{countdown}</div>
 
@@ -72,6 +70,9 @@ export default function FallDetectionModal({ onCancel, onConfirmSOS, type = 'fal
         </button>
 
         {/* Secondary action — dispatch SOS immediately without waiting for the countdown */}
+          {t('fall.imFine', "I'M FINE - CANCEL")}
+        </button>
+
         <button
           onClick={onConfirmSOS}
           className="w-full py-4 bg-transparent border-2 border-red-500 text-red-300 font-bold rounded-2xl hover:bg-red-500/20 active:scale-95 transition-all"

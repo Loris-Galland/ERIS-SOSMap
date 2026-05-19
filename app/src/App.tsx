@@ -5,6 +5,7 @@ import type { PluginListenerHandle } from '@capacitor/core';
 import { useTranslation } from 'react-i18next';
 import logo from './assets/small_logo.png';
 import DiagnosticsModal from './features/settings/DiagnosticsModal';
+import { useShakeSOS } from './features/sos/hooks/useShakeSOS';
 import { useGPS } from './features/map/hooks/useGPS';
 import { useRiskDetection } from './features/risk/hooks/useRiskDetection';
 import RiskAlertBanner from './features/risk/RiskAlertBanner';
@@ -95,8 +96,51 @@ export default function App() {
   // ─── THEME ───
   const [visualTheme, setVisualTheme] = useState(localStorage.getItem('eris_theme') || 'dark');
 
+  // ─── DIAGNOSTICS ───
+  const [showDiagnostics, setShowDiagnostics] = useState(false);
+  const { userPosition, gpsStatus } = useGPS({
+    mapInstance: useRef(null),
+    isActive: true,
+  });
+
   // Track whether we already handled the initial redirect after login
   const hasRedirectedRef = useRef(false);
+
+  // ─── SHAKE TO SOS GLOBAL INITIALIZATION ───
+  const userId = session?.user?.id || (isGuest ? 'guest_user' : 'anonymous_user');
+
+  const getLivePosition = () => {
+    return {
+      lat: userPosition.lat || 0,
+      lng: userPosition.lng || 0,
+      alt: userPosition.alt || 0,
+    };
+  };
+
+  const {
+    startListening,
+    stopListening,
+    isCounting: isShakeCounting,
+    countdown: shakeCountdown,
+    cancelSOS: cancelShakeSOS,
+  } = useShakeSOS(userId, getLivePosition, () => 100);
+
+  const [isShakeActive, setIsShakeActive] = useState<boolean>(
+    localStorage.getItem('eris_shake_sos_enabled') === 'true',
+  );
+
+  // Synchronize changes broadcasted from the SensorsSection toggle switch
+  useEffect(() => {
+    const handlePreferenceUpdate = () => {
+      const freshValue = localStorage.getItem('eris_shake_sos_enabled') !== 'false';
+      setIsShakeActive(freshValue);
+    };
+
+    window.addEventListener('eris-shake-preference-changed', handlePreferenceUpdate);
+    return () => {
+      window.removeEventListener('eris-shake-preference-changed', handlePreferenceUpdate);
+    };
+  }, []);
 
   // Apply theme on mount
   useEffect(() => {
@@ -143,9 +187,18 @@ export default function App() {
     }
   }, [session]);
 
-  // ─── MESH NETWORK ───
+  // ─── MESH NETWORK & ACCELEROMETER DAEMONS ───
   useEffect(() => {
     CapacitorErisSosmap.startMeshNetwork();
+
+    const isShakeEnabled = localStorage.getItem('eris_shake_sos_enabled') !== 'false';
+
+    if (isShakeEnabled) {
+      startListening(); // Bind motion event capture threads
+    } else {
+      console.log('[APP] Shake-to-SOS disabled. Forcing hardware sensor shutdown.');
+      stopListening(); // Forcibly kills active accelerometer event hooks immediately
+    }
 
     const meshListener = CapacitorErisSosmap.addListener('onMeshMessageReceived', async (data: any) => {
       console.log('[MESH] SOS received from another ERIS user:', data.message);
@@ -165,8 +218,11 @@ export default function App() {
     return () => {
       CapacitorErisSosmap.stopMeshNetwork();
       meshListener.then((listener: PluginListenerHandle) => listener.remove());
+
+      // Fallback hardware cleanup
+      stopListening();
     };
-  }, [session, isGuest]);
+  }, [session, isGuest, activeTab, isShakeActive]);
 
   // ─── LOADING ───
   if (isInitializing) {
@@ -177,6 +233,29 @@ export default function App() {
   return (
     <div className="flex flex-col h-screen w-full bg-eris-bg text-eris-text overflow-hidden font-sans">
       <LowBatteryGlobal />
+
+      {/* ─── GLOBAL SHAKE TO SOS NOTIFICATION BANNER ─── */}
+      {isShakeCounting && (
+        <div className="absolute top-4 left-4 right-4 bg-red-600 text-white p-4 rounded-xl shadow-2xl z-[9999] flex flex-col gap-3 border border-red-500 animate-bounce">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined animate-spin text-xl">vibration</span>
+              <span className="font-bold tracking-wide">
+                {t('shake.banner_title', 'Sending SOS in {{seconds}}s', { seconds: shakeCountdown })}
+              </span>
+            </div>
+            <span className="text-xs bg-black/30 px-2 py-0.5 rounded-full font-mono">
+              {t('shake.banner_badge', 'Hardware Shake')}
+            </span>
+          </div>
+          <button
+            onClick={cancelShakeSOS}
+            className="w-full bg-white text-red-700 font-extrabold py-2 rounded-lg text-sm hover:bg-slate-100 transition-colors active:scale-[0.98]"
+          >
+            {t('shake.banner_cancel', 'CANCEL DISPATCH')}
+          </button>
+        </div>
+      )}
 
       <header className="flex justify-between items-center px-5 py-3 bg-eris-bg/95 backdrop-blur-md border-b border-eris-border/50 z-[1000] relative">
         <div className="flex items-center gap-2">

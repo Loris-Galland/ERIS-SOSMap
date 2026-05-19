@@ -5,10 +5,11 @@ import L from 'leaflet';
 
 const CACHE_KEY = 'sosmap_last_location';
 
-interface UserPosition {
+export interface UserPosition {
   lat: number;
   lng: number;
   alt: number;
+  speed: number;
 }
 
 interface UseGPSProps {
@@ -21,13 +22,16 @@ export function useGPS({ mapInstance, isActive }: UseGPSProps) {
     const cached = localStorage.getItem(CACHE_KEY);
     if (cached) {
       try {
-        return JSON.parse(cached);
+        const parsed = JSON.parse(cached);
+        // Ensure speed exists even in older cached data
+        return { lat: parsed.lat, lng: parsed.lng, alt: parsed.alt, speed: parsed.speed || 0 };
       } catch (e) {
         console.error('Failed to parse cached location', e);
       }
     }
-    return { lat: 0, lng: 0, alt: 0 };
+    return { lat: 0, lng: 0, alt: 0, speed: 0 };
   });
+  
   const [gpsStatus, setGpsStatus] = useState('Locating...');
   const userMarker = useRef<L.Marker | null>(null);
 
@@ -83,8 +87,16 @@ export function useGPS({ mapInstance, isActive }: UseGPSProps) {
               return;
             }
             if (position) {
-              const { latitude, longitude, altitude } = position.coords;
-              const newPosition = { lat: latitude, lng: longitude, alt: altitude || 0 };
+              const { latitude, longitude, altitude, speed } = position.coords;
+
+              const currentSpeedKmh = speed ? speed * 3.6 : 0;
+
+              const newPosition = { 
+                lat: latitude, 
+                lng: longitude, 
+                alt: altitude || 0,
+                speed: currentSpeedKmh
+              };
 
               setUserPosition(newPosition);
               setGpsStatus('Connected');

@@ -68,7 +68,10 @@
     "connected": "Đã kết nối",
     "searching": "Đang tìm...",
     "runTest": "Chạy kiểm tra mạng",
-    "logoutBtn": "Đăng xuất khỏi hệ thống ERIS"
+    "logoutBtn": "Đăng xuất khỏi hệ thống ERIS",
+    "sensorsTitle": "Cảm biến thiết bị",
+    "shake_sos_title": "Lắc để gửi SOS",
+    "shake_sos_desc": "Tự động gửi tín hiệu SOS khi lắc thiết bị."
   },
   "auth": {
     "title": "Truy cập an toàn",
@@ -365,5 +368,9 @@
     "iAmOk": "Tôi ổn — Bỏ qua",
     "sendSOS": "Gửi SOS",
     "autoSOS": "SOS tự động sau {{seconds}}s"
+  "shake": {
+    "banner_title": "Gửi SOS trong {{seconds}}s",
+    "banner_badge": "Lắc phần cứng",
+    "banner_cancel": "HỦY GỬI"
   }
 }

@@ -68,7 +68,10 @@
     "connected": "Connected",
     "searching": "Searching...",
     "runTest": "Run Network Test",
-    "logoutBtn": "Sign Out of ERIS System"
+    "logoutBtn": "Sign Out of ERIS System",
+    "sensorsTitle": "Device Sensors",
+    "shake_sos_title": "Shake to SOS",
+    "shake_sos_desc": "Sends automatically an SOS when shaking the device"
   },
   "auth": {
     "title": "Secure Access",
@@ -365,5 +368,9 @@
     "iAmOk": "I'm OK — Dismiss",
     "sendSOS": "Send SOS",
     "autoSOS": "Auto SOS in {{seconds}}s"
+  "shake": {
+    "banner_title": "Sending SOS in {{seconds}}s",
+    "banner_badge": "Hardware Shake",
+    "banner_cancel": "CANCEL DISPATCH"
   }
 }
