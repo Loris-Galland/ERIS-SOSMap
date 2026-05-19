@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import L from 'leaflet';
 import { useGPS } from './hooks/useGPS';
@@ -9,6 +9,9 @@ import DiagnosticsModal from '../../features/settings/DiagnosticsModal';
 import { PRESET_REGIONS, MAP_STYLES } from '../../utils/MapUtils';
 import { useSOSMarkersAdmin } from '../../features/admin/hooks/useSOSMarkersAdmin';
 import { usePOIs, type POICategory } from './hooks/usePOIs';
+import { useFallDetection } from '../sos/hooks/useFallDetection';
+import FallDetectionModal from '../../components/FallDetectionModal';
+import { dispatchSOS } from '../../services/sosService';
 
 interface MapScreenProps {
   isActive: boolean;
@@ -52,6 +55,9 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [localSearchableRegions, setLocalSearchableRegions] = useState<any[]>([]);
 
+  // Fall detection state
+  const [showFallModal, setShowFallModal] = useState(false);
+
   // ─── HOOKS ───
   const { mapInstance, showLayerMenu, setShowLayerMenu, currentMapStyle, changeMapStyle } = useMapLayers({
     mapRef,
@@ -88,6 +94,40 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
     isActive,
     isAdmin,
   });
+
+  // Logic for fall detection
+  const handleFallDetected = useCallback(() => {
+    console.log('🚨 FALL DETECTED BY ACCELEROMETER!');
+    setShowFallModal(true);
+  }, []);
+
+  // Activate continuous fall detection
+  useFallDetection(handleFallDetected, true);
+
+  const handleSOSConfirm = async () => {
+    setShowFallModal(false);
+
+    // Check if we have a valid position
+    if (userPosition.lat !== 0 && userPosition.lng !== 0) {
+      try {
+        await dispatchSOS(
+          currentUserId,
+          { lat: userPosition.lat, lng: userPosition.lng, alt: userPosition.alt },
+          100,
+          'AUTOMATIC FALL DETECTED',
+        );
+        console.log('SOS SENT AUTOMATICALLY!');
+        onNavigateToAlerts();
+      } catch (error) {
+        console.error('Failed to send SOS:', error);
+        alert(t('fall.sosFailed', 'Failed to send SOS. Please try again manually.'));
+      }
+    } else {
+      console.warn('Cannot send SOS: No GPS location available.');
+      alert(t('fall.noGps', 'Cannot send SOS: Acquiring position...'));
+      onNavigateToAlerts(); // fallback: go to SOS screen to try again
+    }
+  };
 
   // Fetch weather when GPS position changes
   useEffect(() => {
@@ -837,6 +877,9 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
 
       {/* ─── DIAGNOSTICS ─── */}
       {showDiagnostics && <DiagnosticsModal onClose={() => setShowDiagnostics(false)} gpsStatus={gpsStatus} />}
+
+      {/* ─── FALL DETECTION MODAL ─── */}
+      {showFallModal && <FallDetectionModal onCancel={() => setShowFallModal(false)} onConfirmSOS={handleSOSConfirm} />}
     </div>
   );
 }
