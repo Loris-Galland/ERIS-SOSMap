@@ -13,7 +13,7 @@ export interface UserPosition {
 }
 
 interface UseGPSProps {
-  mapInstance: React.MutableRefObject<L.Map | null>;
+  mapInstance?: React.MutableRefObject<L.Map | null>;
   isActive: boolean;
 }
 
@@ -41,7 +41,7 @@ export function useGPS({ mapInstance, isActive }: UseGPSProps) {
     let watchId: string | null = null;
 
     const updateMarker = (lat: number, lng: number, shouldSetView: boolean) => {
-      if (!mapInstance.current) return;
+      if (!mapInstance?.current) return;
 
       if (userMarker.current) {
         userMarker.current.setLatLng([lat, lng]);
@@ -119,7 +119,7 @@ export function useGPS({ mapInstance, isActive }: UseGPSProps) {
       if (watchId) {
         Geolocation.clearWatch({ id: watchId });
       }
-      if (userMarker.current && mapInstance.current) {
+      if (userMarker.current && mapInstance?.current) {
         mapInstance.current.removeLayer(userMarker.current);
       }
       userMarker.current = null;

@@ -128,7 +128,7 @@ describe('flushRetryQueue', () => {
 
 describe('dispatchSOS', () => {
   it('sends via INTERNET and returns the Supabase ID', async () => {
-    mockTriggerEmergency.mockResolvedValue({ transmissionMethod: 'INTERNET' });
+    mockTriggerEmergency.mockResolvedValue({ success: true, transmissionMethod: 'INTERNET' });
 
     const result = await dispatchSOS(USER_ID, POSITION, 75, 'Test SOS');
 
@@ -139,7 +139,7 @@ describe('dispatchSOS', () => {
   });
 
   it('uses hardware fallback when transmissionMethod is not INTERNET', async () => {
-    mockTriggerEmergency.mockResolvedValue({ transmissionMethod: 'LORA' });
+    mockTriggerEmergency.mockResolvedValue({ success: true, transmissionMethod: 'LORA' });
 
     const result = await dispatchSOS(USER_ID, POSITION, 50, 'Offline SOS');
 
@@ -159,7 +159,7 @@ describe('dispatchSOS', () => {
   });
 
   it('uses the default message when notes is blank', async () => {
-    mockTriggerEmergency.mockResolvedValue({ transmissionMethod: 'INTERNET' });
+    mockTriggerEmergency.mockResolvedValue({ success: true, transmissionMethod: 'INTERNET' });
 
     await dispatchSOS(USER_ID, POSITION, 100, '   ');
 
@@ -168,7 +168,7 @@ describe('dispatchSOS', () => {
   });
 
   it('attaches medical data from the local profile when available', async () => {
-    mockTriggerEmergency.mockResolvedValue({ transmissionMethod: 'INTERNET' });
+    mockTriggerEmergency.mockResolvedValue({ success: true, transmissionMethod: 'INTERNET' });
     mockUserProfileGet.mockResolvedValue({
       id: USER_ID,
       firstName: 'Jean',

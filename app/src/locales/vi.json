@@ -336,6 +336,38 @@
     "errorUsers": "Lỗi khi tải người dùng:",
     "noUsers": "Không tìm thấy người dùng"
   },
+  "fall": {
+    "detectedTitle": "PHÁT HIỆN TÉ NGÃ",
+    "detectedMessage": "Cảnh báo SOS tự động sẽ được gửi với vị trí của bạn trong...",
+    "imFine": "TÔI ỔN — HỦY",
+    "sendNow": "GỬI SOS NGAY"
+  },
+  "crash": {
+    "detectedTitle": "PHÁT HIỆN TAI NẠN",
+    "detectedMessage": "Phát hiện tai nạn xe cộ. Cảnh báo SOS tự động sẽ được gửi trong...",
+    "imFine": "TÔI ỔN — HỦY",
+    "sendNow": "GỬI SOS NGAY"
+  },
+  "risk": {
+    "suddenStop": {
+      "title": "Phát hiện dừng đột ngột",
+      "desc": "Chuyển động tốc độ cao dừng lại đột ngột. Bạn có ổn không?"
+    },
+    "fallConfirmed": {
+      "title": "Phát hiện té ngã",
+      "desc": "Cảm biến thiết bị phát hiện mô hình té ngã. Bạn có ổn không?"
+    },
+    "crashConfirmed": {
+      "title": "Phát hiện tai nạn xe cộ",
+      "desc": "Thiết bị phát hiện va chạm mạnh ở tốc độ cao. Bạn có ổn không?"
+    },
+    "prolongedImmobility": {
+      "title": "Không phát hiện chuyển động",
+      "desc": "Bạn đã đứng yên trong thời gian bất thường. Bạn có ổn không?"
+    },
+    "iAmOk": "Tôi ổn — Bỏ qua",
+    "sendSOS": "Gửi SOS",
+    "autoSOS": "SOS tự động sau {{seconds}}s"
   "shake": {
     "banner_title": "Gửi SOS trong {{seconds}}s",
     "banner_badge": "Lắc phần cứng",

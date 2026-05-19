@@ -336,6 +336,38 @@
     "errorUsers": "加载用户时出错：",
     "noUsers": "未找到用户"
   },
+  "fall": {
+    "detectedTitle": "检测到跌倒",
+    "detectedMessage": "您的位置将在以下时间内自动发送SOS警报...",
+    "imFine": "我没事 — 取消",
+    "sendNow": "立即发送SOS"
+  },
+  "crash": {
+    "detectedTitle": "检测到碰撞",
+    "detectedMessage": "检测到车辆碰撞。自动SOS警报将在以下时间内发送...",
+    "imFine": "我没事 — 取消",
+    "sendNow": "立即发送SOS"
+  },
+  "risk": {
+    "suddenStop": {
+      "title": "检测到突然停止",
+      "desc": "高速运动突然停止。您还好吗？"
+    },
+    "fallConfirmed": {
+      "title": "检测到跌倒",
+      "desc": "您的设备传感器检测到跌倒模式。您还好吗？"
+    },
+    "crashConfirmed": {
+      "title": "检测到车辆碰撞",
+      "desc": "您的设备在高速行驶时检测到剧烈撞击。您还好吗？"
+    },
+    "prolongedImmobility": {
+      "title": "未检测到移动",
+      "desc": "您已经静止了异常长的时间。您还好吗？"
+    },
+    "iAmOk": "我没事 — 忽略",
+    "sendSOS": "发送 SOS",
+    "autoSOS": "{{seconds}} 秒后自动 SOS"
   "shake": {
     "banner_title": "{{seconds}}秒内发送 SOS",
     "banner_badge": "硬件摇晃",

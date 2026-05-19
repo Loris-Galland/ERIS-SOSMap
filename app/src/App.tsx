@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { supabase } from './db/supabaseClient';
 import { CapacitorErisSosmap } from 'capacitor-eris-sosmap';
 import type { PluginListenerHandle } from '@capacitor/core';
@@ -7,7 +7,12 @@ import logo from './assets/small_logo.png';
 import DiagnosticsModal from './features/settings/DiagnosticsModal';
 import { useShakeSOS } from './features/sos/hooks/useShakeSOS';
 import { useGPS } from './features/map/hooks/useGPS';
-
+import { useRiskDetection } from './features/risk/hooks/useRiskDetection';
+import RiskAlertBanner from './features/risk/RiskAlertBanner';
+import { useFallDetection } from './features/sos/hooks/useFallDetection';
+import { useCrashDetection } from './features/sos/hooks/useCrashDetection';
+import FallDetectionModal from './components/FallDetectionModal';
+import { dispatchSOS } from './services/sosService';
 import AuthScreen from './features/auth/AuthScreen';
 import AlertScreen from './features/sos/AlertScreen';
 import OfflineScreen from './features/offline/OfflineScreen';
@@ -30,6 +35,60 @@ export default function App() {
   const [isInitializing, setIsInitializing] = useState(true);
   const isGuest = localStorage.getItem('eris_is_guest') === 'true';
   const { isAdmin } = useAdmin(session);
+  const userId = session?.user?.id ?? null;
+
+  // ─── GPS — declared early so userPosition is available to SOS callbacks below ───
+  const [showDiagnostics, setShowDiagnostics] = useState(false);
+  const { gpsStatus, userPosition } = useGPS({ isActive: true });
+
+  // ─── AI RISK DETECTION ───
+  const { riskEvent, dismissRisk, acknowledgeAsSOS, currentSpeedMs } = useRiskDetection(userId);
+
+  // ─── FALL DETECTION (accelerometer) — active on all tabs ───
+  const [showFallModal, setShowFallModal] = useState(false);
+  const onFallDetected = useCallback(() => setShowFallModal(true), []);
+  useFallDetection(onFallDetected, true);
+
+  // Dispatch SOS automatically when fall countdown expires or user confirms
+  const handleFallSOS = useCallback(async () => {
+    setShowFallModal(false);
+    if (userPosition.lat !== 0 && userPosition.lng !== 0) {
+      try {
+        await dispatchSOS(
+          userId ?? 'guest',
+          { lat: userPosition.lat, lng: userPosition.lng, alt: userPosition.alt },
+          100,
+          'AUTOMATIC FALL DETECTED',
+        );
+      } catch (err) {
+        console.error('[ERIS] Auto fall SOS failed', err);
+      }
+    }
+    setActiveTab('ALERTS');
+  }, [userId, userPosition]);
+
+  // ─── CRASH DETECTION (accelerometer + speed arming) — active on all tabs ───
+  const [showCrashModal, setShowCrashModal] = useState(false);
+  const onCrashDetected = useCallback(() => setShowCrashModal(true), []);
+  useCrashDetection({ currentSpeedKmh: currentSpeedMs * 3.6, onCrashDetected, isActive: true });
+
+  // Dispatch SOS automatically when crash countdown expires or user confirms
+  const handleCrashSOS = useCallback(async () => {
+    setShowCrashModal(false);
+    if (userPosition.lat !== 0 && userPosition.lng !== 0) {
+      try {
+        await dispatchSOS(
+          userId ?? 'guest',
+          { lat: userPosition.lat, lng: userPosition.lng, alt: userPosition.alt },
+          100,
+          'AUTOMATIC CRASH DETECTED',
+        );
+      } catch (err) {
+        console.error('[ERIS] Auto crash SOS failed', err);
+      }
+    }
+    setActiveTab('ALERTS');
+  }, [userId, userPosition]);
 
   // ─── NAVIGATION ───
   const [activeTab, setActiveTab] = useState<ActiveTab>('ALERTS');
@@ -288,6 +347,33 @@ export default function App() {
         {/* DIAGNOSTICS MODAL */}
         {showDiagnostics && <DiagnosticsModal onClose={() => setShowDiagnostics(false)} gpsStatus={gpsStatus} />}
       </main>
+
+      {/* ─── FALL DETECTION MODAL (highest priority) ─── */}
+      {showFallModal && (
+        <FallDetectionModal
+          type="fall"
+          onCancel={() => setShowFallModal(false)}
+          onConfirmSOS={handleFallSOS}
+        />
+      )}
+
+      {/* ─── CRASH DETECTION MODAL (vehicle crash, highest priority) ─── */}
+      {!showFallModal && showCrashModal && (
+        <FallDetectionModal
+          type="crash"
+          onCancel={() => setShowCrashModal(false)}
+          onConfirmSOS={handleCrashSOS}
+        />
+      )}
+
+      {/* ─── AI RISK DETECTION BANNER (GPS behavioral patterns) ─── */}
+      {!showFallModal && !showCrashModal && (
+        <RiskAlertBanner
+          event={riskEvent}
+          onDismiss={dismissRisk}
+          onSendSOS={() => { acknowledgeAsSOS(); setActiveTab('ALERTS'); }}
+        />
+      )}
 
       {/* ─── BOTTOM NAV ─── */}
       <nav className="flex items-center justify-around h-20 bg-eris-bg/95 backdrop-blur-md border-t border-eris-border/50 pb-safe z-[1000]">

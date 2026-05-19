@@ -336,6 +336,38 @@
     "errorUsers": "Erreur lors du chargement des utilisateurs :",
     "noUsers": "Aucun utilisateur trouvé"
   },
+  "fall": {
+    "detectedTitle": "CHUTE DÉTECTÉE",
+    "detectedMessage": "Une alerte SOS automatique sera envoyée avec votre position dans...",
+    "imFine": "JE VAIS BIEN — ANNULER",
+    "sendNow": "ENVOYER SOS MAINTENANT"
+  },
+  "crash": {
+    "detectedTitle": "ACCIDENT DÉTECTÉ",
+    "detectedMessage": "Un accident de véhicule a été détecté. Une alerte SOS automatique sera envoyée dans...",
+    "imFine": "JE VAIS BIEN — ANNULER",
+    "sendNow": "ENVOYER SOS MAINTENANT"
+  },
+  "risk": {
+    "suddenStop": {
+      "title": "Arrêt brusque détecté",
+      "desc": "Un mouvement à grande vitesse s'est arrêté brutalement. Êtes-vous OK ?"
+    },
+    "fallConfirmed": {
+      "title": "Chute détectée",
+      "desc": "Les capteurs de votre appareil ont détecté une chute. Êtes-vous OK ?"
+    },
+    "crashConfirmed": {
+      "title": "Accident de véhicule détecté",
+      "desc": "Un impact violent à grande vitesse a été détecté par votre appareil. Êtes-vous OK ?"
+    },
+    "prolongedImmobility": {
+      "title": "Aucun mouvement détecté",
+      "desc": "Vous n'avez pas bougé depuis un temps inhabituellement long. Êtes-vous OK ?"
+    },
+    "iAmOk": "Je vais bien — Ignorer",
+    "sendSOS": "Envoyer SOS",
+    "autoSOS": "SOS auto dans {{seconds}}s"
   "shake": {
     "banner_title": "Envoi du SOS dans {{seconds}}s",
     "banner_badge": "Secouement",

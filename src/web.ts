@@ -1,7 +1,12 @@
 import { WebPlugin } from '@capacitor/core';
 import type { CapacitorErisSosmapPlugin } from './definitions';
 
+type DeviceMotionEventWithPermission = typeof DeviceMotionEvent & {
+  requestPermission?: () => Promise<'granted' | 'denied'>;
+};
+
 export class CapacitorErisSosmapWeb extends WebPlugin implements CapacitorErisSosmapPlugin {
+  private motionHandler: ((e: DeviceMotionEvent) => void) | null = null;
   async echo(options: { value: string }): Promise<{ value: string }> {
     console.log('ECHO', options);
     return options;
@@ -37,5 +42,46 @@ export class CapacitorErisSosmapWeb extends WebPlugin implements CapacitorErisSo
 
   async broadcastMeshMessage(options: { message: string }): Promise<void> {
     console.warn('[ERIS-WEB] Message envoyé dans le vide (Web) :', options.message);
+  }
+
+  // Request DeviceMotion permission (required on iOS 13+ browsers) and start listening
+  async startMotionMonitoring(): Promise<void> {
+    const DME = DeviceMotionEvent as DeviceMotionEventWithPermission;
+    if (typeof DME.requestPermission === 'function') {
+      const permission = await DME.requestPermission();
+      if (permission !== 'granted') {
+        console.warn('[ERIS-WEB] DeviceMotion permission denied');
+        return;
+      }
+    }
+
+    this.motionHandler = (e: DeviceMotionEvent) => {
+      const a  = e.acceleration;
+      if (!a) return;
+      const ax = a.x ?? 0;
+      const ay = a.y ?? 0;
+      const az = a.z ?? 0;
+      const r  = e.rotationRate;
+      this.notifyListeners('onMotionData', {
+        ax,
+        ay,
+        az,
+        gx:        r?.alpha ?? 0,
+        gy:        r?.beta  ?? 0,
+        gz:        r?.gamma ?? 0,
+        magnitude: Math.sqrt(ax * ax + ay * ay + az * az),
+        timestamp: Date.now(),
+      });
+    };
+
+    window.addEventListener('devicemotion', this.motionHandler);
+  }
+
+  // Remove the DeviceMotion listener and release the handler reference
+  async stopMotionMonitoring(): Promise<void> {
+    if (this.motionHandler) {
+      window.removeEventListener('devicemotion', this.motionHandler);
+      this.motionHandler = null;
+    }
   }
 }
