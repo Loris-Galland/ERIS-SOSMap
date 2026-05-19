@@ -12,6 +12,7 @@ import { usePOIs, type POICategory } from './hooks/usePOIs';
 import { useFallDetection } from '../sos/hooks/useFallDetection';
 import FallDetectionModal from '../../components/FallDetectionModal';
 import { dispatchSOS } from '../../services/sosService';
+import { useCrashDetection } from '../sos/hooks/useCrashDetection';
 
 interface MapScreenProps {
   isActive: boolean;
@@ -103,6 +104,22 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
 
   // Activate continuous fall detection
   useFallDetection(handleFallDetected, true);
+
+  // Logic for motorcycle crash detection
+  const handleCrashDetected = useCallback(() => {
+    console.log('🚨 MOTORCYCLE CRASH DETECTED!');
+    setShowFallModal(true); // Reuses the red countdown modal with the siren
+  }, []);
+
+  // Compute speed safely or default to 0 if useGPS doesn't provide it yet
+  const currentSpeed = (userPosition as any).speed || 0;
+
+  // Activate continuous crash detection based on GPS speed and impact forces
+  useCrashDetection({
+    currentSpeedKmh: currentSpeed,
+    onCrashDetected: handleCrashDetected,
+    isActive: isActive,
+  });
 
   const handleSOSConfirm = async () => {
     setShowFallModal(false);
