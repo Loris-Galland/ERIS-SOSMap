@@ -170,7 +170,7 @@ export default function SOSHistoryScreen({ onClose }: SOSHistoryScreenProps) {
   return (
     <div className="absolute inset-0 z-[4000] bg-eris-bg flex flex-col animate-in slide-in-from-bottom duration-300">
       {/* Header */}
-      <header className="flex items-center px-6 py-4 sticky top-0 z-50 bg-eris-bg/90 backdrop-blur-md border-b border-eris-border/50">
+      <header className="flex items-center px-6 py-4 sticky top-[-10px] z-50 bg-eris-bg/90 backdrop-blur-md border-b border-eris-border/50">
         <button
           onClick={onClose}
           className="text-eris-text-muted hover:text-eris-text transition-colors mr-4 active:scale-95 flex items-center justify-center w-10 h-10 bg-eris-surface-alt/50 rounded-full"
@@ -266,7 +266,7 @@ export default function SOSHistoryScreen({ onClose }: SOSHistoryScreenProps) {
       {selectedAlert && (
         <div className="absolute inset-0 z-[5000] bg-black/60 backdrop-blur-sm flex items-end">
           <div className="w-full bg-eris-bg border-t border-eris-border rounded-t-3xl overflow-y-auto max-h-[85vh] animate-in slide-in-from-bottom duration-300">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-eris-border/50 sticky top-0 bg-eris-bg z-10">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-eris-border/50 sticky top-[23px] bg-eris-bg z-10">
               <div>
                 <h3 className="text-eris-text font-bold text-lg">{t('history.detailsTitle', 'Alert Details')}</h3>
                 <p className="text-eris-text-subtle text-[11px]">{formatDate(selectedAlert.timestamp, i18n)}</p>
@@ -279,7 +279,7 @@ export default function SOSHistoryScreen({ onClose }: SOSHistoryScreenProps) {
               </button>
             </div>
 
-            <div className="px-6 py-5 flex flex-col gap-5">
+            <div className="px-6 py-9 flex flex-col gap-5">
               <div className="flex items-center gap-3">
                 <div className={`w-3 h-3 rounded-full ${getStatusColor(selectedAlert.status)}`} />
                 <span className="text-eris-text text-sm font-bold capitalize">
