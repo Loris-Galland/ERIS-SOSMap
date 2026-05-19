@@ -368,6 +368,7 @@
     "iAmOk": "I'm OK — Dismiss",
     "sendSOS": "Send SOS",
     "autoSOS": "Auto SOS in {{seconds}}s"
+  },
   "shake": {
     "banner_title": "Sending SOS in {{seconds}}s",
     "banner_badge": "Hardware Shake",

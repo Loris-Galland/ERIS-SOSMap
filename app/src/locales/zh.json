@@ -1,4 +1,4 @@
-{
+﻿{
   "nav": {
     "alerts": "警报",
     "map": "地图",
@@ -368,6 +368,7 @@
     "iAmOk": "我没事 — 忽略",
     "sendSOS": "发送 SOS",
     "autoSOS": "{{seconds}} 秒后自动 SOS"
+  },
   "shake": {
     "banner_title": "{{seconds}}秒内发送 SOS",
     "banner_badge": "硬件摇晃",

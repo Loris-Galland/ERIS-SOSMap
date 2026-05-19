@@ -1,4 +1,4 @@
-{
+﻿{
   "nav": {
     "alerts": "Alertes",
     "map": "Carte",
@@ -368,6 +368,7 @@
     "iAmOk": "Je vais bien — Ignorer",
     "sendSOS": "Envoyer SOS",
     "autoSOS": "SOS auto dans {{seconds}}s"
+  },
   "shake": {
     "banner_title": "Envoi du SOS dans {{seconds}}s",
     "banner_badge": "Secouement",

@@ -1,4 +1,4 @@
-{
+﻿{
   "nav": {
     "alerts": "Cảnh báo",
     "map": "Bản đồ",
@@ -368,6 +368,7 @@
     "iAmOk": "Tôi ổn — Bỏ qua",
     "sendSOS": "Gửi SOS",
     "autoSOS": "SOS tự động sau {{seconds}}s"
+  },
   "shake": {
     "banner_title": "Gửi SOS trong {{seconds}}s",
     "banner_badge": "Lắc phần cứng",

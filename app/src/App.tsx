@@ -35,7 +35,7 @@ export default function App() {
   const [isInitializing, setIsInitializing] = useState(true);
   const isGuest = localStorage.getItem('eris_is_guest') === 'true';
   const { isAdmin } = useAdmin(session);
-  const userId = session?.user?.id ?? null;
+  const userId = session?.user?.id || (isGuest ? 'guest_user' : null);
 
   // ─── GPS — declared early so userPosition is available to SOS callbacks below ───
   const [showDiagnostics, setShowDiagnostics] = useState(false);
@@ -96,18 +96,8 @@ export default function App() {
   // ─── THEME ───
   const [visualTheme, setVisualTheme] = useState(localStorage.getItem('eris_theme') || 'dark');
 
-  // ─── DIAGNOSTICS ───
-  const [showDiagnostics, setShowDiagnostics] = useState(false);
-  const { userPosition, gpsStatus } = useGPS({
-    mapInstance: useRef(null),
-    isActive: true,
-  });
-
   // Track whether we already handled the initial redirect after login
   const hasRedirectedRef = useRef(false);
-
-  // ─── SHAKE TO SOS GLOBAL INITIALIZATION ───
-  const userId = session?.user?.id || (isGuest ? 'guest_user' : 'anonymous_user');
 
   const getLivePosition = () => {
     return {

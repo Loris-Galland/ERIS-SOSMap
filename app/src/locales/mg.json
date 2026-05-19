@@ -1,4 +1,4 @@
-{
+﻿{
   "nav": {
     "alerts": "Fampandrenesana",
     "map": "Sarintany",
@@ -368,6 +368,7 @@
     "iAmOk": "Tsara aho — Hifindra",
     "sendSOS": "Handefa SOS",
     "autoSOS": "SOS ho lasa amin'ny {{seconds}}s"
+  },
   "shake": {
     "banner_title": "Mandefa SOS afaka {{seconds}}s",
     "banner_badge": "Hozongozonina",
