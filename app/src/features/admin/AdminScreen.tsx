@@ -1,11 +1,12 @@
-// Admin panel entry point -routes to the different admin feature screens
+// Admin panel entry point — routes to the different admin feature screens
 
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import SOSAlertDashboard from './components/SOSAlertDashboard';
 import UserManagementScreen from './components/UserManagementScreen';
+import AudioRecordingsDashboard from './components/AudioRecordingsDashboard';
 
-type AdminView = 'home' | 'sos_dashboard' | 'user_management';
+type AdminView = 'home' | 'sos_dashboard' | 'user_management' | 'audio_recordings';
 
 export default function AdminScreen() {
   const { t } = useTranslation();
@@ -18,6 +19,10 @@ export default function AdminScreen() {
   // Route to the User Management sub-screen
   if (view === 'user_management') {
     return <UserManagementScreen onBack={() => setView('home')} />;
+  }
+  // Route to the Audio Recordings sub-screen
+  if (view === 'audio_recordings') {
+    return <AudioRecordingsDashboard onBack={() => setView('home')} />;
   }
 
   return (
@@ -59,6 +64,19 @@ export default function AdminScreen() {
             <div>
               <p className="font-semibold text-sm">{t('admin.usersTitle', 'User Management')}</p>
               <p className="text-eris-text-muted text-xs">{t('admin.usersDesc', 'Users & roles')}</p>
+            </div>
+            <span className="material-symbols-outlined text-eris-text-subtle text-xl ml-auto">chevron_right</span>
+          </button>
+
+          {/* Navigates to audio recordings dashboard */}
+          <button
+            onClick={() => setView('audio_recordings')}
+            className="bg-eris-surface border border-eris-border/50 rounded-2xl p-4 flex items-center gap-4 active:scale-[0.98] transition-transform text-left w-full"
+          >
+            <span className="material-symbols-outlined text-eris-danger text-2xl">mic</span>
+            <div>
+              <p className="font-semibold text-sm">{t('admin.audio.title', 'Audio Recordings')}</p>
+              <p className="text-eris-text-muted text-xs">{t('admin.audio.adminDesc', 'Emergency audio captured on fall / crash')}</p>
             </div>
             <span className="material-symbols-outlined text-eris-text-subtle text-xl ml-auto">chevron_right</span>
           </button>

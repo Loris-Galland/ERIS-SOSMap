@@ -1,6 +1,17 @@
 import Dexie, { type Table } from 'dexie';
 import type { RiskEventRecord } from '../features/risk/types';
 
+// Pending audio recording waiting to be uploaded to Supabase Storage (offline fallback)
+export interface PendingAudioUpload {
+  id?: number;
+  user_id: string;
+  trigger_type: 'fall' | 'crash';
+  blob: Blob;
+  duration_seconds: number;
+  created_at: number;
+  retry_count: number;
+}
+
 // Define the structure for SOS alerts waiting for network sync
 export interface PendingSOS {
   id?: number;
@@ -50,6 +61,7 @@ export class ErisLocalDB extends Dexie {
   emergencyContacts!: Table<any, string>;
   hazards!: Table<HazardAlert>;
   riskEvents!: Table<RiskEventRecord>;
+  pendingAudioUploads!: Table<PendingAudioUpload>;
 
   constructor() {
     super('ErisLocalDB');
@@ -68,6 +80,16 @@ export class ErisLocalDB extends Dexie {
       emergencyContacts: 'id, user_id',
       hazards:           '++id, uuid, type, synced, timestamp',
       riskEvents:        '++id, pattern, level, detectedAt, dismissed',
+    });
+
+    // Version 6 — add pendingAudioUploads for offline audio recording fallback
+    this.version(6).stores({
+      sosQueue:             '++id, status, timestamp, user_id',
+      userProfile:          'id',
+      emergencyContacts:    'id, user_id',
+      hazards:              '++id, uuid, type, synced, timestamp',
+      riskEvents:           '++id, pattern, level, detectedAt, dismissed',
+      pendingAudioUploads:  '++id, user_id, created_at',
     });
   }
 }
