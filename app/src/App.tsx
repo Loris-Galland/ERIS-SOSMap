@@ -24,6 +24,8 @@ import MapScreen from './features/map/MapScreen';
 import LowBatteryGlobal from './components/LowBatteryGlobal';
 import AdminScreen from './features/admin/AdminScreen';
 import { useAdmin } from './features/admin/hooks/useAdmin';
+import { useAudioRecording } from './features/audio/hooks/useAudioRecording';
+import RecordingIndicator from './features/audio/components/RecordingIndicator';
 
 export type ActiveTab = 'MAP' | 'ALERTS' | 'OFFLINE' | 'USER' | 'SETTINGS' | 'DOWNLOAD_MAP' | 'PROFILE_SETUP' | 'ADMIN';
 
@@ -44,14 +46,22 @@ export default function App() {
   // ─── AI RISK DETECTION ───
   const { riskEvent, dismissRisk, acknowledgeAsSOS, currentSpeedMs } = useRiskDetection(userId);
 
+  // ─── AUDIO RECORDING — started automatically on confirmed fall / crash ───
+  const { isRecording, startRecording, stopRecording, cancelRecording } = useAudioRecording(userId);
+
   // ─── FALL DETECTION (accelerometer) — active on all tabs ───
   const [showFallModal, setShowFallModal] = useState(false);
-  const onFallDetected = useCallback(() => setShowFallModal(true), []);
+  const onFallDetected = useCallback(() => {
+    setShowFallModal(true);
+    startRecording('fall');
+  }, [startRecording]);
   useFallDetection(onFallDetected, true);
 
   // Dispatch SOS automatically when fall countdown expires or user confirms
   const handleFallSOS = useCallback(async () => {
     setShowFallModal(false);
+    // Recording continues — the emergency is confirmed, we want the full ambient audio
+    stopRecording();
     if (userPosition.lat !== 0 && userPosition.lng !== 0) {
       try {
         await dispatchSOS(
@@ -65,16 +75,20 @@ export default function App() {
       }
     }
     setActiveTab('ALERTS');
-  }, [userId, userPosition]);
+  }, [userId, userPosition, stopRecording]);
 
   // ─── CRASH DETECTION (accelerometer + speed arming) — active on all tabs ───
   const [showCrashModal, setShowCrashModal] = useState(false);
-  const onCrashDetected = useCallback(() => setShowCrashModal(true), []);
+  const onCrashDetected = useCallback(() => {
+    setShowCrashModal(true);
+    startRecording('crash');
+  }, [startRecording]);
   useCrashDetection({ currentSpeedKmh: currentSpeedMs * 3.6, onCrashDetected, isActive: true });
 
   // Dispatch SOS automatically when crash countdown expires or user confirms
   const handleCrashSOS = useCallback(async () => {
     setShowCrashModal(false);
+    stopRecording();
     if (userPosition.lat !== 0 && userPosition.lng !== 0) {
       try {
         await dispatchSOS(
@@ -88,7 +102,7 @@ export default function App() {
       }
     }
     setActiveTab('ALERTS');
-  }, [userId, userPosition]);
+  }, [userId, userPosition, stopRecording]);
 
   // ─── NAVIGATION ───
   const [activeTab, setActiveTab] = useState<ActiveTab>('ALERTS');
@@ -223,6 +237,7 @@ export default function App() {
   return (
     <div className="flex flex-col h-screen w-full bg-eris-bg text-eris-text overflow-hidden font-sans">
       <LowBatteryGlobal />
+      <RecordingIndicator isRecording={isRecording} />
 
       {/* ─── GLOBAL SHAKE TO SOS NOTIFICATION BANNER ─── */}
       {isShakeCounting && (
@@ -342,7 +357,7 @@ export default function App() {
       {showFallModal && (
         <FallDetectionModal
           type="fall"
-          onCancel={() => setShowFallModal(false)}
+          onCancel={() => { setShowFallModal(false); cancelRecording(); }}
           onConfirmSOS={handleFallSOS}
         />
       )}
@@ -351,7 +366,7 @@ export default function App() {
       {!showFallModal && showCrashModal && (
         <FallDetectionModal
           type="crash"
-          onCancel={() => setShowCrashModal(false)}
+          onCancel={() => { setShowCrashModal(false); cancelRecording(); }}
           onConfirmSOS={handleCrashSOS}
         />
       )}
