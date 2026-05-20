@@ -71,7 +71,16 @@
     "logoutBtn": "Sign Out of ERIS System",
     "sensorsTitle": "Device Sensors",
     "shake_sos_title": "Shake to SOS",
-    "shake_sos_desc": "Sends automatically an SOS when shaking the device"
+    "shake_sos_desc": "Sends automatically an SOS when shaking the device",
+    "discrete_sos_title": "Discrete SOS",
+    "discrete_sos_desc": "Trigger a silent SOS without sirens or alarms",
+    "discrete_none": "Disabled",
+    "discrete_tap": "4 Rapid Taps",
+    "discrete_flip": "3 Phone Flips"
+  },
+  "discrete": {
+    "banner_title": "Silent SOS Triggered",
+    "banner_subtitle": "Sending in {{seconds}}s..."
   },
   "auth": {
     "title": "Secure Access",

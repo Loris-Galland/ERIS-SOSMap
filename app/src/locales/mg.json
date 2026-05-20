@@ -71,7 +71,16 @@
     "logoutBtn": "Hivoaka ny rafitra ERIS",
     "sensorsTitle": "Mpandray feon'ny fitaovana",
     "shake_sos_title": "Hozongozonina raha handefa SOS",
-    "shake_sos_desc": "Mandefa ho azy ny SOS rehefa mihetsika ny fitaovana"
+    "shake_sos_desc": "Mandefa ho azy ny SOS rehefa mihetsika ny fitaovana",
+    "discrete_sos_title": "SOS Miafina",
+    "discrete_sos_desc": "Alefaso mangingina ny SOS tsy misy fanairana na anjomara",
+    "discrete_none": "Tsy mandeha",
+    "discrete_tap": "Tsindry haingana 4",
+    "discrete_flip": "Ahodino in-3 ny finday"
+  },
+  "discrete": {
+    "banner_title": "SOS mangina nalefa",
+    "banner_subtitle": "Handefa afaka {{seconds}}s..."
   },
   "auth": {
     "title": "Fidirana voaaro",

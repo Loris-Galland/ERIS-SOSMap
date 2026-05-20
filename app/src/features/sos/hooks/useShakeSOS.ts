@@ -26,7 +26,7 @@ export const useShakeSOS = (
   
   // ─── INTERNAL COUNTDOWN STATE ───
   const [isCounting, setIsCounting] = useState<boolean>(false);
-  const [countdown, setCountdown] = useState<number>(3);
+  const [countdown, setCountdown] = useState<number>(5);
   const timerRef = useRef<any | null>(null);
 
   // High-Frequency Hardware Tracking References
@@ -123,7 +123,7 @@ export const useShakeSOS = (
     hasTriggeredRef.current = true;
     shakeCountRef.current = 0;
     
-    setCountdown(3);
+    setCountdown(5);
     setIsCounting(true);
   };
 
@@ -168,7 +168,7 @@ export const useShakeSOS = (
     if (timerRef.current) clearTimeout(timerRef.current);
     
     setIsCounting(false);
-    setCountdown(3);
+    setCountdown(5);
     
     hasTriggeredRef.current = false;
     onCooldownRef.current = false; 

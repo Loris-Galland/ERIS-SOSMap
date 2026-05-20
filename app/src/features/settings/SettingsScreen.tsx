@@ -11,7 +11,7 @@ import { useTranslation } from 'react-i18next';
 import DisplaySection from './sections/DisplaySection';
 import NotificationsSection from './sections/NotificationsSection';
 import PrivacySection from './sections/PrivacySection';
-import SensorsSection from './sections/SensorsSection';
+import SosSection from './sections/SosSection';
 import DataStorageSection from './sections/DataStorageSection';
 import PowerMgmtSection from './sections/PowerMgmtSection';
 import DiagnosticsSection from './sections/DiagnosticsSection';
@@ -43,7 +43,7 @@ export default function SettingsScreen({ onBack, currentTheme, onThemeChange }: 
         <DisplaySection currentTheme={currentTheme} onThemeChange={onThemeChange} />
         <NotificationsSection />
         <PrivacySection />
-        <SensorsSection />
+        <SosSection />
         <DataStorageSection />
         <PowerMgmtSection />
         <DiagnosticsSection />

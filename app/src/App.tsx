@@ -24,6 +24,9 @@ import MapScreen from './features/map/MapScreen';
 import LowBatteryGlobal from './components/LowBatteryGlobal';
 import AdminScreen from './features/admin/AdminScreen';
 import { useAdmin } from './features/admin/hooks/useAdmin';
+import { useDiscreteSOS } from './features/sos/hooks/useDiscreteSOS';
+import ShakeSOSBanner from './features/sos/components/shakeSOSBanner';
+import DiscreteSOSBanner from './features/sos/components/discreteSOSBanner';
 
 export type ActiveTab = 'MAP' | 'ALERTS' | 'OFFLINE' | 'USER' | 'SETTINGS' | 'DOWNLOAD_MAP' | 'PROFILE_SETUP' | 'ADMIN';
 
@@ -48,6 +51,17 @@ export default function App() {
   const [showFallModal, setShowFallModal] = useState(false);
   const onFallDetected = useCallback(() => setShowFallModal(true), []);
   useFallDetection(onFallDetected, true);
+
+  // ─── DISCRETE SOS (Silent Trigger) ───
+  const {
+    isCounting: isDiscreteCounting,
+    countdown: discreteCountdown,
+    cancelSOS: cancelDiscreteSOS,
+  } = useDiscreteSOS({
+    userId: userId ?? 'guest',
+    userPosition: userPosition,
+    isActive: true,
+  });
 
   // Dispatch SOS automatically when fall countdown expires or user confirms
   const handleFallSOS = useCallback(async () => {
@@ -224,28 +238,10 @@ export default function App() {
     <div className="flex flex-col h-screen w-full bg-eris-bg text-eris-text overflow-hidden font-sans">
       <LowBatteryGlobal />
 
-      {/* ─── GLOBAL SHAKE TO SOS NOTIFICATION BANNER ─── */}
-      {isShakeCounting && (
-        <div className="absolute top-4 left-4 right-4 bg-red-600 text-white p-4 rounded-xl shadow-2xl z-[9999] flex flex-col gap-3 border border-red-500 animate-bounce">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined animate-spin text-xl">vibration</span>
-              <span className="font-bold tracking-wide">
-                {t('shake.banner_title', 'Sending SOS in {{seconds}}s', { seconds: shakeCountdown })}
-              </span>
-            </div>
-            <span className="text-xs bg-black/30 px-2 py-0.5 rounded-full font-mono">
-              {t('shake.banner_badge', 'Hardware Shake')}
-            </span>
-          </div>
-          <button
-            onClick={cancelShakeSOS}
-            className="w-full bg-white text-red-700 font-extrabold py-2 rounded-lg text-sm hover:bg-slate-100 transition-colors active:scale-[0.98]"
-          >
-            {t('shake.banner_cancel', 'CANCEL DISPATCH')}
-          </button>
-        </div>
-      )}
+      {/* ─── GLOBAL SOS DAEMON BANNERS ─── */}
+      <ShakeSOSBanner isCounting={isShakeCounting} countdown={shakeCountdown} onCancel={cancelShakeSOS} />
+
+      <DiscreteSOSBanner isCounting={isDiscreteCounting} countdown={discreteCountdown} onCancel={cancelDiscreteSOS} />
 
       <header className="flex justify-between items-center px-5 py-3 bg-eris-bg/95 backdrop-blur-md border-b border-eris-border/50 z-[1000] relative">
         <div className="flex items-center gap-2">
@@ -340,20 +336,12 @@ export default function App() {
 
       {/* ─── FALL DETECTION MODAL (highest priority) ─── */}
       {showFallModal && (
-        <FallDetectionModal
-          type="fall"
-          onCancel={() => setShowFallModal(false)}
-          onConfirmSOS={handleFallSOS}
-        />
+        <FallDetectionModal type="fall" onCancel={() => setShowFallModal(false)} onConfirmSOS={handleFallSOS} />
       )}
 
       {/* ─── CRASH DETECTION MODAL (vehicle crash, highest priority) ─── */}
       {!showFallModal && showCrashModal && (
-        <FallDetectionModal
-          type="crash"
-          onCancel={() => setShowCrashModal(false)}
-          onConfirmSOS={handleCrashSOS}
-        />
+        <FallDetectionModal type="crash" onCancel={() => setShowCrashModal(false)} onConfirmSOS={handleCrashSOS} />
       )}
 
       {/* ─── AI RISK DETECTION BANNER (GPS behavioral patterns) ─── */}
@@ -361,7 +349,10 @@ export default function App() {
         <RiskAlertBanner
           event={riskEvent}
           onDismiss={dismissRisk}
-          onSendSOS={() => { acknowledgeAsSOS(); setActiveTab('ALERTS'); }}
+          onSendSOS={() => {
+            acknowledgeAsSOS();
+            setActiveTab('ALERTS');
+          }}
         />
       )}
 

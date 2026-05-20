@@ -71,7 +71,16 @@
     "logoutBtn": "登出 ERIS 系统",
     "sensorsTitle": "设备传感器",
     "shake_sos_title": "摇一摇发送 SOS",
-    "shake_sos_desc": "搖晃設備時自動發送SOS求救訊號"
+    "shake_sos_desc": "搖晃設備時自動發送SOS求救訊號",
+    "discrete_sos_title": "隐蔽 SOS",
+    "discrete_sos_desc": "触发静音 SOS，无警报声",
+    "discrete_none": "已禁用",
+    "discrete_tap": "快速点击 4 次",
+    "discrete_flip": "翻转手机 3 次"
+  },
+  "discrete": {
+    "banner_title": "已触发静音 SOS",
+    "banner_subtitle": "{{seconds}} 秒后发送..."
   },
   "auth": {
     "title": "安全访问",

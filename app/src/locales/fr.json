@@ -71,7 +71,16 @@
     "logoutBtn": "Se déconnecter du système ERIS",
     "sensorsTitle": "Capteurs de l'appareil",
     "shake_sos_title": "Secouer pour SOS",
-    "shake_sos_desc": "Envoie automatiquement un SOS si l'appareil est secoué"
+    "shake_sos_desc": "Envoie automatiquement un SOS si l'appareil est secoué",
+    "discrete_sos_title": "SOS Discret",
+    "discrete_sos_desc": "Déclencher un SOS silencieux sans sirène ni alarme",
+    "discrete_none": "Désactivé",
+    "discrete_tap": "4 Tapes Rapides",
+    "discrete_flip": "3 Retournements du Téléphone"
+  },
+  "discrete": {
+    "banner_title": "SOS Silencieux Déclenché",
+    "banner_subtitle": "Envoi dans {{seconds}}s..."
   },
   "auth": {
     "title": "Accès Sécurisé",

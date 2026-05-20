@@ -71,7 +71,16 @@
     "logoutBtn": "Đăng xuất khỏi hệ thống ERIS",
     "sensorsTitle": "Cảm biến thiết bị",
     "shake_sos_title": "Lắc để gửi SOS",
-    "shake_sos_desc": "Tự động gửi tín hiệu SOS khi lắc thiết bị."
+    "shake_sos_desc": "Tự động gửi tín hiệu SOS khi lắc thiết bị.",
+    "discrete_sos_title": "SOS Kín đáo",
+    "discrete_sos_desc": "Kích hoạt SOS im lặng không có còi báo động hoặc chuông",
+    "discrete_none": "Đã tắt",
+    "discrete_tap": "Chạm nhanh 4 lần",
+    "discrete_flip": "Lật điện thoại 3 lần"
+  },
+  "discrete": {
+    "banner_title": "Đã kích hoạt SOS im lặng",
+    "banner_subtitle": "Đang gửi trong {{seconds}}s..."
   },
   "auth": {
     "title": "Truy cập an toàn",
