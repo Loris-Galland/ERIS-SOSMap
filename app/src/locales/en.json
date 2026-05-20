@@ -76,7 +76,16 @@
     "discrete_sos_desc": "Trigger a silent SOS without sirens or alarms",
     "discrete_none": "Disabled",
     "discrete_tap": "4 Rapid Taps",
-    "discrete_flip": "3 Phone Flips"
+    "discrete_flip": "3 Phone Flips",
+    "audioRecording": "Emergency Audio Recording",
+    "audioRecordingDesc": "Record ambient audio on fall or crash detection",
+    "audioConsentTitle": "Before enabling audio recording",
+    "audioConsent1": "Audio is recorded only when a fall or crash is detected.",
+    "audioConsent2": "Recordings are stored securely and deleted after 30 days.",
+    "audioConsent3": "Only you and your emergency contacts can access them.",
+    "audioConsent4": "You can disable this at any time from this screen.",
+    "audioConsent5": "This feature processes health data (GDPR Art. 9).",
+    "audioConsentAccept": "I Understand — Enable"
   },
   "discrete": {
     "banner_title": "Silent SOS Triggered",
@@ -343,7 +352,24 @@
     "revokeBtn": "Revoke Admin",
     "grantBtn": "Grant Admin",
     "errorUsers": "Error loading users:",
-    "noUsers": "No users found"
+    "noUsers": "No users found",
+    "audio": {
+      "title": "Audio Recordings",
+      "adminDesc": "Emergency audio captured on fall / crash",
+      "stats": "{{count}} recording(s)",
+      "triggerFall": "Fall Detected",
+      "triggerCrash": "Crash Detected",
+      "userId": "User:",
+      "expiresAt": "Expires:",
+      "noUrl": "Signed URL unavailable",
+      "download": "Download",
+      "delete": "Delete",
+      "confirmDelete": "Delete this recording permanently?",
+      "noRecordings": "No recordings yet"
+    }
+  },
+  "audio": {
+    "recBadge": "REC"
   },
   "fall": {
     "detectedTitle": "FALL DETECTED",

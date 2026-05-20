@@ -76,7 +76,16 @@
     "discrete_sos_desc": "Déclencher un SOS silencieux sans sirène ni alarme",
     "discrete_none": "Désactivé",
     "discrete_tap": "4 Tapes Rapides",
-    "discrete_flip": "3 Retournements du Téléphone"
+    "discrete_flip": "3 Retournements du Téléphone",
+    "audioRecording": "Enregistrement audio d'urgence",
+    "audioRecordingDesc": "Enregistre l'ambiance sonore lors d'une chute ou d'un accident détecté",
+    "audioConsentTitle": "Avant d'activer l'enregistrement audio",
+    "audioConsent1": "L'audio est enregistré uniquement lors d'une chute ou d'un accident confirmé.",
+    "audioConsent2": "Les enregistrements sont stockés de manière sécurisée et supprimés au bout de 30 jours.",
+    "audioConsent3": "Seuls vous et vos contacts d'urgence y ont accès.",
+    "audioConsent4": "Vous pouvez désactiver cette option à tout moment depuis cet écran.",
+    "audioConsent5": "Cette fonctionnalité traite des données de santé (RGPD Art. 9).",
+    "audioConsentAccept": "Je comprends — Activer"
   },
   "discrete": {
     "banner_title": "SOS Silencieux Déclenché",
@@ -343,7 +352,21 @@
     "revokeBtn": "Révoquer l'Admin",
     "grantBtn": "Nommer Admin",
     "errorUsers": "Erreur lors du chargement des utilisateurs :",
-    "noUsers": "Aucun utilisateur trouvé"
+    "noUsers": "Aucun utilisateur trouvé",
+    "audio": {
+      "title": "Enregistrements audio",
+      "adminDesc": "Audio d'urgence capturé lors d'une chute ou d'un accident",
+      "stats": "{{count}} enregistrement(s)",
+      "triggerFall": "Chute détectée",
+      "triggerCrash": "Accident détecté",
+      "userId": "Utilisateur :",
+      "expiresAt": "Expire le :",
+      "noUrl": "URL signée indisponible",
+      "download": "Télécharger",
+      "delete": "Supprimer",
+      "confirmDelete": "Supprimer définitivement cet enregistrement ?",
+      "noRecordings": "Aucun enregistrement pour l'instant"
+    }
   },
   "fall": {
     "detectedTitle": "CHUTE DÉTECTÉE",
@@ -377,6 +400,9 @@
     "iAmOk": "Je vais bien — Ignorer",
     "sendSOS": "Envoyer SOS",
     "autoSOS": "SOS auto dans {{seconds}}s"
+  },
+  "audio": {
+    "recBadge": "REC"
   },
   "shake": {
     "banner_title": "Envoi du SOS dans {{seconds}}s",
