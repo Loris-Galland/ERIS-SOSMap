@@ -69,7 +69,7 @@
     "searching": "Recherche...",
     "runTest": "Lancer le test réseau",
     "logoutBtn": "Se déconnecter du système ERIS",
-    "sensorsTitle": "Capteurs de l'appareil",
+    "sosTitle": "SOS",
     "shake_sos_title": "Secouer pour SOS",
     "shake_sos_desc": "Envoie automatiquement un SOS si l'appareil est secoué",
     "discrete_sos_title": "SOS Discret",

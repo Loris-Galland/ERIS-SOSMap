@@ -69,7 +69,7 @@
     "searching": "正在搜索...",
     "runTest": "运行网络测试",
     "logoutBtn": "登出 ERIS 系统",
-    "sensorsTitle": "设备传感器",
+    "sosTitle": "SOS",
     "shake_sos_title": "摇一摇发送 SOS",
     "shake_sos_desc": "搖晃設備時自動發送SOS求救訊號",
     "discrete_sos_title": "隐蔽 SOS",

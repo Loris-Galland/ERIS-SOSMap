@@ -39,7 +39,7 @@ export default function SosSection() {
     <section>
       {/* Sensors Section Title Header matching the custom typography pattern */}
       <h3 className="text-eris-text-muted text-xs font-bold uppercase tracking-widest mb-3 px-2">
-        {t('settings.sensorsTitle', 'Device Sensors')}
+        {t('settings.sosTitle', 'SOS')}
       </h3>
 
       {/* Surface block with exact background opacity variations and card rounding bounds */}
