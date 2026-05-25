@@ -1,0 +1,201 @@
+import { db } from '../db/localDb';
+import { supabase } from '../db/supabaseClient';
+import { CapacitorErisSosmap } from 'capacitor-eris-sosmap';
+import { Capacitor } from '@capacitor/core';
+
+// Background retry engine
+// This runs whenever dispatchSOS is called and flushes any previously queued alerts.
+export const flushRetryQueue = async () => {
+  const pending = await db.sosQueue.where('status').equals('queued').toArray();
+  for (const item of pending) {
+    try {
+      const { error } = await supabase.from('sos_alerts').insert({
+        user_id: item.user_id,
+        latitude: item.lat,
+        longitude: item.lon,
+        altitude: item.altitude,
+        battery_level: item.battery_level,
+        notes: item.notes,
+        status: 'delivered',
+        transmission_method: 'INTERNET_RETRY',
+        first_name: item.first_name,
+        last_name: item.last_name,
+        blood_type: item.blood_type,
+        allergies: item.allergies,
+        medical_conditions: item.medical_conditions,
+        current_condition: item.current_condition
+      });
+      if (!error) {
+        await db.sosQueue.update(item.id!, {
+          status: 'delivered',
+          transmission_method: 'INTERNET_RETRY',
+        });
+        console.log('[ERIS] Queued SOS successfully flushed:', item.id);
+      }
+    } catch {
+      // Keep it queued for the next attempt
+      console.warn('[ERIS] Could not flush retry queue item:', item.id);
+    }
+  }
+};
+
+// ==========================================
+// OFFLINE EMERGENCY NOTIFICATION (SMS)
+// ==========================================
+const triggerOfflineNotification = async (position: {lat: number, lng: number}, notes: string) => {
+  try {
+    const mapLink = `https://maps.google.com/?q=${position.lat},${position.lng}`;
+    const message = `URGENT (ERIS) : J'ai déclenché un SOS. Ma position : ${mapLink}. Notes : ${notes}`;
+    
+    // Attempt to retrieve local emergency numbers if they are cached in Dexie
+    let phones = "";
+    if ((db as any).emergencyContacts) {
+      const contacts = await (db as any).emergencyContacts.toArray();
+      if (contacts && contacts.length > 0) {
+        phones = contacts.map((c: any) => c.phone_number).join(',');
+      }
+    }
+
+    // Handle the syntax difference between iOS and Android for SMS links
+    const separator = Capacitor.getPlatform() === 'ios' ? '&' : '?';
+    
+    // Open the native SMS application using the cellular fallback network
+    window.open(`sms:${phones}${separator}body=${encodeURIComponent(message)}`, '_system');
+  } catch (err) {
+    console.error("[ERIS] Failed to open the SMS application", err);
+  }
+};
+
+export const dispatchSOS = async (
+  userId: string,
+  position: { lat: number; lng: number; alt: number },
+  batteryLevel: number = 100,
+  notes: string = '',
+) => {
+  // Try to flush any previously failed SOS alerts first
+  // FIX: Do not use 'await' to avoid blocking the offline dispatch
+  flushRetryQueue().catch(e => console.warn('[ERIS] Background flush error:', e));
+
+  // Use user input or a default message
+  const finalNotes = notes.trim() !== '' ? notes : 'Manual SOS alert triggered';
+
+  // Fetch local user profile to attach medical data even when offline
+  let profile = undefined;
+  try {
+    profile = await db.userProfile.get(userId);
+  } catch (e) {
+    console.warn('[ERIS] Could not load local profile', e);
+  }
+
+  // Payload strictly formatted for Supabase schema
+  const supabasePayload = {
+    user_id: userId,
+    latitude: position.lat,
+    longitude: position.lng,
+    altitude: position.alt,
+    battery_level: batteryLevel,
+    notes: finalNotes,
+    status: 'pending',
+    transmission_method: 'PENDING',
+    first_name: profile?.firstName || 'Unknown',
+    last_name: profile?.lastName || 'Unknown',
+    blood_type: profile?.bloodType || 'Unknown',
+    allergies: profile?.allergies || 'None',
+    medical_conditions: profile?.medicalConditions || 'None',
+    current_condition: profile?.currentCondition || 'Unknown'
+  };
+
+  // Payload merged with Dexie specific requirements
+  const dexiePayload = {
+    ...supabasePayload,
+    lat: position.lat,
+    lon: position.lng,
+    status: 'pending' as any,
+    timestamp: Date.now(),
+  };
+
+  // Prepare the stringified payload to bounce across the Mesh Network 
+  const meshPayload = JSON.stringify({
+    ...supabasePayload,
+    isRelay: true // Flag to tell receivers this is a relayed message, not their own
+  });
+
+  try {
+    // Trigger native network check and hardware fallback logic
+    const nativeResult = await CapacitorErisSosmap.triggerEmergency({
+      latitude: position.lat,
+      longitude: position.lng,
+      userId,
+    });
+
+    if (nativeResult.transmissionMethod === 'INTERNET') {
+      // Send directly to Supabase and select the generated data to get the ID
+      const { data, error } = await supabase
+        .from('sos_alerts')
+        .insert({
+          ...supabasePayload,
+          status: 'delivered',
+          transmission_method: 'INTERNET',
+        })
+        .select();
+
+      if (error) throw error;
+
+      // Keep a local history of successful alerts in Dexie
+      dexiePayload.status = 'delivered';
+      dexiePayload.transmission_method = 'INTERNET';
+      const localId = await db.sosQueue.add(dexiePayload);
+
+      return { success: true, method: 'INTERNET', supabaseId: data[0].id, localId };
+    } else {
+      // Handled by Native Wi-Fi / LoRa Fallback
+      dexiePayload.status = 'delivered_to_hardware';
+      dexiePayload.transmission_method = nativeResult.transmissionMethod;
+      const localId = await db.sosQueue.add(dexiePayload);
+
+      // Trigger the SMS fallback notification
+      await triggerOfflineNotification(position, finalNotes);
+
+      // Broadcast to local Mesh Network (Bluetooth/Wi-Fi Direct)
+      console.log('[ERIS] Offline: Broadcasting SOS to local Mesh Network...');
+      CapacitorErisSosmap.broadcastMeshMessage({ message: meshPayload })
+        .catch((err) => console.warn('[ERIS] Mesh broadcast failed:', err));
+
+      return { success: true, method: nativeResult.transmissionMethod, localId };
+    }
+  } catch (error) {
+    // Total failure, queue for background retry
+    console.error('SOS Dispatch failed, adding to background retry queue:', error);
+
+    dexiePayload.status = 'queued';
+    dexiePayload.transmission_method = 'QUEUED_FOR_RETRY';
+    const localId = await db.sosQueue.add(dexiePayload);
+
+    // Trigger the SMS fallback
+    await triggerOfflineNotification(position, finalNotes);
+
+    // Broadcast to local Mesh Network even on total failure
+    console.log('[ERIS] Total Failure: Broadcasting SOS to local Mesh Network...');
+    CapacitorErisSosmap.broadcastMeshMessage({ message: meshPayload })
+      .catch((err) => console.warn('[ERIS] Mesh broadcast failed:', err));
+
+    return { success: false, method: 'QUEUED_FOR_RETRY', localId };
+  }
+};
+
+// Function to revoke the sent SOS alert
+export const revokeSOS = async (supabaseId?: string, localId?: number) => {
+  try {
+    if (supabaseId) {
+      await supabase.from('sos_alerts').delete().eq('id', supabaseId);
+    }
+    if (localId) {
+      await db.sosQueue.delete(localId);
+    }
+    console.log('[ERIS] SOS Alert revoked successfully');
+    return true;
+  } catch (error) {
+    console.error('[ERIS] Failed to revoke SOS:', error);
+    return false;
+  }
+};

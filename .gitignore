@@ -2,6 +2,13 @@
 dist
 node_modules
 
+# Environment & secrets
+.env*
+
+# Claude Code
+.claude/
+CLAUDE.md
+
 # iOS files
 Pods
 Podfile.lock
