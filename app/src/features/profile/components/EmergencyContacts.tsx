@@ -1,7 +1,9 @@
-/**
+﻿/*
  * EmergencyContacts.tsx
- *
- * Lists, adds, updates, and deletes emergency contacts.
+ * Profile sub-component that lists, adds, edits, and deletes emergency contacts.
+ * All mutations are handled by callbacks provided by useProfileData; this
+ * component is purely presentational with local form state for the add/edit
+ * forms. Each contact row also exposes a direct tel: link to call the person.
  */
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';

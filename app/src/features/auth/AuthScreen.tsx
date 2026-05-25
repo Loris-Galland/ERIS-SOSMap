@@ -1,3 +1,12 @@
+/*
+ * AuthScreen — full-screen sign-in and sign-up form for the ERIS app.
+ * Manages email/password state locally and delegates authentication to the
+ * Supabase JS client (signInWithPassword / signUp).
+ * Accepts an optional onOpenSettings callback that reveals a settings button
+ * in the top-right corner, used before a session exists.
+ * Rendered by App.tsx when no active Supabase session is detected.
+ */
+
 import { useState } from 'react';
 import { supabase } from '../../db/supabaseClient';
 import { useTranslation } from 'react-i18next';

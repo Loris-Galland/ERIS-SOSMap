@@ -1,4 +1,9 @@
-// Admin panel entry point — routes to the different admin feature screens
+/*
+ * Admin panel entry point component for the ERIS app.
+ * Renders a home menu with navigation cards that route to each admin sub-screen:
+ * SOSAlertDashboard, UserManagementScreen, and AudioRecordingsDashboard.
+ * Gated behind admin-only access controlled by the useAdmin hook upstream.
+ */
 
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';

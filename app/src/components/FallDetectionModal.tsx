@@ -1,8 +1,9 @@
 /*
- * Full-screen emergency modal shown when a physical fall or vehicle crash is confirmed.
- * Plays a siren, counts down 15 seconds, then auto-dispatches SOS if the user doesn't cancel.
- * Accepts a `type` prop ('fall' | 'crash') to display the correct title and icon.
- * The countdown gives the user time to dismiss if the detection was a false positive.
+ * Full-screen emergency modal shown when a fall or vehicle crash is detected.
+ * Exports FallDetectionModal (default). Plays a siren and counts down 15 seconds,
+ * then auto-calls onConfirmSOS unless the user cancels. Accepts a 'fall' | 'crash' type
+ * prop to adjust the title and icon. Uses react-i18next for localized strings.
+ * Triggered by the fall/crash detection logic in the SOS feature.
  */
 
 import { useEffect, useState } from 'react';

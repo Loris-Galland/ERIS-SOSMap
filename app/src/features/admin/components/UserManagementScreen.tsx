@@ -1,4 +1,9 @@
-// Admin user list with role management
+/*
+ * Admin screen for viewing and managing user accounts (US42).
+ * Lists all users from the user_profiles table via useUserManagement,
+ * supports name-based search, and lets admins grant or revoke the admin
+ * role with a two-tap confirmation flow to prevent accidental changes.
+ */
 
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';

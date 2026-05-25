@@ -1,8 +1,10 @@
-/**
+/*
  * useProfileData.ts
- * * Custom hook that encapsulates all data fetching, hardware status (GPS/Battery),
- * local offline DB syncing (Dexie), and Supabase mutations for the Profile.
- * Now includes secure account deletion.
+ * Central data hook for the profile feature. Fetches the user's profile and
+ * emergency contacts from Supabase (with Dexie fallback when offline), reads
+ * GPS and battery levels via Capacitor, and exposes saveMedicalInfo, addContact,
+ * updateContact, deleteContact, and deleteAccount mutations consumed by
+ * ProfileScreen and its sub-components.
  */
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../db/supabaseClient';

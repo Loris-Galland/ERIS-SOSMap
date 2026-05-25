@@ -1,3 +1,10 @@
+/*
+ * Hook that loads and manages the full user list for the admin User Management screen.
+ * Fetches user profiles from the user_profiles Supabase table and exposes toggleAdminRole,
+ * which flips is_admin with an optimistic update and rolls back on RLS-blocked failures.
+ * Consumed by UserManagementScreen and exports the AdminUser type.
+ */
+
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../db/supabaseClient';
 

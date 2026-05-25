@@ -1,3 +1,10 @@
+/*
+ * ManualZoneSelector.tsx
+ * Full-screen overlay that lets the user draw a custom download zone by panning
+ * a Leaflet map. Includes a Nominatim-powered search bar to fly to any location.
+ * The current map viewport becomes the selected bounding box when the user taps
+ * "Save this zone". Calls back into DownloadMapScreen via onConfirmArea.
+ */
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import { createOfflineLayer, MAP_STYLES } from '../../../utils/MapUtils';

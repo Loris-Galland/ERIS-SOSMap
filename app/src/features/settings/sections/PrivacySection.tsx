@@ -1,11 +1,9 @@
 /*
- * Privacy & Safety settings section.
- * Contains the audio recording opt-in toggle with RGPD consent disclosure.
- *
- * Audio recording is OFF by default (opt-in, never opt-out) because recordings
- * qualify as health data under GDPR Article 9 — explicit prior consent is mandatory.
- * A consent card is displayed the first time the user enables the feature,
- * summarising what is recorded, who can access it, and the 30-day retention limit.
+ * Settings section for privacy and safety preferences.
+ * Exports PrivacySection, which manages live location sharing, anonymous analytics,
+ * and the GDPR-compliant emergency audio recording opt-in toggle.
+ * Audio consent state is persisted in localStorage (eris_audio_recording_enabled) and
+ * broadcast via a custom DOM event consumed by the audio recording hooks in the sos feature.
  */
 
 import React, { useState } from 'react';

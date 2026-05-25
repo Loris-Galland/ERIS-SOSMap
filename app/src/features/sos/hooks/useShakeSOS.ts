@@ -1,3 +1,11 @@
+/*
+ * Hook that detects energetic device shaking and dispatches an SOS after a 5-second countdown.
+ * Uses @capacitor/motion to track rapid directional force changes; requires minShakeCount
+ * back-and-forth movements within timeWindow milliseconds to trigger.
+ * Exports useShakeSOS with startListening/stopListening controls and cancelSOS for the banner UI.
+ * Connects to sosService for dispatch, ShakeSOSBanner for the countdown overlay, and SosSection
+ * for the user-facing on/off preference stored in localStorage.
+ */
 import { useEffect, useRef, useState } from 'react';
 import { Motion } from '@capacitor/motion';
 import { type PluginListenerHandle } from '@capacitor/core';

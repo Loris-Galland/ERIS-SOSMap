@@ -1,3 +1,10 @@
+/*
+ * Slide-up overlay screen listing all past SOS alerts for the authenticated user.
+ * Exports the default SOSHistoryScreen component, opened from AlertScreen via the history button.
+ * Merges remote Supabase sos_alerts records with locally queued Dexie entries, deduplicating
+ * alerts that appear in both sources. Tapping an entry opens a detail sheet with location,
+ * device, medical snapshot, and transmission method information.
+ */
 import { useState, useEffect } from 'react';
 import { supabase } from '../../db/supabaseClient';
 import { db } from '../../db/localDb';

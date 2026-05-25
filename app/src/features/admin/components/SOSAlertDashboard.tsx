@@ -1,5 +1,10 @@
-// app/src/features/admin/components/SOSAlertDashboard.tsx
-// Real-time SOS alert dashboard for admins — US38 & US39
+/*
+ * Real-time SOS alert dashboard for admins (US38 & US39).
+ * Displays all SOS alerts fetched and subscribed via useSOSAlerts, with
+ * status-based filtering and an accordion layout for per-alert details.
+ * Admins can update alert status (pending -> in_progress -> resolved) directly
+ * from this screen; changes are written back to Supabase optimistically.
+ */
 
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';

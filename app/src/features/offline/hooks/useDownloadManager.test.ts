@@ -1,3 +1,10 @@
+/*
+ * useDownloadManager.test.ts
+ * Vitest unit tests for the useDownloadManager hook. Covers initial state
+ * hydration from localStorage, getBoundsForRegion for preset and custom regions,
+ * handleDelete dialog flow and localStorage persistence, and setCustomRegions.
+ * Leaflet and leaflet.offline are fully mocked to keep tests browser-free.
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 

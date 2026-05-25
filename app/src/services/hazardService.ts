@@ -1,3 +1,11 @@
+/*
+ * Service module for hazard reporting and retrieval in the ERIS app.
+ * Exports reportHazard, fetchHazards, and removeHazard.
+ * Each operation targets both the Supabase 'hazards' table (when online) and
+ * the local Dexie database for offline-first support. Unsynced records are
+ * merged with remote data when fetchHazards is called while online.
+ */
+
 import { db } from '../db/localDb';
 import { supabase } from '../db/supabaseClient';
 

@@ -1,14 +1,11 @@
 /*
- * Core hook managing the MediaRecorder lifecycle for emergency audio capture.
- * Reads the RGPD opt-in flag (eris_audio_recording_enabled) before any action —
- * if the user has not explicitly consented, the hook is a no-op.
- *
- * Three public actions:
- *   startRecording(triggerType) — arms the mic and begins capture
- *   stopRecording()             — finalises the blob and queues the upload
- *   cancelRecording()           — aborts and discards without uploading (false alarm)
- *
- * Auto-stops after MAX_DURATION_S to prevent runaway recordings.
+ * useAudioRecording — hook that owns the full MediaRecorder lifecycle for
+ * emergency audio capture triggered by fall or crash detection.
+ * Guards all actions behind the RGPD opt-in flag stored in localStorage.
+ * Exposes startRecording(triggerType), stopRecording(), and cancelRecording().
+ * On stop it delegates the upload to audioUploadService, which handles both
+ * online upload to Supabase Storage and offline queuing via Dexie.
+ * An auto-stop timer enforces a 5-minute recording ceiling.
  */
 
 import { useCallback, useRef, useState } from 'react';

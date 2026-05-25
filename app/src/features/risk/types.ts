@@ -1,7 +1,8 @@
 /*
  * Shared TypeScript types for the AI risk detection pipeline.
- * Used by the detection engine, the React hook, the UI banner, and the Dexie persistence layer.
- * The FallEventInput interface is the contract between this feature and the Auto Fall Detection feature.
+ * Exports RiskPattern, RiskLevel, RiskEvent, PositionSample, MotionSample, FallEventInput,
+ * and RiskEventRecord — consumed by riskDetectionEngine, useRiskDetection, RiskAlertBanner,
+ * and the Dexie local database schema.
  */
 
 export type RiskPattern =

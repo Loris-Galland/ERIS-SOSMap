@@ -1,3 +1,13 @@
+/*
+ * Core SOS dispatch service for the ERIS app.
+ * Exports dispatchSOS, flushRetryQueue, and revokeSOS.
+ * dispatchSOS orchestrates multi-path delivery: internet via Supabase, hardware
+ * fallback (LoRa / Wi-Fi Direct) via the Capacitor plugin, SMS via native deep
+ * link, and mesh broadcast. Failed alerts are queued in Dexie for retry.
+ * Connects to: Supabase 'sos_alerts', localDb sosQueue and userProfile, and the
+ * capacitor-eris-sosmap plugin for native network and mesh capabilities.
+ */
+
 import { db } from '../db/localDb';
 import { supabase } from '../db/supabaseClient';
 import { CapacitorErisSosmap } from 'capacitor-eris-sosmap';

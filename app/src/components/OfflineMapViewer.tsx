@@ -1,3 +1,11 @@
+/*
+ * Full-screen offline map viewer component for the ERIS app.
+ * Exports OfflineMapViewer (default), which renders a Leaflet map from locally
+ * cached tiles using leaflet.offline. Receives a name, a LatLngBounds, and the
+ * list of downloaded styles; lets the user switch between available tile layers.
+ * Used by the offline feature to preview a saved map region without internet access.
+ */
+
 import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import { createOfflineLayer, MAP_STYLES } from '../utils/MapUtils';

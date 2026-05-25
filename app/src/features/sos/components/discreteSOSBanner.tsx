@@ -1,3 +1,9 @@
+/*
+ * Floating banner that appears at the bottom of the screen when a discrete SOS gesture is detected.
+ * Exports the default DiscreteSOSBanner component, rendered by the app shell while useDiscreteSOS
+ * is counting down. Shows a 5-second countdown and a cancel button; hides itself when isCounting is false.
+ * Connects to useDiscreteSOS and the i18n keys in the discrete.* namespace.
+ */
 import { useTranslation } from 'react-i18next';
 
 interface DiscreteSOSBannerProps {

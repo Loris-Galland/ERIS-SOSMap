@@ -1,7 +1,9 @@
-/**
+/*
  * ProfileScreen.tsx
- * * Orchestrator for the user profile. Connects the data hook to the UI components.
- * Now includes secure account deletion.
+ * Top-level screen for the user profile. Orchestrates ProfileStatusBar,
+ * MedicalInfoCard, and EmergencyContacts by wiring them to useProfileData.
+ * Also owns the account-deletion confirmation flow and the logout action
+ * via the Supabase auth client.
  */
 import React from 'react';
 import { supabase } from '../../db/supabaseClient';

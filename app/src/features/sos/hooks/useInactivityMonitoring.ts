@@ -1,3 +1,10 @@
+/*
+ * Hook that monitors device inactivity using the @capacitor/motion accelerometer.
+ * Tracks micro-movements via delta comparison against the previous accelerometer vector;
+ * calls onInactivityDetected() if no movement is recorded for INACTIVITY_TIME_LIMIT (30 minutes).
+ * Exports useInactivityMonitoring with a resetTimer() utility to restart the timer from the app shell.
+ * Connects to the SOS feature to trigger a safety check when the user stops moving for too long.
+ */
 import { useEffect, useRef } from 'react';
 import { Motion } from '@capacitor/motion';
 

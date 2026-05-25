@@ -1,3 +1,11 @@
+/*
+ * useDownloadManager.tsx
+ * Custom hook that owns all offline-map state: downloaded region IDs, custom
+ * regions, per-region metadata (styles, last update), and live storage usage.
+ * Exposes handleDownload, handleDelete, and handleUpdate, which use a hidden
+ * Leaflet map with leaflet.offline's savetiles control to fetch and cache tiles
+ * in IndexedDB. Consumed by both DownloadMapScreen and OfflineScreen.
+ */
 import { useEffect, useState } from 'react';
 import L from 'leaflet';
 import { createOfflineLayer, PRESET_REGIONS, MAP_STYLES } from '../../../utils/MapUtils';

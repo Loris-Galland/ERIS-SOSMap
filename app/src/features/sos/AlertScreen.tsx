@@ -1,3 +1,10 @@
+/*
+ * Primary SOS dispatch screen, the main entry point for manual emergency alerts.
+ * Exports the default AlertScreen component rendered on the ALERTS tab.
+ * Handles GPS watching, Supabase session resolution (or guest ID fallback), hold-to-send
+ * interaction, a 5-second cancellation grace period, offline queue via Dexie, and SMS fallback.
+ * Connects to sosService, localDb, SosHistoryScreen, and DistressSignalScreen.
+ */
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../../db/supabaseClient';
 import { dispatchSOS, flushRetryQueue, revokeSOS } from '../../services/sosService';

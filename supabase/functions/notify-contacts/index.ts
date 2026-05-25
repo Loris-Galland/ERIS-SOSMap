@@ -1,3 +1,12 @@
+/*
+ * Supabase Edge Function: notify-contacts.
+ * Triggered by a database webhook when a new SOS alert is inserted. Fetches the
+ * affected user's emergency contacts from the 'emergency_contacts' table and
+ * sends each one an SMS via the Twilio API containing the user's name, GPS
+ * coordinates (Google Maps link), and optional notes. Requires the environment
+ * variables SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, TWILIO_ACCOUNT_SID,
+ * TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER to be set in the Supabase project.
+ */
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -57,7 +66,7 @@ serve(async (req) => {
       );
     }
 
-    return new Response(JSON.stringify({ success: true, notified: contacts.length }), { 
+    return new Response(JSON.stringify({ success: true, notified: contacts.length }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' }
     });

@@ -1,3 +1,13 @@
+/*
+ * useHazards — hook that loads, renders, and manages hazard markers on the
+ * Leaflet map via hazardService (fetchHazards, reportHazard, removeHazard).
+ * Subscribes to Supabase Realtime INSERT/DELETE events on the hazards table
+ * so markers update automatically without a manual refresh.
+ * Admins can delete markers through a confirmation modal (hazardToDelete state).
+ * Exposes reporting and deletion handlers plus modal visibility state.
+ * Used by MapScreen; depends on supabaseClient for the realtime subscription.
+ */
+
 import { useState, useRef, useEffect, useCallback } from 'react';
 import L from 'leaflet';
 import { fetchHazards, reportHazard, removeHazard } from '../../../services/hazardService';

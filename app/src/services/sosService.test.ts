@@ -1,3 +1,11 @@
+/*
+ * Vitest unit tests for sosService.ts.
+ * Covers dispatchSOS (INTERNET, hardware fallback, total failure paths),
+ * flushRetryQueue (empty queue, successful flush, Supabase error),
+ * and revokeSOS. Supabase, Dexie, and the Capacitor plugin are fully mocked.
+ * Run with: npm run test (from app/).
+ */
+
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('../db/supabaseClient', () => ({

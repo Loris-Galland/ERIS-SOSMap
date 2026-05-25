@@ -1,3 +1,10 @@
+/*
+ * RegionList.tsx
+ * Renders the searchable list of preset and custom downloadable regions inside
+ * DownloadMapScreen. Each row shows the download state (pending, in-progress,
+ * or offline-available) and provides download, delete, and view actions that
+ * bubble up via callbacks. Exports the Region interface used across the feature.
+ */
 import React from 'react';
 
 export interface Region {

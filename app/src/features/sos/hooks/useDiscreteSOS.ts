@@ -1,3 +1,9 @@
+/*
+ * Hook that listens for discrete (silent) SOS gestures and dispatches an SOS after a 5-second countdown.
+ * Supports two trigger methods configurable from SosSection: quad_tap (4 rapid screen taps)
+ * and device_flip (3 face-down phone flips detected via DeviceOrientationEvent).
+ * Exports useDiscreteSOS; connects to sosService for dispatch and DiscreteSOSBanner for the countdown UI.
+ */
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { dispatchSOS } from '../../../services/sosService';
 

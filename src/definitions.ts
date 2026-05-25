@@ -1,3 +1,10 @@
+/*
+ * Plugin public API contract for capacitor-eris-sosmap.
+ * Defines the MotionData shape (raw accelerometer + gyroscope sample) and the
+ * CapacitorErisSosmapPlugin interface that all platform implementations (iOS,
+ * Android, Web) must satisfy. Consumed by src/index.ts and src/web.ts, and
+ * re-exported to app consumers via the plugin entry point.
+ */
 import type { PluginListenerHandle } from '@capacitor/core';
 
 // Raw accelerometer + gyroscope sample emitted by the native motion monitor at ~5 Hz

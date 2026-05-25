@@ -1,14 +1,12 @@
 /*
- * Handles uploading emergency audio recordings to Supabase Storage.
- * Upload path: emergency-recordings/<user_id>/<trigger>_<timestamp>.webm
- *
- * Offline fallback: if the upload fails for any reason (no connectivity,
- * storage quota, etc.) the blob and its metadata are persisted to the
- * Dexie pendingAudioUploads table. The next successful upload attempt
- * triggers flushPendingUploads() to drain the local queue.
- *
- * Retry limit: 3 attempts per record before it is abandoned to avoid
- * filling IndexedDB indefinitely.
+ * audioUploadService — uploads emergency audio blobs to Supabase Storage
+ * (bucket: emergency_recordings) and inserts a metadata row in the database.
+ * If the upload fails (offline or storage error), the blob is saved locally
+ * to the Dexie pendingAudioUploads table for later retry.
+ * flushPendingUploads() drains that queue whenever a live upload succeeds.
+ * Each pending record is retried up to MAX_RETRIES (3) times before being
+ * abandoned to avoid filling IndexedDB indefinitely.
+ * Consumed exclusively by useAudioRecording.
  */
 
 import { supabase } from '../../../db/supabaseClient';

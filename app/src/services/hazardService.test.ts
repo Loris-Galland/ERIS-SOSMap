@@ -1,3 +1,10 @@
+/*
+ * Vitest unit tests for hazardService.ts.
+ * Covers reportHazard, fetchHazards, and removeHazard across online and offline
+ * scenarios. Supabase and Dexie are fully mocked to isolate service logic.
+ * Run with: npm run test (from app/).
+ */
+
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('../db/supabaseClient', () => ({

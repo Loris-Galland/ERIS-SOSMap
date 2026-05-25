@@ -1,3 +1,11 @@
+/*
+ * Dexie (IndexedDB) database definition for offline-first data storage.
+ * Declares the ErisLocalDB class with six tables: sosQueue (pending SOS alerts
+ * awaiting network sync), userProfile, emergencyContacts, hazards, riskEvents
+ * (AI detection history), and pendingAudioUploads (recordings queued for
+ * Supabase Storage). Used by sosService, hazardService, audio hooks, and risk
+ * detection features throughout the app.
+ */
 import Dexie, { type Table } from 'dexie';
 import type { RiskEventRecord } from '../features/risk/types';
 
@@ -15,7 +23,7 @@ export interface PendingAudioUpload {
 // Define the structure for SOS alerts waiting for network sync
 export interface PendingSOS {
   id?: number;
-  user_id: string; 
+  user_id: string;
   lat: number;
   lon: number;
   altitude: number;

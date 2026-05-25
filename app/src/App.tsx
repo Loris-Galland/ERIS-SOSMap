@@ -1,3 +1,12 @@
+/*
+ * Root application component for ERIS Safety.
+ * Owns the global session state (Supabase auth), tab-based navigation, and
+ * application-wide daemons: mesh network, shake-to-SOS, fall detection, crash
+ * detection, discrete SOS, AI risk detection, and audio recording. Renders the
+ * persistent header, bottom navigation bar, and the active feature screen.
+ * Connects to supabaseClient (auth), capacitor-eris-sosmap (native bridge),
+ * sosService (SOS dispatch), and all feature hooks under app/src/features/.
+ */
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { supabase } from './db/supabaseClient';
 import { CapacitorErisSosmap } from 'capacitor-eris-sosmap';

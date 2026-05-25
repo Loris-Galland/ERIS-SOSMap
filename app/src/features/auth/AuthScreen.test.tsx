@@ -1,3 +1,10 @@
+/*
+ * AuthScreen.test.tsx — Vitest + React Testing Library unit tests for AuthScreen.
+ * Covers rendering, sign-in flow, sign-up flow, and the optional settings button.
+ * Mocks supabaseClient (auth.signInWithPassword and auth.signUp) and react-i18next
+ * so tests remain isolated from network and translation concerns.
+ */
+
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';

@@ -1,11 +1,9 @@
 /*
- * Detects vehicle crashes using the device accelerometer via @capacitor/motion.
- * Arms detection only when the user is travelling above CRASH_SPEED_THRESHOLD_KMH,
- * then fires when a massive impact spike is recorded (CRASH_IMPACT_THRESHOLD m/s²).
- * When a crash is confirmed it calls onCrashDetected() AND emits to riskEventBus
- * so the AI risk engine can register the CRASH_CONFIRMED pattern.
- *
- * Speed input comes from useRiskDetection (currentSpeedMs × 3.6 → km/h).
+ * Hook that detects vehicular crashes using the @capacitor/motion accelerometer.
+ * Arms itself only when currentSpeedKmh exceeds CRASH_SPEED_THRESHOLD_KMH, then fires
+ * onCrashDetected() and emits to riskEventBus when a massive impact spike is recorded.
+ * Speed is provided by the caller (useRiskDetection exposes currentSpeedMs * 3.6).
+ * Connects to riskEventBus so the AI risk engine receives CRASH_CONFIRMED events.
  */
 
 import { useEffect, useRef } from 'react';

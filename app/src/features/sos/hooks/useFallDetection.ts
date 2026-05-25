@@ -1,8 +1,9 @@
 /*
- * Detects physical falls using the device accelerometer via @capacitor/motion.
- * Implements a three-phase state machine: free-fall → impact → immobility.
- * When a fall is confirmed it calls onFallDetected() AND emits to riskEventBus
- * so the AI risk engine can corroborate the event with GPS behavioral data.
+ * Hook that detects physical falls via a three-phase accelerometer state machine:
+ * free-fall (low magnitude) -> impact (high magnitude spike) -> immobility (2 s without movement).
+ * When a fall is confirmed it calls onFallDetected() and emits to riskEventBus so the AI risk engine
+ * can corroborate the FALL_CONFIRMED pattern with GPS behavioral data.
+ * Connects to @capacitor/motion and riskEventBus; used by the app shell alongside useRiskDetection.
  */
 
 import { useEffect, useRef } from 'react';

@@ -1,12 +1,8 @@
 /*
- * Lightweight singleton event bus for cross-feature risk signal sharing.
- * Decouples detection features (Auto Fall, Crash) from the AI Risk engine:
- * each detector calls emit*(), and the AI engine reacts without a direct import.
- *
- * Usage from detection hooks:
- *   import { riskEventBus } from '@/features/risk/riskEventBus';
- *   riskEventBus.emitFallDetected(lat, lng);
- *   riskEventBus.emitCrashDetected(lat, lng);
+ * Singleton event bus that decouples fall/crash detection hooks from the AI risk engine.
+ * useFallDetection and useCrashDetection call emit*() after confirming an event;
+ * useRiskDetection registers handlers via on*() on mount so neither side needs a direct import.
+ * Exports the riskEventBus object consumed across the risk and sos feature modules.
  */
 
 type EventHandler = (lat: number, lng: number) => void;

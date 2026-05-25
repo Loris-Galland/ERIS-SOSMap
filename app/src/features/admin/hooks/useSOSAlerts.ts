@@ -1,4 +1,10 @@
-// Fetches and subscribes in real-time to all SOS alerts for the admin dashboard
+/*
+ * Hook that fetches and maintains a real-time list of SOS alerts for the admin dashboard.
+ * Performs an initial load from the sos_alerts Supabase table, then subscribes to
+ * INSERT and UPDATE events via Postgres changes to keep the list live. Exports
+ * updateAlertStatus to write status changes back to Supabase with an optimistic UI update.
+ * Consumed by SOSAlertDashboard and types are shared with useSOSMarkersAdmin.
+ */
 
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../db/supabaseClient';

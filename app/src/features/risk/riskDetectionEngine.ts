@@ -1,13 +1,9 @@
 /*
- * Pure, stateful detection engine for behavioral risk analysis.
- * Has zero React dependencies — instantiated once inside useRiskDetection and testable in isolation.
- * Processes two independent data streams (GPS position and accelerometer motion) and emits RiskEvents
- * when a dangerous pattern is detected with sufficient confidence.
- *
- * Detection patterns:
- *   SUDDEN_STOP          — vehicular speed collapses to near-zero (accident)
- *   FALL_CONFIRMED       — free-fall → impact signature, or GPS immobility after an external fall event
- *   PROLONGED_IMMOBILITY — user was moving, is now still for longer than IMMOBILITY_THRESHOLD_MS
+ * Pure, framework-agnostic class implementing the AI behavioral risk analysis engine.
+ * Exports RiskDetectionEngine, instantiated once by useRiskDetection and fully testable in isolation.
+ * Accepts GPS position samples and accelerometer motion samples via addGpsSample/addMotionSample,
+ * and emits RiskEvents for SUDDEN_STOP, FALL_CONFIRMED, CRASH_CONFIRMED, and PROLONGED_IMMOBILITY.
+ * Connects to the risk feature through types.ts and is fed external events from riskEventBus.
  */
 
 import type { FallEventInput, MotionSample, PositionSample, RiskEvent, RiskLevel, RiskPattern } from './types';

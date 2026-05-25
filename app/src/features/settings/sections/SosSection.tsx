@@ -1,3 +1,10 @@
+/*
+ * Settings section for gesture-based SOS triggers.
+ * Exports SosSection, which controls the Shake-to-SOS toggle and the Discrete SOS method selector.
+ * Preferences are persisted to localStorage and broadcast as custom DOM events
+ * (eris-shake-preference-changed, eris-discrete-preference-changed) so useShakeSOS and
+ * useDiscreteSOS pick up changes instantly without restarting the app.
+ */
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Switch from '../components/Switch'; // Adjust import path based on your folder structure

@@ -1,3 +1,11 @@
+/*
+ * Shared map utilities for the ERIS app.
+ * Exports MAP_STYLES (tile provider URLs and metadata), PRESET_REGIONS
+ * (predefined French geographic areas for offline download), and
+ * createOfflineLayer (factory for leaflet.offline tile layers).
+ * Consumed by OfflineMapViewer and the offline feature's download UI.
+ */
+
 import L from 'leaflet';
 import 'leaflet.offline';
 

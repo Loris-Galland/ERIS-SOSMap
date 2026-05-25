@@ -1,3 +1,9 @@
+/*
+ * Full-screen overlay modal that shows real-time device diagnostics: network status,
+ * mesh relay, GPS signal, and battery level. Exports the default DiagnosticsModal component,
+ * opened from DiagnosticsSection inside the settings screen.
+ * Uses @capacitor/network and @capacitor/device for live system data.
+ */
 import React, { useEffect, useState } from 'react';
 import { Network } from '@capacitor/network';
 import { Device } from '@capacitor/device';

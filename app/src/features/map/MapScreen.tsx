@@ -1,3 +1,13 @@
+/*
+ * MapScreen — the primary map view of the ERIS app, rendered when the map tab is active.
+ * Composes useMapLayers (Leaflet init), useGPS (position tracking), useWeather,
+ * useHazards, usePOIs, useFallDetection, useCrashDetection, useInactivityMonitoring,
+ * and useSOSMarkersAdmin into a single interactive screen.
+ * Handles geographic search via Nominatim (online) or cached local regions (offline),
+ * POI filter pills, layer switching, and automatic SOS dispatch on detected emergencies.
+ * Exported as the default component consumed by App.tsx tab navigation.
+ */
+
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import L from 'leaflet';

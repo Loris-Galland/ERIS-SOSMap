@@ -1,3 +1,11 @@
+/*
+ * OfflineScreen.tsx
+ * Overview screen for offline maps already stored on the device. Shows real
+ * storage usage, lists downloaded regions with last-update timestamps, and
+ * exposes update and delete actions. Uses useDownloadManager for state and
+ * OfflineMapViewer to preview a cached region. Links to DownloadMapScreen
+ * via the onNavigateDownload callback.
+ */
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PRESET_REGIONS } from '../../utils/MapUtils';

@@ -1,8 +1,9 @@
 /*
- * React hook that feeds GPS position data into RiskDetectionEngine
- * and exposes a RiskEvent whenever a dangerous behavioral pattern is detected.
- * Physical fall/crash detection (accelerometer) feeds corroboration events
- * into this hook via riskEventBus, keeping the two features decoupled.
+ * React hook that wires the Capacitor GPS watcher to RiskDetectionEngine and exposes
+ * the active RiskEvent plus dismissal/acknowledgement callbacks to the app shell.
+ * Registers riskEventBus handlers so useFallDetection and useCrashDetection can feed
+ * corroborating events without importing this hook directly.
+ * Persists dismissed and SOS-acknowledged events to the Dexie riskEvents table for audit history.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';

@@ -1,3 +1,11 @@
+/*
+ * Full-screen distress beacon component for the ERIS app.
+ * Exports DistressSignalScreen (default), which activates a siren audio loop
+ * and a hardware flashlight strobe when toggled by the user or by the physical
+ * volume buttons. Uses @capgo/capacitor-flash for native flashlight access.
+ * Consumed by the SOS feature as a last-resort visual/audio signalling tool.
+ */
+
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { CapacitorFlash } from '@capgo/capacitor-flash';

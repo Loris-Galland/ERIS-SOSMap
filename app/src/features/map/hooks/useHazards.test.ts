@@ -1,3 +1,11 @@
+/*
+ * useHazards.test.ts — Vitest unit tests for the useHazards hook.
+ * Mocks hazardService, supabaseClient, and leaflet to keep tests isolated.
+ * Covers initial state values, handleReportHazard (valid/invalid coordinates,
+ * all hazard types, modal dismissal), handleDeleteHazard (guard against null,
+ * correct UUID forwarded, state reset), and individual state setters.
+ */
+
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 

@@ -1,3 +1,13 @@
+/*
+ * usePOIs — hook that fetches emergency Points of Interest from the Overpass API
+ * and renders them as Leaflet markers on the map.
+ * Queries are built dynamically from the activeFilters array (POICategory[]) and
+ * sent to one of three Overpass mirror endpoints with automatic fallback.
+ * Fetches are cancelled via AbortController when filters change or the hook
+ * unmounts, and are silently skipped when zoom < 12 to avoid overloading the API.
+ * Exports the POICategory union type consumed by MapScreen's filter pill UI.
+ */
+
 import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 
