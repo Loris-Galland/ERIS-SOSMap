@@ -378,7 +378,9 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
   return (
     <div className="relative w-full h-full">
       {/* ─── LEAFLET MAP ─── */}
-      <div ref={mapRef} className="absolute inset-0 z-0" />
+      <div className={`absolute inset-0 z-0 ${currentMapStyle === 'terrain_dark' ? 'dark-terrain-active' : ''}`}>
+        <div ref={mapRef} className="w-full h-full" />
+      </div>
 
       {/* ─── SEARCH & REFRESH BAR ─── */}
       <div className="flex items-center px-4 py-3 bg-eris-bg/80 backdrop-blur-md z-[9999] gap-3 absolute top-0 left-0 right-0">

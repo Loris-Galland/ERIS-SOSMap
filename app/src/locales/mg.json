@@ -239,8 +239,9 @@
   "mapStyles": {
     "dark": "Maizina",
     "light": "Fomba Fahazavana",
-    "contrast": "Fifanintonana Avo",
-    "terrain": "Terrain",
+    "contrasted": "Fifanintonana Avo",
+    "terrain": "Lalana",
+    "terrain_dark": "Lalana (Maizina)",
     "satellite": "Zanabolana",
     "topo": "Tany",
     "streets": "Làlana",

@@ -239,8 +239,9 @@
   "mapStyles": {
     "dark": "深色",
     "light": "淺色模式",
-    "contrast": "高對比",
+    "contrasted": "高對比",
     "terrain": "地形",
+    "terrain_dark": "地形 (深色)",
     "satellite": "卫星",
     "topo": "地形",
     "streets": "街道",

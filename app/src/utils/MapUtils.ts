@@ -39,6 +39,13 @@ export const MAP_STYLES = {
     icon: 'terrain',
     estimatedSizeFactor: 1.5,
   },
+  terrain_dark: {
+    id: 'terrain_dark',
+    name: 'Terrain (Dark Mode)',
+    url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', // Same URL!
+    icon: 'nights_stay',
+    estimatedSizeFactor: 1.5,
+  },
   satellite: {
     id: 'satellite',
     name: 'Satellite',
@@ -54,7 +61,7 @@ export const createOfflineLayer = (url: string = MAP_STYLES.dark.url) => {
     attribution: 'ERIS Safety',
     minZoom: 12,
     maxZoom: 17,
-    crossOrigin: true,
+    crossOrigin: true
   });
 };
 

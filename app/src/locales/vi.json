@@ -239,8 +239,9 @@
   "mapStyles": {
     "dark": "Tối",
     "light": "Chế độ sáng",
-    "contrast": "Độ tương phản cao",
+    "contrasted": "Độ tương phản cao",
     "terrain": "Địa hình",
+    "terrain_dark": "Địa hình (Tối)",
     "satellite": "Vệ tinh",
     "topo": "Địa hình",
     "streets": "Đường phố",
