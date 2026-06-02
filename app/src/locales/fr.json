@@ -250,6 +250,7 @@
     "light": "Clair",
     "contrasted": "Contrasté",
     "terrain": "Terrain",
+    "terrain_dark": "Terrain (Sombre)",
     "satellite": "Satellite",
     "topo": "Topographique",
     "streets": "Rues",

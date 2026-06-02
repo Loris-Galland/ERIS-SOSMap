@@ -248,8 +248,9 @@
   "mapStyles": {
     "dark": "Dark",
     "light": "Light Mode",
-    "contrasted": "Hight Contrast",
+    "contrasted": "High Contrast",
     "terrain": "Terrain",
+    "terrain_dark": "Terrain (Dark Mode)",
     "satellite": "Satellite",
     "topo": "Topographic",
     "streets": "Streets",
