@@ -11,6 +11,7 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import L from 'leaflet';
+import 'leaflet-draw';
 import { useGPS } from './hooks/useGPS';
 import { useWeather } from './hooks/useWeather';
 import { useHazards } from './hooks/useHazards';
@@ -48,6 +49,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
   const mapRef = useRef<HTMLDivElement | null>(null);
   const [isMapReady, setIsMapReady] = useState(false);
   const currentUserId = session?.user?.id || getGuestId();
+  const [isDrawingMode, setIsDrawingMode] = useState(false);
 
   const [offlineMode, setOfflineMode] = useState(false);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
@@ -96,6 +98,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
     hazardToDelete,
     setHazardToDelete,
     handleDeleteHazard,
+    setPendingGeometry,
   } = useHazards({ mapInstance, isActive, isAdmin, isMapReady });
 
   const { isLoading: isPoisLoading } = usePOIs({ mapInstance, activeFilters });
@@ -113,7 +116,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
 
   // Logic for fall detection
   const handleFallDetected = useCallback(() => {
-    console.log('🚨 FALL DETECTED BY ACCELEROMETER!');
+    console.log('FALL DETECTED BY ACCELEROMETER!');
     setShowFallModal(true);
   }, []);
 
@@ -122,7 +125,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
 
   // Logic for motorcycle crash detection
   const handleCrashDetected = useCallback(() => {
-    console.log('🚨 MOTORCYCLE CRASH DETECTED!');
+    console.log('MOTORCYCLE CRASH DETECTED!');
     setShowFallModal(true); // Reuses the red countdown modal with the siren
   }, []);
 
@@ -163,7 +166,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
 
   // --- Logic for Inactivity Monitoring ---
   const handleInactivityDetected = useCallback(() => {
-    console.log('🚨 PROLONGED INACTIVITY DETECTED!');
+    console.log('PROLONGED INACTIVITY DETECTED!');
     setShowInactivityModal(true);
   }, []);
 
@@ -374,6 +377,72 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
     setSearchQuery('');
     setSearchResults([]);
   };
+
+  useEffect(() => {
+    if (!mapInstance.current || !isDrawingMode) return;
+
+    const map = mapInstance.current;
+
+    const drawnItems = new L.FeatureGroup();
+    map.addLayer(drawnItems);
+
+    const drawControl = new L.Control.Draw({
+      position: 'topright',
+      draw: {
+        polyline: false,
+        polygon: false,
+        circlemarker: false,
+        marker: {},
+        circle: {},
+        rectangle: {},
+      },
+      edit: {
+        featureGroup: drawnItems,
+        edit: false,
+        remove: false,
+      },
+    });
+    map.addControl(drawControl);
+
+    const onDrawCreated = (e: any) => {
+      const { layerType, layer } = e;
+      let newGeo: any = { shape_metadata: {} };
+
+      if (layerType === 'marker') {
+        const { lat, lng } = layer.getLatLng();
+        newGeo = { lat, lng, shape_type: 'point' };
+      } else if (layerType === 'circle') {
+        const { lat, lng } = layer.getLatLng();
+        newGeo = { lat, lng, shape_type: 'circle', shape_metadata: { radius: layer.getRadius() } };
+      } else if (layerType === 'rectangle') {
+        const bounds = layer.getBounds();
+        const center = bounds.getCenter();
+        newGeo = {
+          lat: center.lat,
+          lng: center.lng,
+          shape_type: 'rectangle',
+          shape_metadata: {
+            bounds: [
+              [bounds.getNorthEast().lat, bounds.getNorthEast().lng],
+              [bounds.getSouthWest().lat, bounds.getSouthWest().lng],
+            ],
+          },
+        };
+      }
+
+      setPendingGeometry(newGeo);
+      setIsDrawingMode(false);
+      setShowHazardReportModal(true);
+    };
+
+    map.on(L.Draw.Event.CREATED, onDrawCreated);
+
+    return () => {
+      map.off(L.Draw.Event.CREATED, onDrawCreated);
+      map.removeControl(drawControl);
+      map.removeLayer(drawnItems);
+    };
+  }, [isDrawingMode, mapInstance, setPendingGeometry, setShowHazardReportModal]);
 
   return (
     <div className="relative w-full h-full">
@@ -698,11 +767,13 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
 
         {/* Report hazard button */}
         <button
-          onClick={() => setShowHazardReportModal(true)}
-          className="w-12 h-12 bg-eris-alert [.theme-dark_&]:bg-orange-400 rounded-full flex items-center justify-center text-white [.theme-contrasted_&]:border-2 [.theme-contrasted_&]:!border-black hover:bg-orange-400 transition-colors shadow-lg shadow-eris-alert/30 active:scale-95"
-          title="Report Hazard"
+          onClick={() => setIsDrawingMode(!isDrawingMode)}
+          className={`w-12 h-12 ${isDrawingMode ? 'bg-gray-500' : 'bg-eris-alert'} [.theme-dark_&]:bg-orange-400 rounded-full flex items-center justify-center text-white [.theme-contrasted_&]:border-2 [.theme-contrasted_&]:!border-black hover:bg-orange-400 transition-colors shadow-lg shadow-eris-alert/30 active:scale-95`}
+          title={isDrawingMode ? 'Cancel Draw' : 'Report Hazard'}
         >
-          <span className="material-symbols-outlined [.theme-contrasted_&]:!text-black text-xl">warning</span>
+          <span className="material-symbols-outlined [.theme-contrasted_&]:!text-black text-xl">
+            {isDrawingMode ? 'close' : 'warning'}
+          </span>
         </button>
 
         {/* Re-center on my location button */}
