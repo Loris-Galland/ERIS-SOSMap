@@ -28,6 +28,10 @@ export interface SOSAlertAdmin {
   medical_conditions: string;
   current_condition: string;
   created_at: string;
+  incident_type?: string;
+  victim_count?: number;
+  trigger_source?: string;
+  photo_data?: string;
 }
 
 export function useSOSAlerts() {

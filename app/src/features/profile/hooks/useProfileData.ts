@@ -167,7 +167,7 @@ export function useProfileData() {
       } else {
         if (db.emergencyContacts) await db.emergencyContacts.put({ ...contactToSave, sync_status: 'pending' });
         setContacts([...contacts, contactToSave]);
-        showAlert('Offline Mode', 'Contact saved locally. It will be synced when the network is restored.', 'info');
+        showAlert(t('profile.offlineMode', 'Offline Mode'), t('profile.contactSavedOffline', 'Contact saved locally. It will be synced when the network is restored.'), 'info');
       }
       return true;
     } catch (err) {

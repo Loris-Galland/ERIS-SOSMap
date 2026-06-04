@@ -17,9 +17,19 @@ export default function AdminScreen() {
   const { t } = useTranslation();
   const [view, setView] = useState<AdminView>('home');
 
+  const [targetAlertId, setTargetAlertId] = useState<string | null>(null);
+
   // Route to the SOS dashboard sub-screen
   if (view === 'sos_dashboard') {
-    return <SOSAlertDashboard onBack={() => setView('home')} />;
+    return (
+      <SOSAlertDashboard
+        onBack={() => {
+          setView('home');
+          setTargetAlertId(null);
+        }}
+        targetAlertId={targetAlertId}
+      />
+    );
   }
   // Route to the User Management sub-screen
   if (view === 'user_management') {
@@ -27,7 +37,16 @@ export default function AdminScreen() {
   }
   // Route to the Audio Recordings sub-screen
   if (view === 'audio_recordings') {
-    return <AudioRecordingsDashboard onBack={() => setView('home')} />;
+    return (
+      <AudioRecordingsDashboard
+        onBack={() => setView('home')}
+        onViewAlert={(alertId) => {
+          // When the button is clicked, save the ID and switch pages!
+          setTargetAlertId(alertId);
+          setView('sos_dashboard');
+        }}
+      />
+    );
   }
 
   return (
@@ -81,7 +100,9 @@ export default function AdminScreen() {
             <span className="material-symbols-outlined text-eris-danger text-2xl">mic</span>
             <div>
               <p className="font-semibold text-sm">{t('admin.audio.title', 'Audio Recordings')}</p>
-              <p className="text-eris-text-muted text-xs">{t('admin.audio.adminDesc', 'Emergency audio captured on fall / crash')}</p>
+              <p className="text-eris-text-muted text-xs">
+                {t('admin.audio.adminDesc', 'Emergency audio captured on fall / crash')}
+              </p>
             </div>
             <span className="material-symbols-outlined text-eris-text-subtle text-xl ml-auto">chevron_right</span>
           </button>

@@ -23,6 +23,11 @@ export default function SosSection() {
     (localStorage.getItem('eris_discrete_sos_method') as DiscreteMethod) || 'none',
   );
 
+  // Load initial state for Inactivity SOS (defaults to true)
+  const [isInactivityEnabled, setIsInactivityEnabled] = useState<boolean>(
+    localStorage.getItem('eris_inactivity_sos_enabled') !== 'false',
+  );
+
   const handleToggleChange = () => {
     const nextState = !isShakeEnabled;
     setIsShakeEnabled(nextState);
@@ -40,6 +45,13 @@ export default function SosSection() {
 
     // Dispatch an event so the Discrete hook instantly picks up the change without restarting the app
     window.dispatchEvent(new CustomEvent('eris-discrete-preference-changed'));
+  };
+
+  const handleInactivityToggle = () => {
+    const nextState = !isInactivityEnabled;
+    setIsInactivityEnabled(nextState);
+    localStorage.setItem('eris_inactivity_sos_enabled', String(nextState));
+    window.dispatchEvent(new CustomEvent('eris-inactivity-preference-changed'));
   };
 
   return (
@@ -62,6 +74,19 @@ export default function SosSection() {
 
           {/* Synchronized workspace switch binding element configuration */}
           <Switch active={isShakeEnabled} onClick={handleToggleChange} />
+        </div>
+
+        {/* Inactivity Monitoring Row */}
+        <div className="flex items-center justify-between p-4">
+          <div className="flex-1 pr-4">
+            <p className="text-eris-text text-sm font-medium">
+              {t('settings.inactivity_title', 'Inactivity Monitoring')}
+            </p>
+            <p className="text-eris-text-subtle text-[11px] leading-normal">
+              {t('settings.inactivity_desc', 'Triggers an SOS if you remain completely still for a prolonged time')}
+            </p>
+          </div>
+          <Switch active={isInactivityEnabled} onClick={handleInactivityToggle} />
         </div>
 
         {/* Discrete (Silent) SOS Entry Row Item */}

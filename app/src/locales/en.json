@@ -35,7 +35,20 @@
     "longitude": "LONGITUDE",
     "altitude": "ALTITUDE",
     "networkActive": "Connected — ERIS Network Active",
-    "networkOffline": "Offline — Hardware Fallback Ready"
+    "networkOffline": "Offline — Hardware Fallback Ready",
+    "emergencyType": "Emergency Type",
+    "presetFire": "Fire",
+    "presetFlood": "Flood",
+    "presetMedical": "Medical",
+    "presetLandslide": "Landslide",
+    "presetCrash": "Crash",
+    "presetOther": "Other",
+    "victims": "Victims",
+    "addPhoto": "Add Photo",
+    "photoAttached": "Photo Attached",
+    "autoFallNote": "AUTOMATIC FALL DETECTED: Fall detected and user unresponsive.",
+    "autoCrashNote": "AUTOMATIC CRASH DETECTED: Severe vehicle crash detected by device sensors.",
+    "autoInactivityNote": "AUTOMATIC SOS: Prolonged inactivity detected."
   },
   "settings": {
     "title": "Settings",
@@ -69,6 +82,9 @@
     "searching": "Searching...",
     "runTest": "Run Network Test",
     "logoutBtn": "Sign Out of ERIS System",
+    "powerMgmtTitle": "Power Management",
+    "autoSosBattery": "Auto-SOS (Critical Battery)",
+    "autoSosBatteryDesc": "Send last position automatically at 1% battery",
     "sosTitle": "SOS",
     "shake_sos_title": "Shake to SOS",
     "shake_sos_desc": "Sends automatically an SOS when shaking the device",
@@ -78,14 +94,20 @@
     "discrete_tap": "4 Rapid Taps",
     "discrete_flip": "3 Phone Flips",
     "audioRecording": "Emergency Audio Recording",
-    "audioRecordingDesc": "Record ambient audio on fall or crash detection",
     "audioConsentTitle": "Before enabling audio recording",
-    "audioConsent1": "Audio is recorded only when a fall or crash is detected.",
+    "audioRecordingDesc": "Record up to 5 minutes of ambient audio in the background during selected emergencies to collect evidence.",
+    "audioConsent1": "Up to 5 minutes of audio is recorded automatically in the background during your configured emergency triggers.",
     "audioConsent2": "Recordings are stored securely and deleted after 30 days.",
     "audioConsent3": "Only you and your emergency contacts can access them.",
     "audioConsent4": "You can disable this at any time from this screen.",
     "audioConsent5": "This feature processes health data (GDPR Art. 9).",
-    "audioConsentAccept": "I Understand — Enable"
+    "audioConsentAccept": "I Understand — Enable",
+    "audioGranularTitle": "Record automatically for:",
+    "sosTypeCrash": "Vehicle Crash Detection",
+    "sosTypeFall": "Fall Detection",
+    "sosTypeDiscrete": "Discrete SOS (Stealth)",
+    "sosTypeShake": "Shake-to-SOS",
+    "sosTypeManual": "Manual Button Press"
   },
   "discrete": {
     "banner_title": "Silent SOS Triggered",
@@ -137,7 +159,9 @@
     "updateContactError": "Error updating contact",
     "confirmDelete": "Are you sure you want to delete this contact?",
     "deleteAccountBtn": "Delete my account",
-    "deleting": "Deleting..."
+    "deleting": "Deleting...",
+    "offlineMode": "Offline Mode",
+    "contactSavedOffline": "Contact saved locally. It will be synced when the network is restored."
   },
   "offline": {
     "title": "Offline Maps",
@@ -146,7 +170,8 @@
     "updatedMinsAgo": "Updated ${minutes} min ago",
     "updatedJustNow": "Updated just now",
     "customSize": "Custom Size",
-    "customZone": "Custom Zone",
+    "customZone": "Custom zone",
+    "savedZone": "Saved zone",
     "confirmDelete": "Delete ${name} from storage?",
     "updateSuccess": "${name} updated successfully.",
     "localStorage": "Local Storage",
@@ -280,7 +305,9 @@
     "power": "Power",
     "charging": "(Charging)",
     "sosCloud": "Your SOS will be dispatched globally to the ERIS Cloud.",
-    "sosMesh": "No internet. Your SOS will rely on Local Mesh and SMS Fallback."
+    "sosMesh": "No internet. Your SOS will rely on Local Mesh and SMS Fallback.",
+    "loraModule": "LoRa Module",
+    "meshNetwork": "Mesh Network"
   },
   "lowBattery": {
     "low": "Low Battery",
@@ -304,7 +331,9 @@
   },
   "hazard": {
     "deleteTitle": "Delete Alert",
-    "deleteConfirm": "Are you sure you want to permanently delete this hazard alert?"
+    "deleteConfirm": "Are you sure you want to permanently delete this hazard alert?",
+    "areaWarning": "Area Warning",
+    "avalancheRisk": "High avalanche risk reported in your current sector. Avoid steep terrains."
   },
   "common": {
     "cancel": "Cancel",
@@ -376,7 +405,9 @@
     "detectedTitle": "FALL DETECTED",
     "detectedMessage": "An automatic SOS alert will be sent with your location in...",
     "imFine": "I'M FINE — CANCEL",
-    "sendNow": "SEND SOS NOW"
+    "sendNow": "SEND SOS NOW",
+    "sosFailed": "Failed to send SOS. Please try again manually.",
+    "noGps": "Cannot send SOS: Acquiring position..."
   },
   "crash": {
     "detectedTitle": "CRASH DETECTED",

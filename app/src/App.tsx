@@ -38,6 +38,9 @@ import ShakeSOSBanner from './features/sos/components/shakeSOSBanner';
 import DiscreteSOSBanner from './features/sos/components/discreteSOSBanner';
 import { useAudioRecording } from './features/audio/hooks/useAudioRecording';
 import RecordingIndicator from './features/audio/components/RecordingIndicator';
+import { Device } from '@capacitor/device';
+import { useInactivityMonitoring } from './features/sos/hooks/useInactivityMonitoring';
+import InactivityModal from './components/InactivityModal';
 
 export type ActiveTab = 'MAP' | 'ALERTS' | 'OFFLINE' | 'USER' | 'SETTINGS' | 'DOWNLOAD_MAP' | 'PROFILE_SETUP' | 'ADMIN';
 
@@ -80,6 +83,66 @@ export default function App() {
     isActive: true,
   });
 
+  // ─── INACTIVITY MONITORING — active on all tabs ───
+  const [showInactivityModal, setShowInactivityModal] = useState(false);
+
+  const [isInactivityActive, setIsInactivityActive] = useState<boolean>(
+    localStorage.getItem('eris_inactivity_sos_enabled') !== 'false',
+  );
+
+  useEffect(() => {
+    const handleInactivityUpdate = () => {
+      setIsInactivityActive(localStorage.getItem('eris_inactivity_sos_enabled') !== 'false');
+    };
+    window.addEventListener('eris-inactivity-preference-changed', handleInactivityUpdate);
+    return () => window.removeEventListener('eris-inactivity-preference-changed', handleInactivityUpdate);
+  }, []);
+
+  const onInactivityDetected = useCallback(() => {
+    setShowInactivityModal(true);
+  }, []);
+
+  const { resetTimer: resetInactivityTimer } = useInactivityMonitoring(onInactivityDetected, isInactivityActive);
+
+  const handleInactivityCancel = useCallback(() => {
+    setShowInactivityModal(false);
+    resetInactivityTimer(); // Restart the clock because the user is fine
+  }, [resetInactivityTimer]);
+
+  // Dsipatch SOS automatically after 30 minutes of inactivity
+  const handleInactivitySOS = useCallback(async () => {
+    setShowInactivityModal(false);
+
+    if (userPosition.lat !== 0 && userPosition.lng !== 0) {
+      try {
+        let currentBattery = 100;
+        try {
+          const info = await Device.getBatteryInfo();
+          if (info.batteryLevel !== undefined) {
+            currentBattery = Math.round(info.batteryLevel * 100);
+          }
+        } catch (e) {
+          console.warn('[ERIS] Could not fetch native battery info', e);
+        }
+
+        await dispatchSOS(
+          userId ?? 'guest',
+          { lat: userPosition.lat, lng: userPosition.lng, alt: userPosition.alt },
+          currentBattery,
+          t('alert.autoInactivityNote', 'AUTOMATIC SOS: Prolonged inactivity detected.'),
+          {
+            incidentType: 'OTHER',
+            victimCount: 1,
+            triggerSource: 'AUTO',
+          },
+        );
+      } catch (err) {
+        console.error('[ERIS] Auto inactivity SOS failed', err);
+      }
+    }
+    setActiveTab('ALERTS');
+  }, [userId, userPosition]);
+
   // Dispatch SOS automatically when fall countdown expires or user confirms
   const handleFallSOS = useCallback(async () => {
     setShowFallModal(false);
@@ -87,11 +150,26 @@ export default function App() {
     stopRecording();
     if (userPosition.lat !== 0 && userPosition.lng !== 0) {
       try {
+        let currentBattery = 100;
+        try {
+          const info = await Device.getBatteryInfo();
+          if (info.batteryLevel !== undefined) {
+            currentBattery = Math.round(info.batteryLevel * 100);
+          }
+        } catch (e) {
+          console.warn('[ERIS] Could not fetch native battery info', e);
+        }
+
         await dispatchSOS(
           userId ?? 'guest',
           { lat: userPosition.lat, lng: userPosition.lng, alt: userPosition.alt },
-          100,
-          'AUTOMATIC FALL DETECTED',
+          currentBattery,
+          t('alert.autoFallNote', 'AUTOMATIC FALL DETECTED: Fall detected and user unresponsive.'),
+          {
+            incidentType: 'OTHER', // maybe add a 'FALL' or 'MEDICAL' preset
+            victimCount: 1,
+            triggerSource: 'AUTO',
+          },
         );
       } catch (err) {
         console.error('[ERIS] Auto fall SOS failed', err);
@@ -114,11 +192,26 @@ export default function App() {
     stopRecording();
     if (userPosition.lat !== 0 && userPosition.lng !== 0) {
       try {
+        let currentBattery = 100;
+        try {
+          const info = await Device.getBatteryInfo();
+          if (info.batteryLevel !== undefined) {
+            currentBattery = Math.round(info.batteryLevel * 100);
+          }
+        } catch (e) {
+          console.warn('[ERIS] Could not fetch native battery info', e);
+        }
+
         await dispatchSOS(
           userId ?? 'guest',
           { lat: userPosition.lat, lng: userPosition.lng, alt: userPosition.alt },
-          100,
-          'AUTOMATIC CRASH DETECTED',
+          currentBattery,
+          t('alert.autoCrashNote', 'AUTOMATIC CRASH DETECTED: Severe vehicle crash detected by device sensors.'),
+          {
+            incidentType: 'CRASH',
+            victimCount: 1,
+            triggerSource: 'AUTO',
+          },
         );
       } catch (err) {
         console.error('[ERIS] Auto crash SOS failed', err);
@@ -392,6 +485,11 @@ export default function App() {
             setActiveTab('ALERTS');
           }}
         />
+      )}
+
+      {/* ─── INACTIVITY DETECTION MODAL (60 second warning) ─── */}
+      {!showFallModal && !showCrashModal && showInactivityModal && (
+        <InactivityModal onCancel={handleInactivityCancel} onConfirmSOS={handleInactivitySOS} />
       )}
 
       {/* ─── BOTTOM NAV ─── */}

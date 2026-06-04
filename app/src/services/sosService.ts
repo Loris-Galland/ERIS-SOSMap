@@ -33,7 +33,11 @@ export const flushRetryQueue = async () => {
         blood_type: item.blood_type,
         allergies: item.allergies,
         medical_conditions: item.medical_conditions,
-        current_condition: item.current_condition
+        current_condition: item.current_condition,
+        incident_type: item.incidentType, 
+        victim_count: item.victimCount,
+        trigger_source: item.triggerSource,
+        photo_data: item.photoData
       });
       if (!error) {
         await db.sosQueue.update(item.id!, {
@@ -81,6 +85,7 @@ export const dispatchSOS = async (
   position: { lat: number; lng: number; alt: number },
   batteryLevel: number = 100,
   notes: string = '',
+  context?: { incidentType?: string | null; victimCount?: number; photoData?: string | null; triggerSource?: 'MANUAL' | 'AUTO' | 'DISCRETE' | 'SHAKE'; }
 ) => {
   // Try to flush any previously failed SOS alerts first
   // FIX: Do not use 'await' to avoid blocking the offline dispatch
@@ -112,7 +117,11 @@ export const dispatchSOS = async (
     blood_type: profile?.bloodType || 'Unknown',
     allergies: profile?.allergies || 'None',
     medical_conditions: profile?.medicalConditions || 'None',
-    current_condition: profile?.currentCondition || 'Unknown'
+    current_condition: profile?.currentCondition || 'Unknown',
+    incident_type: context?.incidentType || undefined,
+    victim_count: context?.victimCount || 1,
+    trigger_source: context?.triggerSource || 'MANUAL',
+    photo_data: context?.photoData || undefined,
   };
 
   // Payload merged with Dexie specific requirements
@@ -122,6 +131,10 @@ export const dispatchSOS = async (
     lon: position.lng,
     status: 'pending' as any,
     timestamp: Date.now(),
+    incidentType: context?.incidentType || undefined,
+    victimCount: context?.victimCount || 1,
+    triggerSource: context?.triggerSource || 'MANUAL',
+    photoData: context?.photoData || undefined,
   };
 
   // Prepare the stringified payload to bounce across the Mesh Network 

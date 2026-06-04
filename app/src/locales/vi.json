@@ -35,7 +35,17 @@
     "longitude": "KINH ĐỘ",
     "altitude": "ĐỘ CAO",
     "networkActive": "Đã kết nối — Mạng ERIS",
-    "networkOffline": "Ngoại tuyến — Thiết bị dự phòng sẵn sàng"
+    "networkOffline": "Ngoại tuyến — Thiết bị dự phòng sẵn sàng",
+    "emergencyType": "Loại Khẩn cấp",
+    "presetFire": "Hỏa hoạn",
+    "presetFlood": "Lũ lụt",
+    "presetMedical": "Y tế",
+    "presetLandslide": "Sạt lở đất",
+    "presetCrash": "Tai nạn",
+    "presetOther": "Khác",
+    "victims": "Nạn nhân",
+    "addPhoto": "Thêm Ảnh",
+    "photoAttached": "Đã đính kèm ảnh"
   },
   "settings": {
     "title": "Cài đặt",
@@ -76,7 +86,15 @@
     "discrete_sos_desc": "Kích hoạt SOS im lặng không có còi báo động hoặc chuông",
     "discrete_none": "Đã tắt",
     "discrete_tap": "Chạm nhanh 4 lần",
-    "discrete_flip": "Lật điện thoại 3 lần"
+    "discrete_flip": "Lật điện thoại 3 lần",
+    "audioRecordingDesc": "Ghi lại âm thanh xung quanh trong các trường hợp khẩn cấp đã chọn để thu thập bằng chứng.",
+    "audioConsent1": "Âm thanh chỉ được ghi lại tự động trong các tình huống khẩn cấp mà bạn đã định cấu hình.",
+    "audioGranularTitle": "Tự động ghi âm cho:",
+    "sosTypeCrash": "Phát hiện tai nạn xe",
+    "sosTypeFall": "Phát hiện té ngã",
+    "sosTypeDiscrete": "SOS Bí mật (Tàng hình)",
+    "sosTypeShake": "Lắc để gửi SOS",
+    "sosTypeManual": "Nhấn nút thủ công"
   },
   "discrete": {
     "banner_title": "Đã kích hoạt SOS im lặng",

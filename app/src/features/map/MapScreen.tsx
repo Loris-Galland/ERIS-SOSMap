@@ -23,8 +23,7 @@ import { useFallDetection } from '../sos/hooks/useFallDetection';
 import FallDetectionModal from '../../components/FallDetectionModal';
 import { dispatchSOS } from '../../services/sosService';
 import { useCrashDetection } from '../sos/hooks/useCrashDetection';
-import { useInactivityMonitoring } from '../sos/hooks/useInactivityMonitoring';
-import InactivityModal from '../../components/InactivityModal';
+import { useAudioRecording } from '../audio/hooks/useAudioRecording';
 
 interface MapScreenProps {
   isActive: boolean;
@@ -71,8 +70,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
   // Fall detection state
   const [showFallModal, setShowFallModal] = useState(false);
 
-  // Inactivity monitoring state
-  const [showInactivityModal, setShowInactivityModal] = useState(false);
+  const { startRecording, cancelRecording, linkAudioToAlert } = useAudioRecording(currentUserId);
 
   // ─── HOOKS ───
   const { mapInstance, showLayerMenu, setShowLayerMenu, currentMapStyle, changeMapStyle } = useMapLayers({
@@ -114,6 +112,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
   // Logic for fall detection
   const handleFallDetected = useCallback(() => {
     console.log('🚨 FALL DETECTED BY ACCELEROMETER!');
+    startRecording('fall');
     setShowFallModal(true);
   }, []);
 
@@ -123,6 +122,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
   // Logic for motorcycle crash detection
   const handleCrashDetected = useCallback(() => {
     console.log('🚨 MOTORCYCLE CRASH DETECTED!');
+    startRecording('crash');
     setShowFallModal(true); // Reuses the red countdown modal with the siren
   }, []);
 
@@ -142,12 +142,17 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
     // Check if we have a valid position
     if (userPosition.lat !== 0 && userPosition.lng !== 0) {
       try {
-        await dispatchSOS(
+        const result = await dispatchSOS(
           currentUserId,
           { lat: userPosition.lat, lng: userPosition.lng, alt: userPosition.alt },
           100,
           'AUTOMATIC FALL/CRASH DETECTED',
         );
+
+        if (result && (result as any).supabaseId) {
+          linkAudioToAlert((result as any).supabaseId);
+        }
+
         console.log('SOS SENT AUTOMATICALLY!');
         onNavigateToAlerts();
       } catch (error) {
@@ -157,41 +162,6 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
     } else {
       console.warn('Cannot send SOS: No GPS location available.');
       alert(t('fall.noGps', 'Cannot send SOS: Acquiring position...'));
-      onNavigateToAlerts();
-    }
-  };
-
-  // --- Logic for Inactivity Monitoring ---
-  const handleInactivityDetected = useCallback(() => {
-    console.log('🚨 PROLONGED INACTIVITY DETECTED!');
-    setShowInactivityModal(true);
-  }, []);
-
-  const { resetTimer: resetInactivityTimer } = useInactivityMonitoring(handleInactivityDetected, true);
-
-  const handleInactivityCancel = () => {
-    setShowInactivityModal(false);
-    resetInactivityTimer(); // Restart the clock because the user is fine
-  };
-
-  const handleInactivitySOS = async () => {
-    setShowInactivityModal(false);
-
-    // Check if we have a valid position
-    if (userPosition.lat !== 0 && userPosition.lng !== 0) {
-      try {
-        await dispatchSOS(
-          currentUserId,
-          { lat: userPosition.lat, lng: userPosition.lng, alt: userPosition.alt },
-          100,
-          'AUTOMATIC SOS: PROLONGED INACTIVITY DETECTED',
-        );
-        onNavigateToAlerts();
-      } catch (error) {
-        console.error('Failed to send SOS:', error);
-      }
-    } else {
-      console.warn('Cannot send SOS: No GPS location available.');
       onNavigateToAlerts();
     }
   };
@@ -250,7 +220,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
     const customRegs = savedCustom ? JSON.parse(savedCustom) : [];
     const formattedCustom = customRegs.map((r: any) => ({
       place_id: r.id,
-      display_name: `${r.name}, Custom zone`,
+      display_name: `${r.name}, ${t('offline.customZone', 'Custom zone')}`,
       boundingbox: [r.bounds.southWest[0], r.bounds.northEast[0], r.bounds.southWest[1], r.bounds.northEast[1]],
       isOffline: true,
     }));
@@ -259,7 +229,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
     const downloadedIds = savedOffline ? JSON.parse(savedOffline) : [];
     const downloadedPresets = PRESET_REGIONS.filter((pr) => downloadedIds.includes(pr.id)).map((pr) => ({
       place_id: pr.id.toString(),
-      display_name: `${pr.name}, Saved zone`,
+      display_name: `${pr.name}, ${t('offline.savedZone', 'Saved zone')}`,
       boundingbox: [
         pr.bounds.getSouthWest().lat,
         pr.bounds.getNorthEast().lat,
@@ -948,10 +918,15 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
       {showDiagnostics && <DiagnosticsModal onClose={() => setShowDiagnostics(false)} gpsStatus={gpsStatus} />}
 
       {/* ─── FALL DETECTION MODAL ─── */}
-      {showFallModal && <FallDetectionModal onCancel={() => setShowFallModal(false)} onConfirmSOS={handleSOSConfirm} />}
-
-      {/* ─── INACTIVITY MODAL ─── */}
-      {showInactivityModal && <InactivityModal onCancel={handleInactivityCancel} onConfirmSOS={handleInactivitySOS} />}
+      {showFallModal && (
+        <FallDetectionModal
+          onCancel={() => {
+            cancelRecording();
+            setShowFallModal(false);
+          }}
+          onConfirmSOS={handleSOSConfirm}
+        />
+      )}
     </div>
   );
 }

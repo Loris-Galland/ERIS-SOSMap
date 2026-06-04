@@ -35,7 +35,17 @@
     "longitude": "LONGITUDE",
     "altitude": "HAAVO",
     "networkActive": "Mandeha — Mandeha ny tambajotra ERIS",
-    "networkOffline": "Tsy misy internet — Vonona ny fitaovana backup"
+    "networkOffline": "Tsy misy internet — Vonona ny fitaovana backup",
+    "emergencyType": "Karazana vonjy taitra",
+    "presetFire": "Afo",
+    "presetFlood": "Tondra-drano",
+    "presetMedical": "Ara-pitsaboana",
+    "presetLandslide": "Fihotsahan'ny tany",
+    "presetCrash": "Lozam-pifamoivoizana",
+    "presetOther": "Hafa",
+    "victims": "Ireo niharam-boina",
+    "addPhoto": "Hampiditra sary",
+    "photoAttached": "Sary tafiditra"
   },
   "settings": {
     "title": "Fikirana",
@@ -76,7 +86,15 @@
     "discrete_sos_desc": "Alefaso mangingina ny SOS tsy misy fanairana na anjomara",
     "discrete_none": "Tsy mandeha",
     "discrete_tap": "Tsindry haingana 4",
-    "discrete_flip": "Ahodino in-3 ny finday"
+    "discrete_flip": "Ahodino in-3 ny finday",
+    "audioRecordingDesc": "Mandrakitra ny feo manodidina mandritra ireo hamehana voafantina mba hanangonana porofo.",
+    "audioConsent1": "Tonga dia mandrakitra feo ny fitaovana rehefa miseho ireo tranga hamehana nokirainao ihany.",
+    "audioGranularTitle": "Mandrakitra avy hatrany ho an'ny:",
+    "sosTypeCrash": "Fahitana fifandonan'ny fiara",
+    "sosTypeFall": "Fahitana fahalavoana",
+    "sosTypeDiscrete": "SOS mangina (Stealth)",
+    "sosTypeShake": "Ahozongozona ho SOS",
+    "sosTypeManual": "Fanakantsarihana bokotra amin'ny tanana"
   },
   "discrete": {
     "banner_title": "SOS mangina nalefa",
