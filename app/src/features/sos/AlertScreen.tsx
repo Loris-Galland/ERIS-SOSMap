@@ -153,8 +153,8 @@ export default function AlertScreen() {
   const handleCancelAlert = async () => {
     if (graceTimerRef.current) clearTimeout(graceTimerRef.current);
 
-    if (lastAlertIds) {
-      await revokeSOS(lastAlertIds.supabase, lastAlertIds.local);
+    if (lastAlertIds && userId) {
+      await revokeSOS(userId, lastAlertIds.supabase, lastAlertIds.local);
     }
 
     setIsGracePeriod(false);

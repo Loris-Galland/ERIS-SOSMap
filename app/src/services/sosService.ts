@@ -166,10 +166,7 @@ export const dispatchSOS = async (
       // Trigger the SMS fallback notification
       await triggerOfflineNotification(position, finalNotes);
 
-      // Broadcast to local Mesh Network (Bluetooth/Wi-Fi Direct)
-      console.log('[ERIS] Offline: Broadcasting SOS to local Mesh Network...');
-      CapacitorErisSosmap.broadcastMeshMessage({ message: meshPayload })
-        .catch((err) => console.warn('[ERIS] Mesh broadcast failed:', err));
+      CapacitorErisSosmap.broadcastMeshMessage({ message: meshPayload }).catch(() => {});
 
       return { success: true, method: nativeResult.transmissionMethod, localId };
     }
@@ -184,28 +181,26 @@ export const dispatchSOS = async (
     // Trigger the SMS fallback
     await triggerOfflineNotification(position, finalNotes);
 
-    // Broadcast to local Mesh Network even on total failure
-    console.log('[ERIS] Total Failure: Broadcasting SOS to local Mesh Network...');
-    CapacitorErisSosmap.broadcastMeshMessage({ message: meshPayload })
-      .catch((err) => console.warn('[ERIS] Mesh broadcast failed:', err));
+    CapacitorErisSosmap.broadcastMeshMessage({ message: meshPayload }).catch(() => {});
 
     return { success: false, method: 'QUEUED_FOR_RETRY', localId };
   }
 };
 
-// Function to revoke the sent SOS alert
-export const revokeSOS = async (supabaseId?: string, localId?: number) => {
+export const revokeSOS = async (userId: string, supabaseId?: string, localId?: number) => {
   try {
     if (supabaseId) {
-      await supabase.from('sos_alerts').delete().eq('id', supabaseId);
+      await supabase
+        .from('sos_alerts')
+        .update({ status: 'revoked' })
+        .eq('id', supabaseId)
+        .eq('user_id', userId);
     }
     if (localId) {
-      await db.sosQueue.delete(localId);
+      await db.sosQueue.update(localId, { status: 'revoked' as any });
     }
-    console.log('[ERIS] SOS Alert revoked successfully');
     return true;
   } catch (error) {
-    console.error('[ERIS] Failed to revoke SOS:', error);
     return false;
   }
 };
