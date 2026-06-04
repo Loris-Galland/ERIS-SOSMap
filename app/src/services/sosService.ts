@@ -82,9 +82,9 @@ export const dispatchSOS = async (
   batteryLevel: number = 100,
   notes: string = '',
 ) => {
-  // Try to flush any previously failed SOS alerts first
-  // FIX: Do not use 'await' to avoid blocking the offline dispatch
-  flushRetryQueue().catch(e => console.warn('[ERIS] Background flush error:', e));
+  const isGuest = localStorage.getItem('eris_is_guest') === 'true' || userId.startsWith('guest');
+
+  flushRetryQueue().catch(() => {});
 
   // Use user input or a default message
   const finalNotes = notes.trim() !== '' ? notes : 'Manual SOS alert triggered';
@@ -131,15 +131,14 @@ export const dispatchSOS = async (
   });
 
   try {
-    // Trigger native network check and hardware fallback logic
     const nativeResult = await CapacitorErisSosmap.triggerEmergency({
       latitude: position.lat,
       longitude: position.lng,
       userId,
     });
 
-    if (nativeResult.transmissionMethod === 'INTERNET') {
-      // Send directly to Supabase and select the generated data to get the ID
+    // Guests skip the Supabase path — SMS + local queue only
+    if (nativeResult.transmissionMethod === 'INTERNET' && !isGuest) {
       const { data, error } = await supabase
         .from('sos_alerts')
         .insert({
@@ -151,7 +150,6 @@ export const dispatchSOS = async (
 
       if (error) throw error;
 
-      // Keep a local history of successful alerts in Dexie
       dexiePayload.status = 'delivered';
       dexiePayload.transmission_method = 'INTERNET';
       const localId = await db.sosQueue.add(dexiePayload);

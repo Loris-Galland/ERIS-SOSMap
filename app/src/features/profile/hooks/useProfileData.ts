@@ -181,7 +181,7 @@ export function useProfileData() {
   const updateContact = async (contactId: string, editForm: any) => {
     setIsSaving(true);
     try {
-      const { error } = await supabase.from('emergency_contacts').update(editForm).eq('id', contactId);
+      const { error } = await supabase.from('emergency_contacts').update(editForm).eq('id', contactId).eq('user_id', userId);
       if (error) throw error;
       setContacts(contacts.map((c) => (c.id === contactId ? { ...c, ...editForm } : c)));
       return true;
@@ -199,7 +199,7 @@ export function useProfileData() {
 
     setIsSaving(true);
     try {
-      const { error } = await supabase.from('emergency_contacts').delete().eq('id', contactId);
+      const { error } = await supabase.from('emergency_contacts').delete().eq('id', contactId).eq('user_id', userId);
       if (error) throw error;
       setContacts(contacts.filter((c) => c.id !== contactId));
       return true;
