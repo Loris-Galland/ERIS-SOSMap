@@ -98,6 +98,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
     hazardToDelete,
     setHazardToDelete,
     handleDeleteHazard,
+    pendingGeometry,
     setPendingGeometry,
   } = useHazards({ mapInstance, isActive, isAdmin, isMapReady });
 
@@ -406,6 +407,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
 
     const onDrawCreated = (e: any) => {
       const { layerType, layer } = e;
+
       let newGeo: any = { shape_metadata: {} };
 
       if (layerType === 'marker') {
@@ -413,18 +415,33 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
         newGeo = { lat, lng, shape_type: 'point' };
       } else if (layerType === 'circle') {
         const { lat, lng } = layer.getLatLng();
-        newGeo = { lat, lng, shape_type: 'circle', shape_metadata: { radius: layer.getRadius() } };
+        const r = layer.getRadius() > 5 ? layer.getRadius() : 50;
+        newGeo = { lat, lng, shape_type: 'circle', shape_metadata: { radius: r }, sliderSize: r };
       } else if (layerType === 'rectangle') {
         const bounds = layer.getBounds();
         const center = bounds.getCenter();
+
+        const isTap = bounds.getNorthEast().distanceTo(bounds.getSouthWest()) < 10;
+
+        let finalBounds = bounds;
+        let size = 50;
+
+        if (isTap) {
+          finalBounds = center.toBounds(100);
+          size = 50;
+        } else {
+          size = center.distanceTo(bounds.getNorthEast()) * 0.7;
+        }
+
         newGeo = {
           lat: center.lat,
           lng: center.lng,
           shape_type: 'rectangle',
+          sliderSize: size,
           shape_metadata: {
             bounds: [
-              [bounds.getNorthEast().lat, bounds.getNorthEast().lng],
-              [bounds.getSouthWest().lat, bounds.getSouthWest().lng],
+              [finalBounds.getNorthEast().lat, finalBounds.getNorthEast().lng],
+              [finalBounds.getSouthWest().lat, finalBounds.getSouthWest().lng],
             ],
           },
         };
@@ -933,6 +950,47 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
             <p className="text-gray-400 text-xs mb-5 leading-relaxed">
               Warn other ERIS users about immediate dangers at your current location.
             </p>
+            {/* ─── NOUVEAU : CURSEUR DE TAILLE DE ZONE ─── */}
+            {pendingGeometry && pendingGeometry.shape_type !== 'point' && (
+              <div className="mb-5 bg-gray-800/40 p-4 rounded-2xl border border-gray-700/50">
+                <div className="flex justify-between items-center mb-2">
+                  <label className="text-gray-300 text-xs font-bold uppercase tracking-wider">Zone Size (Radius)</label>
+                  <span className="text-orange-400 font-bold text-sm">{Math.round(pendingGeometry.sliderSize)} m</span>
+                </div>
+                <input
+                  type="range"
+                  min="10"
+                  max="1500"
+                  step="10"
+                  value={pendingGeometry.sliderSize}
+                  onChange={(e) => {
+                    const newSize = parseInt(e.target.value);
+                    const center = L.latLng(pendingGeometry.lat, pendingGeometry.lng);
+
+                    let newShapeMetadata = {};
+                    if (pendingGeometry.shape_type === 'circle') {
+                      newShapeMetadata = { radius: newSize };
+                    } else if (pendingGeometry.shape_type === 'rectangle') {
+                      const newBounds = center.toBounds(newSize * 2); // toBounds prend le diamètre complet
+                      newShapeMetadata = {
+                        bounds: [
+                          [newBounds.getNorthEast().lat, newBounds.getNorthEast().lng],
+                          [newBounds.getSouthWest().lat, newBounds.getSouthWest().lng],
+                        ],
+                      };
+                    }
+
+                    // On met à jour la géométrie en temps réel !
+                    setPendingGeometry({
+                      ...pendingGeometry,
+                      sliderSize: newSize,
+                      shape_metadata: newShapeMetadata,
+                    });
+                  }}
+                  className="w-full h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-orange-500"
+                />
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-3 mb-2">
               {[
                 {
@@ -962,6 +1020,13 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
                   label: 'Landslide',
                   color: 'text-purple-400 [.theme-contrasted_&]:text-white',
                   bg: 'bg-purple-400/20 [.theme-contrasted_&]:bg-transparent [.theme-contrasted_&]:border [.theme-contrasted_&]:border-white',
+                },
+                {
+                  type: 'warning',
+                  icon: 'warning',
+                  label: 'Other',
+                  color: 'text-yellow-400 [.theme-contrasted_&]:text-white',
+                  bg: 'bg-yellow-400/20 [.theme-contrasted_&]:bg-transparent [.theme-contrasted_&]:border [.theme-contrasted_&]:border-white',
                 },
               ].map((hazard) => (
                 <button

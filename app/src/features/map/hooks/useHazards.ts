@@ -53,6 +53,7 @@ export function useHazards({ mapInstance, isActive, isAdmin, isMapReady }: UseHa
         case 'flood': iconHtml = 'water_drop'; colorClass = 'bg-blue-500'; hexColor = '#3b82f6'; break;
         case 'road_blocked': iconHtml = 'block'; colorClass = 'bg-orange-500'; hexColor = '#f97316'; break;
         case 'landslide': iconHtml = 'landslide'; colorClass = 'bg-purple-500'; hexColor = '#a855f7'; break;
+        case 'other': iconHtml = 'warning'; colorClass = 'bg-yellow-500'; hexColor = '#eab308'; break;
       }
 
       const icon = L.divIcon({
