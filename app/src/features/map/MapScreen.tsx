@@ -10,6 +10,7 @@
 
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Device } from '@capacitor/device';
 import L from 'leaflet';
 import 'leaflet-draw';
 import { useGPS } from './hooks/useGPS';
@@ -143,13 +144,14 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
   const handleSOSConfirm = async () => {
     setShowFallModal(false);
 
-    // Check if we have a valid position
     if (userPosition.lat !== 0 && userPosition.lng !== 0) {
       try {
+        let battery = 100;
+        try { const info = await Device.getBatteryInfo(); battery = Math.round((info.batteryLevel ?? 1) * 100); } catch {}
         await dispatchSOS(
           currentUserId,
           { lat: userPosition.lat, lng: userPosition.lng, alt: userPosition.alt },
-          100,
+          battery,
           'AUTOMATIC FALL/CRASH DETECTED',
         );
         console.log('SOS SENT AUTOMATICALLY!');
@@ -181,13 +183,14 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
   const handleInactivitySOS = async () => {
     setShowInactivityModal(false);
 
-    // Check if we have a valid position
     if (userPosition.lat !== 0 && userPosition.lng !== 0) {
       try {
+        let battery = 100;
+        try { const info = await Device.getBatteryInfo(); battery = Math.round((info.batteryLevel ?? 1) * 100); } catch {}
         await dispatchSOS(
           currentUserId,
           { lat: userPosition.lat, lng: userPosition.lng, alt: userPosition.alt },
-          100,
+          battery,
           'AUTOMATIC SOS: PROLONGED INACTIVITY DETECTED',
         );
         onNavigateToAlerts();

@@ -8,13 +8,20 @@
 
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Capacitor } from '@capacitor/core';
 import Switch from '../components/Switch';
+
+const PRIVACY_POLICY_URL = 'https://loris-galland.github.io/ERIS-SOSMap/privacy-policy';
 
 export default function PrivacySection() {
   const { t } = useTranslation();
 
-  const [shareLocation, setShareLocation]   = useState(true);
-  const [anonymousAnalytics, setAnonymousAnalytics] = useState(true);
+  const [shareLocation, setShareLocation] = useState<boolean>(
+    localStorage.getItem('eris_share_location') !== 'false',
+  );
+  const [anonymousAnalytics, setAnonymousAnalytics] = useState<boolean>(
+    localStorage.getItem('eris_anonymous_analytics') !== 'false',
+  );
 
   // Audio recording — reads persisted consent; defaults to false (opt-in required)
   const [audioEnabled, setAudioEnabled]     = useState<boolean>(
@@ -62,7 +69,11 @@ export default function PrivacySection() {
               {t('settings.shareLocationDesc', 'Allow rescue teams to find you')}
             </p>
           </div>
-          <Switch active={shareLocation} onClick={() => setShareLocation(!shareLocation)} />
+          <Switch active={shareLocation} onClick={() => {
+            const next = !shareLocation;
+            setShareLocation(next);
+            localStorage.setItem('eris_share_location', String(next));
+          }} />
         </div>
 
         {/* Anonymous analytics */}
@@ -73,7 +84,11 @@ export default function PrivacySection() {
               {t('settings.analyticsDesc', 'Help us improve the ERIS network')}
             </p>
           </div>
-          <Switch active={anonymousAnalytics} onClick={() => setAnonymousAnalytics(!anonymousAnalytics)} />
+          <Switch active={anonymousAnalytics} onClick={() => {
+            const next = !anonymousAnalytics;
+            setAnonymousAnalytics(next);
+            localStorage.setItem('eris_anonymous_analytics', String(next));
+          }} />
         </div>
 
         {/* Emergency audio recording */}
@@ -86,6 +101,18 @@ export default function PrivacySection() {
           </div>
           <Switch active={audioEnabled} onClick={handleAudioToggle} />
         </div>
+      </div>
+
+      {/* Privacy Policy link — required by Play Store & App Store */}
+      <div className="mt-3 px-1">
+        <button
+          onClick={() => window.open(PRIVACY_POLICY_URL, '_system')}
+          className="flex items-center gap-1.5 text-eris-primary text-xs font-medium"
+        >
+          <span className="material-symbols-outlined text-sm">policy</span>
+          {t('settings.privacyPolicy', 'Privacy Policy')}
+          <span className="material-symbols-outlined text-sm">open_in_new</span>
+        </button>
       </div>
 
       {/* RGPD consent card — shown inline when activating for the first time */}

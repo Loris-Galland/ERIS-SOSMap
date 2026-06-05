@@ -216,37 +216,32 @@ export default function App() {
 
   // ─── MESH NETWORK & ACCELEROMETER DAEMONS ───
   useEffect(() => {
-    CapacitorErisSosmap.startMeshNetwork();
+    CapacitorErisSosmap.startMeshNetwork().catch(() => {
+      // Mesh network not available on this platform — non-fatal
+    });
 
     const isShakeEnabled = localStorage.getItem('eris_shake_sos_enabled') !== 'false';
 
     if (isShakeEnabled) {
-      startListening(); // Bind motion event capture threads
+      startListening();
     } else {
-      console.log('[APP] Shake-to-SOS disabled. Forcing hardware sensor shutdown.');
-      stopListening(); // Forcibly kills active accelerometer event hooks immediately
+      stopListening();
     }
 
-    const meshListener = CapacitorErisSosmap.addListener('onMeshMessageReceived', async (data: any) => {
-      console.log('[MESH] SOS received from another ERIS user:', data.message);
+    const meshListenerPromise = CapacitorErisSosmap.addListener('onMeshMessageReceived', async (data: any) => {
       try {
         JSON.parse(data.message);
-        if (navigator.onLine) {
-          console.log('[MESH] Internet available, relaying to Supabase.');
-        } else {
-          console.log('[MESH] Offline, relaying to neighbors.');
-          await CapacitorErisSosmap.broadcastMeshMessage({ message: data.message });
+        if (!navigator.onLine) {
+          CapacitorErisSosmap.broadcastMeshMessage({ message: data.message }).catch(() => {});
         }
       } catch (e) {
-        console.error('[MESH] Error reading Mesh message', e);
+        // Malformed mesh message — ignore
       }
     });
 
     return () => {
-      CapacitorErisSosmap.stopMeshNetwork();
-      meshListener.then((listener: PluginListenerHandle) => listener.remove());
-
-      // Fallback hardware cleanup
+      CapacitorErisSosmap.stopMeshNetwork().catch(() => {});
+      meshListenerPromise.then((listener: PluginListenerHandle) => listener.remove()).catch(() => {});
       stopListening();
     };
   }, [session, isGuest, activeTab, isShakeActive]);
