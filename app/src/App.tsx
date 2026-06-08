@@ -144,39 +144,46 @@ export default function App() {
   }, [userId, userPosition]);
 
   // Dispatch SOS automatically when fall countdown expires or user confirms
-  const handleFallSOS = useCallback(async () => {
-    setShowFallModal(false);
-    // Recording continues — the emergency is confirmed, we want the full ambient audio
-    stopRecording();
-    if (userPosition.lat !== 0 && userPosition.lng !== 0) {
-      try {
-        let currentBattery = 100;
+  const handleFallSOS = useCallback(
+    async (isTimeout: boolean = true) => {
+      setShowFallModal(false);
+      // Recording continues — the emergency is confirmed, we want the full ambient audio
+      stopRecording();
+      if (userPosition.lat !== 0 && userPosition.lng !== 0) {
         try {
-          const info = await Device.getBatteryInfo();
-          if (info.batteryLevel !== undefined) {
-            currentBattery = Math.round(info.batteryLevel * 100);
+          let currentBattery = 100;
+          try {
+            const info = await Device.getBatteryInfo();
+            if (info.batteryLevel !== undefined) {
+              currentBattery = Math.round(info.batteryLevel * 100);
+            }
+          } catch (e) {
+            console.warn('[ERIS] Could not fetch native battery info', e);
           }
-        } catch (e) {
-          console.warn('[ERIS] Could not fetch native battery info', e);
-        }
 
-        await dispatchSOS(
-          userId ?? 'guest',
-          { lat: userPosition.lat, lng: userPosition.lng, alt: userPosition.alt },
-          currentBattery,
-          t('alert.autoFallNote', 'AUTOMATIC FALL DETECTED: Fall detected and user unresponsive.'),
-          {
-            incidentType: 'OTHER', // maybe add a 'FALL' or 'MEDICAL' preset
-            victimCount: 1,
-            triggerSource: 'AUTO',
-          },
-        );
-      } catch (err) {
-        console.error('[ERIS] Auto fall SOS failed', err);
+          const emergencyMessage = isTimeout
+            ? t('alert.autoFallNote', 'AUTOMATIC FALL DETECTED: Fall detected and user unresponsive.')
+            : t('alert.manualFallNote', 'FALL CONFIRMED: User manually confirmed the fall.');
+
+          await dispatchSOS(
+            userId ?? 'guest',
+            { lat: userPosition.lat, lng: userPosition.lng, alt: userPosition.alt },
+            currentBattery,
+            emergencyMessage,
+            {
+              incidentType: 'OTHER', // maybe add a 'FALL' or 'MEDICAL' preset
+              victimCount: 1,
+              triggerSource: 'AUTO',
+            },
+          );
+        } catch (err) {
+          console.error('[ERIS] Auto fall SOS failed', err);
+        }
       }
-    }
-    setActiveTab('ALERTS');
-  }, [userId, userPosition, stopRecording]);
+      setActiveTab('ALERTS');
+    },
+    [userId, userPosition, stopRecording],
+  );
 
   // ─── CRASH DETECTION (accelerometer + speed arming) — active on all tabs ───
   const [showCrashModal, setShowCrashModal] = useState(false);
@@ -187,38 +194,45 @@ export default function App() {
   useCrashDetection({ currentSpeedKmh: currentSpeedMs * 3.6, onCrashDetected, isActive: true });
 
   // Dispatch SOS automatically when crash countdown expires or user confirms
-  const handleCrashSOS = useCallback(async () => {
-    setShowCrashModal(false);
-    stopRecording();
-    if (userPosition.lat !== 0 && userPosition.lng !== 0) {
-      try {
-        let currentBattery = 100;
+  const handleCrashSOS = useCallback(
+    async (isTimeout: boolean = true) => {
+      setShowCrashModal(false);
+      stopRecording();
+      if (userPosition.lat !== 0 && userPosition.lng !== 0) {
         try {
-          const info = await Device.getBatteryInfo();
-          if (info.batteryLevel !== undefined) {
-            currentBattery = Math.round(info.batteryLevel * 100);
+          let currentBattery = 100;
+          try {
+            const info = await Device.getBatteryInfo();
+            if (info.batteryLevel !== undefined) {
+              currentBattery = Math.round(info.batteryLevel * 100);
+            }
+          } catch (e) {
+            console.warn('[ERIS] Could not fetch native battery info', e);
           }
-        } catch (e) {
-          console.warn('[ERIS] Could not fetch native battery info', e);
-        }
 
-        await dispatchSOS(
-          userId ?? 'guest',
-          { lat: userPosition.lat, lng: userPosition.lng, alt: userPosition.alt },
-          currentBattery,
-          t('alert.autoCrashNote', 'AUTOMATIC CRASH DETECTED: Severe vehicle crash detected by device sensors.'),
-          {
-            incidentType: 'CRASH',
-            victimCount: 1,
-            triggerSource: 'AUTO',
-          },
-        );
-      } catch (err) {
-        console.error('[ERIS] Auto crash SOS failed', err);
+          const emergencyMessage = isTimeout
+            ? t('alert.autoCrashNote', 'AUTOMATIC CRASH DETECTED: Severe vehicle crash detected and user unresponsive.')
+            : t('alert.manualCrashNote', 'CRASH CONFIRMED: User manually confirmed the vehicle crash.');
+
+          await dispatchSOS(
+            userId ?? 'guest',
+            { lat: userPosition.lat, lng: userPosition.lng, alt: userPosition.alt },
+            currentBattery,
+            emergencyMessage,
+            {
+              incidentType: 'CRASH',
+              victimCount: 1,
+              triggerSource: 'AUTO',
+            },
+          );
+        } catch (err) {
+          console.error('[ERIS] Auto crash SOS failed', err);
+        }
       }
-    }
-    setActiveTab('ALERTS');
-  }, [userId, userPosition, stopRecording]);
+      setActiveTab('ALERTS');
+    },
+    [userId, userPosition, stopRecording],
+  );
 
   // ─── NAVIGATION ───
   const [activeTab, setActiveTab] = useState<ActiveTab>('ALERTS');

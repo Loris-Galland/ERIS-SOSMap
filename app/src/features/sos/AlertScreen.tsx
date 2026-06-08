@@ -390,7 +390,6 @@ export default function AlertScreen() {
       }
 
       if (permissions.camera !== 'granted') {
-        alert('Camera permission denied by Android.');
         return;
       }
 

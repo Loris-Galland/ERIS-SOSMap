@@ -45,7 +45,8 @@
     "presetOther": "Hafa",
     "victims": "Ireo niharam-boina",
     "addPhoto": "Hampiditra sary",
-    "photoAttached": "Sary tafiditra"
+    "photoAttached": "Sary tafiditra",
+    "audioNotice": "Hisy fandraisam-peo mandritra ny 5 minitra handeha avy hatrany ao ambadika."
   },
   "settings": {
     "title": "Fikirana",
@@ -87,8 +88,8 @@
     "discrete_none": "Tsy mandeha",
     "discrete_tap": "Tsindry haingana 4",
     "discrete_flip": "Ahodino in-3 ny finday",
-    "audioRecordingDesc": "Mandrakitra ny feo manodidina mandritra ireo hamehana voafantina mba hanangonana porofo.",
-    "audioConsent1": "Tonga dia mandrakitra feo ny fitaovana rehefa miseho ireo tranga hamehana nokirainao ihany.",
+    "audioRecordingDesc": "Mandrakitra feo manodidina hatramin'ny 5 minitra ao ambadika mandritra ny hamehana mba hanangonana porofo.",
+    "audioConsent1": "Feo hatramin'ny 5 minitra no horaisina avy hatrany ao ambadika mandritra ny hamehana nokirainao.",
     "audioGranularTitle": "Mandrakitra avy hatrany ho an'ny:",
     "sosTypeCrash": "Fahitana fifandonan'ny fiara",
     "sosTypeFall": "Fahitana fahalavoana",
@@ -362,7 +363,25 @@
     "revokeBtn": "Esory ny maha Mpandrindra",
     "grantBtn": "Atao Mpandrindra",
     "errorUsers": "Nisy olana teo am-pikarohana mpampiasa:",
-    "noUsers": "Tsy misy mpampiasa hita"
+    "noUsers": "Tsy misy mpampiasa hita",
+    "audio": {
+      "title": "Porofo Feo",
+      "adminDesc": "Feo noraisina tao ambadika mandritra ny fanairana hamehana",
+      "stats": "Firaketana {{count}}",
+      "triggerFall": "Fahalavoana hita",
+      "triggerCrash": "Fifandonana hita",
+      "triggerShake": "Nohonzongozonina",
+      "triggerDiscrete": "SOS Mangina/Miafina",
+      "triggerManual": "Tsindry bokotra tanana",
+      "userId": "Mpampiasa:",
+      "expiresAt": "Lany daty:",
+      "noUrl": "Tsy misy URL",
+      "download": "Ampidino",
+      "delete": "Fafao",
+      "confirmDelete": "Fafao tanteraka ity firaketana ity?",
+      "noRecordings": "Mbola tsy misy fandraisam-peo",
+      "viewAlert": "Sokafy ny fanairana SOS mifandray"
+    }
   },
   "fall": {
     "detectedTitle": "HITA FAHABOSESANA",

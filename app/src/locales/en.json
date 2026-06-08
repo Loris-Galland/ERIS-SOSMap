@@ -48,7 +48,8 @@
     "photoAttached": "Photo Attached",
     "autoFallNote": "AUTOMATIC FALL DETECTED: Fall detected and user unresponsive.",
     "autoCrashNote": "AUTOMATIC CRASH DETECTED: Severe vehicle crash detected by device sensors.",
-    "autoInactivityNote": "AUTOMATIC SOS: Prolonged inactivity detected."
+    "autoInactivityNote": "AUTOMATIC SOS: Prolonged inactivity detected.",
+    "audioNotice": "A 5-minute background audio recording will start automatically."
   },
   "settings": {
     "title": "Settings",
@@ -385,17 +386,21 @@
     "noUsers": "No users found",
     "audio": {
       "title": "Audio Recordings",
-      "adminDesc": "Emergency audio captured on fall / crash",
+      "adminDesc": "Background audio captured during emergency alerts",
       "stats": "{{count}} recording(s)",
       "triggerFall": "Fall Detected",
       "triggerCrash": "Crash Detected",
+      "triggerShake": "Hardware Shake",
+      "triggerDiscrete": "Silent/Discrete SOS",
+      "triggerManual": "Manual Button Press",
       "userId": "User:",
       "expiresAt": "Expires:",
       "noUrl": "Signed URL unavailable",
       "download": "Download",
       "delete": "Delete",
       "confirmDelete": "Delete this recording permanently?",
-      "noRecordings": "No recordings yet"
+      "noRecordings": "No recordings yet",
+      "viewAlert": "View Linked SOS Alert"
     }
   },
   "audio": {

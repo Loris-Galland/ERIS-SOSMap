@@ -63,6 +63,10 @@ function RecordingCard({ recording, onDeleted, onViewAlert }: RecordingCardProps
     iconName = 'visibility_off';
     iconColor = 'text-purple-500';
     title = t('admin.audio.triggerDiscrete', 'Discrete SOS');
+  } else if (recording.trigger_type === 'manual') {
+    iconName = 'touch_app';
+    iconColor = 'text-eris-primary';
+    title = t('admin.audio.triggerManual', 'Manual Button Press');
   }
 
   const togglePlay = (e: React.MouseEvent) => {

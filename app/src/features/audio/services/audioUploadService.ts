@@ -32,7 +32,6 @@ export async function uploadAudio(params: UploadParams): Promise<void> {
     // Back online: drain any queued recordings in the background
     flushPendingUploads(params.userId).catch(() => {});
   } catch (error: any) {
-    alert(`Upload Blocked by Supabase: ${error.message || JSON.stringify(error)}`);
     console.warn('[AUDIO] Upload failed — saving locally for retry');
     await db.pendingAudioUploads.add({
       user_id:          params.userId,

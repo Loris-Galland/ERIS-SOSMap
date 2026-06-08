@@ -45,7 +45,8 @@
     "presetOther": "Autre",
     "victims": "Victimes",
     "addPhoto": "Ajouter Photo",
-    "photoAttached": "Photo Jointe"
+    "photoAttached": "Photo Jointe",
+    "audioNotice": "Un enregistrement audio en arrière-plan de 5 minutes démarrera automatiquement."
   },
   "settings": {
     "title": "Paramètres",
@@ -376,13 +377,17 @@
       "stats": "{{count}} enregistrement(s)",
       "triggerFall": "Chute détectée",
       "triggerCrash": "Accident détecté",
+      "triggerShake": "Secouement",
+      "triggerDiscrete": "SOS Discret/Silencieux",
+      "triggerManual": "Pression manuelle du bouton",
       "userId": "Utilisateur :",
       "expiresAt": "Expire le :",
       "noUrl": "URL signée indisponible",
       "download": "Télécharger",
       "delete": "Supprimer",
       "confirmDelete": "Supprimer définitivement cet enregistrement ?",
-      "noRecordings": "Aucun enregistrement pour l'instant"
+      "noRecordings": "Aucun enregistrement pour l'instant",
+      "viewAlert": "Voir l'alerte SOS associée"
     }
   },
   "fall": {

@@ -10,6 +10,7 @@
 
 import { useCallback, useRef, useState, useEffect } from 'react';
 import { VoiceRecorder } from 'capacitor-voice-recorder';
+import { App } from '@capacitor/app';
 import { uploadAudio } from '../services/audioUploadService';
 
 const MAX_DURATION_S  = 300;                    // 5-minute ceiling per recording
@@ -58,8 +59,6 @@ export function useAudioRecording(userId: string | null) {
 
     // Finalise and upload
   const stopRecording = useCallback(async () => {
-    alert("🛑 STOP RECORDING WAS JUST TRIGGERED!");
-    
     if (globalStopTimer) clearTimeout(globalStopTimer);
     
     try {
@@ -140,13 +139,27 @@ export function useAudioRecording(userId: string | null) {
       globalStopTimer = setTimeout(() => stopRecording(), MAX_DURATION_S * 1_000);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : JSON.stringify(err);
-      alert(`Audio Start Error: ${errorMessage}`);
     }
   }, [userId, stopRecording]);
 
+  useEffect(() => {
+    // Listen for the OS telling the app it is going to the background
+    const appStateListener = App.addListener('appStateChange', async ({ isActive }) => {
+      // If the app is no longer active AND we are currently recording...
+      if (!isActive && globalIsRecording) {
+        console.warn('[AUDIO] App pushed to background! Rescuing audio before OS kills the mic...');
+        // Forcefully stop and upload the recording so it isn't lost!
+        await stopRecording();
+      }
+    });
+
+    return () => {
+      appStateListener.then(listener => listener.remove());
+    };
+  }, [stopRecording])
+
   // Abort and discard — used when the user confirms "I'm fine" after a false alarm
   const cancelRecording = useCallback(async () => {
-    alert("⚠️ CANCEL RECORDING WAS JUST TRIGGERED!");
     if (globalStopTimer) clearTimeout(globalStopTimer);
     try {
       // Stop and immediately discard the file

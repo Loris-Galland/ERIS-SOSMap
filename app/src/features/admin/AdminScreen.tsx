@@ -101,7 +101,7 @@ export default function AdminScreen() {
             <div>
               <p className="font-semibold text-sm">{t('admin.audio.title', 'Audio Recordings')}</p>
               <p className="text-eris-text-muted text-xs">
-                {t('admin.audio.adminDesc', 'Emergency audio captured on fall / crash')}
+                {t('admin.audio.adminDesc', 'Background audio captured during emergency alerts')}
               </p>
             </div>
             <span className="material-symbols-outlined text-eris-text-subtle text-xl ml-auto">chevron_right</span>
