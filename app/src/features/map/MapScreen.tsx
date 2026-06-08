@@ -809,28 +809,6 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
         </button>
       </div>
 
-      {/* ─── HAZARD ALERT BANNER ─── */}
-      {showHazardAlert && (
-        <div className="absolute bottom-24 left-4 right-20 z-[1000] animate-fade-in">
-          <div className="bg-eris-danger/90 [.theme-contrasted_&]:bg-black backdrop-blur-md rounded-2xl p-4 flex items-start gap-3 shadow-[0_8px_30px_rgba(var(--eris-danger),0.3)] [.theme-contrasted_&]:shadow-none border border-white/30 [.theme-contrasted_&]:border-white">
-            <div className="w-8 h-8 rounded-full bg-white/30 [.theme-contrasted_&]:bg-transparent [.theme-contrasted_&]:border [.theme-contrasted_&]:border-white flex items-center justify-center shrink-0">
-              <span className="material-symbols-outlined text-white text-lg">warning</span>
-            </div>
-            <div className="flex-1">
-              <h4 className="text-white text-sm font-bold mb-0.5">Area Warning</h4>
-              <p className="text-red-100 [.theme-contrasted_&]:text-white text-xs leading-relaxed">
-                High avalanche risk reported in your current sector. Avoid steep terrains.
-              </p>
-            </div>
-            <button
-              onClick={() => setShowHazardAlert(false)}
-              className="text-red-200 hover:text-eris-text transition-colors"
-            >
-              <span className="material-symbols-outlined [.theme-contrasted_&]:text-white text-xl">close</span>
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* ─── SOS BUTTON ─── */}
       <div className="absolute bottom-6 right-4 z-[1000]">
