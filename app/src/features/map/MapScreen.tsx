@@ -108,37 +108,60 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
   } = useHazards({ mapInstance, isActive, isAdmin, isMapReady });
 
   const { isLoading: isPoisLoading } = usePOIs({ mapInstance, activeFilters });
-  // === GESTION DU CLIC ET DES POIS POUR CHOISIR LA DESTINATION ===
+  /// === GESTION DE LA DESTINATION (APPUI LONG ET CLIC SUR POI) ===
   useEffect(() => {
     if (!mapInstance.current) return;
     const map = mapInstance.current;
 
-    // Gestion du clic sur le fond de la carte
     const handleMapClick = (e: any) => {
       if (isDrawingMode) return;
-      setSelectedDestination({ lat: e.latlng.lat, lng: e.latlng.lng });
+      if (e.latlng) {
+        setSelectedDestination({ lat: e.latlng.lat, lng: e.latlng.lng });
+      }
     };
 
-    // Gestion du clic sur un marqueur existant (Pharmacie, abri, etc.) via son popup
-    const handlePopupOpen = (e: any) => {
-      // Si c'est le popup de notre propre drapeau de destination, on l'ignore
+    const handleLongPress = (e: any) => {
+      if (isDrawingMode) return;
+      if (e.latlng) {
+        setSelectedDestination({ lat: e.latlng.lat, lng: e.latlng.lng });
+      }
+    };
+
+    const handlePopupOrTooltipOpen = (e: any) => {
+      // Ignorer notre propre drapeau
       if (destMarkerRef.current && e.popup === destMarkerRef.current.getPopup()) return;
 
-      const latlng = e.popup.getLatLng();
-      if (latlng) {
+      // Chercher si c'est un popup ou un tooltip qui vient de s'ouvrir
+      const overlay = e.popup || e.tooltip;
+      if (!overlay) return;
+
+      const marker = overlay._source;
+      const latlng =
+        marker && typeof marker.getLatLng === 'function'
+          ? marker.getLatLng()
+          : typeof overlay.getLatLng === 'function'
+            ? overlay.getLatLng()
+            : null;
+
+      if (latlng && latlng.lat && latlng.lng) {
         setSelectedDestination({ lat: latlng.lat, lng: latlng.lng });
       }
     };
 
     map.on('click', handleMapClick);
-    map.on('popupopen', handlePopupOpen);
+    map.on('contextmenu', handleLongPress);
+
+    // On écoute les DEUX types d'infobulles (Popup et Tooltip) !
+    map.on('popupopen', handlePopupOrTooltipOpen);
+    map.on('tooltipopen', handlePopupOrTooltipOpen);
 
     return () => {
       map.off('click', handleMapClick);
-      map.off('popupopen', handlePopupOpen);
+      map.off('contextmenu', handleLongPress);
+      map.off('popupopen', handlePopupOrTooltipOpen);
+      map.off('tooltipopen', handlePopupOrTooltipOpen);
     };
   }, [mapInstance, isDrawingMode]);
-
   // === DESSIN DU DRAPEAU DE DESTINATION ===
   useEffect(() => {
     if (!mapInstance.current) return;
