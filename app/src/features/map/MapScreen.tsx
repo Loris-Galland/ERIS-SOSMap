@@ -27,6 +27,7 @@ import { dispatchSOS } from '../../services/sosService';
 import { useCrashDetection } from '../sos/hooks/useCrashDetection';
 import { useInactivityMonitoring } from '../sos/hooks/useInactivityMonitoring';
 import InactivityModal from '../../components/InactivityModal';
+import { useRouting } from './hooks/useRouting';
 
 interface MapScreenProps {
   isActive: boolean;
@@ -51,6 +52,8 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
   const [isMapReady, setIsMapReady] = useState(false);
   const currentUserId = session?.user?.id || getGuestId();
   const [isDrawingMode, setIsDrawingMode] = useState(false);
+  const [selectedDestination, setSelectedDestination] = useState<{ lat: number; lng: number } | null>(null);
+  const destMarkerRef = useRef<L.Marker | null>(null);
 
   const [offlineMode, setOfflineMode] = useState(false);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
@@ -101,9 +104,97 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
     handleDeleteHazard,
     pendingGeometry,
     setPendingGeometry,
+    hazardsList,
   } = useHazards({ mapInstance, isActive, isAdmin, isMapReady });
 
   const { isLoading: isPoisLoading } = usePOIs({ mapInstance, activeFilters });
+  // === GESTION DU CLIC ET DES POIS POUR CHOISIR LA DESTINATION ===
+  useEffect(() => {
+    if (!mapInstance.current) return;
+    const map = mapInstance.current;
+
+    // Gestion du clic sur le fond de la carte
+    const handleMapClick = (e: any) => {
+      if (isDrawingMode) return;
+      setSelectedDestination({ lat: e.latlng.lat, lng: e.latlng.lng });
+    };
+
+    // Gestion du clic sur un marqueur existant (Pharmacie, abri, etc.) via son popup
+    const handlePopupOpen = (e: any) => {
+      // Si c'est le popup de notre propre drapeau de destination, on l'ignore
+      if (destMarkerRef.current && e.popup === destMarkerRef.current.getPopup()) return;
+
+      const latlng = e.popup.getLatLng();
+      if (latlng) {
+        setSelectedDestination({ lat: latlng.lat, lng: latlng.lng });
+      }
+    };
+
+    map.on('click', handleMapClick);
+    map.on('popupopen', handlePopupOpen);
+
+    return () => {
+      map.off('click', handleMapClick);
+      map.off('popupopen', handlePopupOpen);
+    };
+  }, [mapInstance, isDrawingMode]);
+
+  // === DESSIN DU DRAPEAU DE DESTINATION ===
+  useEffect(() => {
+    if (!mapInstance.current) return;
+
+    if (selectedDestination) {
+      if (!destMarkerRef.current) {
+        // Création de l'icône de drapeau vert
+        const flagIcon = L.divIcon({
+          className: 'bg-transparent',
+          html: `<div style="background-color: #10B981; width: 32px; height: 32px; border-radius: 50%; border: 3px solid white; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px rgba(0,0,0,0.3);"><span class="material-symbols-outlined" style="color: white; font-size: 18px;">flag</span></div>`,
+          iconSize: [32, 32],
+          iconAnchor: [16, 32],
+          popupAnchor: [0, -32],
+        });
+
+        destMarkerRef.current = L.marker([selectedDestination.lat, selectedDestination.lng], { icon: flagIcon })
+          .addTo(mapInstance.current)
+          .bindPopup(
+            '<b style="color: #10B981;">Destination Sélectionnée</b><br/>Appuyez sur le bouton vert pour calculer l\'itinéraire sécurisé.',
+          );
+      } else {
+        destMarkerRef.current.setLatLng([selectedDestination.lat, selectedDestination.lng]);
+      }
+    } else {
+      if (destMarkerRef.current) {
+        mapInstance.current.removeLayer(destMarkerRef.current);
+        destMarkerRef.current = null;
+      }
+    }
+  }, [selectedDestination, mapInstance]);
+  // === INITIALISATION DU ROUTING D'URGENCE (DIJKSTRA) ===
+  const { routeCoordinates, isComputing, computeRoute, clearRoute } = useRouting();
+  const routingLayerRef = useRef<L.Polyline | null>(null);
+
+  // === DESSIN DU CHEMIN SUR LA CARTE (Vanilla Leaflet) ===
+  useEffect(() => {
+    if (!mapInstance.current) return;
+
+    if (routingLayerRef.current) {
+      mapInstance.current.removeLayer(routingLayerRef.current);
+      routingLayerRef.current = null;
+    }
+
+    if (routeCoordinates.length > 0) {
+      routingLayerRef.current = L.polyline(routeCoordinates, {
+        color: '#10B981',
+        weight: 6,
+        opacity: 0.8,
+        dashArray: '10, 10',
+        lineCap: 'round',
+        lineJoin: 'round',
+      }).addTo(mapInstance.current);
+
+      mapInstance.current.fitBounds(routingLayerRef.current.getBounds(), { padding: [50, 50] });
+    }
+  }, [routeCoordinates, mapInstance]);
 
   const toggleFilter = (category: POICategory) => {
     setActiveFilters((prev) => (prev.includes(category) ? [] : [category]));
@@ -147,7 +238,10 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
     if (userPosition.lat !== 0 && userPosition.lng !== 0) {
       try {
         let battery = 100;
-        try { const info = await Device.getBatteryInfo(); battery = Math.round((info.batteryLevel ?? 1) * 100); } catch {}
+        try {
+          const info = await Device.getBatteryInfo();
+          battery = Math.round((info.batteryLevel ?? 1) * 100);
+        } catch {}
         await dispatchSOS(
           currentUserId,
           { lat: userPosition.lat, lng: userPosition.lng, alt: userPosition.alt },
@@ -186,7 +280,10 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
     if (userPosition.lat !== 0 && userPosition.lng !== 0) {
       try {
         let battery = 100;
-        try { const info = await Device.getBatteryInfo(); battery = Math.round((info.batteryLevel ?? 1) * 100); } catch {}
+        try {
+          const info = await Device.getBatteryInfo();
+          battery = Math.round((info.batteryLevel ?? 1) * 100);
+        } catch {}
         await dispatchSOS(
           currentUserId,
           { lat: userPosition.lat, lng: userPosition.lng, alt: userPosition.alt },
@@ -796,6 +893,39 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
           </span>
         </button>
 
+        {/* ─── ROUTING BUTTON ─── */}
+        <button
+          onClick={() => {
+            if (routeCoordinates.length > 0) {
+              clearRoute();
+              setSelectedDestination(null); // Efface le drapeau quand on efface la route
+            } else if (selectedDestination && userPosition.lat !== 0) {
+              computeRoute(
+                userPosition.lat,
+                userPosition.lng,
+                selectedDestination.lat,
+                selectedDestination.lng,
+                hazardsList || [],
+              );
+            } else if (!selectedDestination) {
+              alert("Veuillez d'abord cliquer sur la carte pour choisir une destination.");
+            } else {
+              alert('Position GPS non disponible pour calculer un trajet.');
+            }
+          }}
+          className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors shadow-lg active:scale-95 ${
+            routeCoordinates.length > 0
+              ? 'bg-eris-danger text-white hover:bg-red-600'
+              : 'bg-green-600 text-white hover:bg-green-500'
+          } [.theme-contrasted_&]:border-2 [.theme-contrasted_&]:!border-black`}
+          title={routeCoordinates.length > 0 ? 'Clear Safe Route' : 'Find Evacuation Route'}
+        >
+          <span
+            className={`material-symbols-outlined text-xl [.theme-contrasted_&]:!text-black ${isComputing ? 'animate-spin' : ''}`}
+          >
+            {isComputing ? 'sync' : routeCoordinates.length > 0 ? 'route' : 'directions_run'}
+          </span>
+        </button>
         {/* Re-center on my location button */}
         <button
           onClick={() => {
