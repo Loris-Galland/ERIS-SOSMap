@@ -182,8 +182,8 @@ export default function AlertScreen() {
   const handleCancelAlert = async () => {
     if (graceTimerRef.current) clearTimeout(graceTimerRef.current);
 
-    if (lastAlertIds) {
-      await revokeSOS(lastAlertIds.supabase, lastAlertIds.local);
+    if (lastAlertIds && userId) {
+      await revokeSOS(userId, lastAlertIds.supabase, lastAlertIds.local);
     }
 
     setIsGracePeriod(false);
@@ -703,6 +703,7 @@ export default function AlertScreen() {
           <textarea
             id="alert-notes"
             rows={3}
+            maxLength={500}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             disabled={isSending || isGracePeriod}

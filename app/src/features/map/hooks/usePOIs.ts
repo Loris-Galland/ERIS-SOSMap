@@ -164,8 +164,13 @@ export function usePOIs({ mapInstance, activeFilters }: UsePOIsProps) {
             else name = 'Unknown Facility';
             }
 
+            const safeName = name
+              .replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;')
+              .replace(/"/g, '&quot;');
             L.marker([lat, lon], { icon: customIcon })
-            .bindPopup(`<strong class="text-sm font-sans">${name}</strong>`)
+            .bindPopup(`<strong class="text-sm font-sans">${safeName}</strong>`)
             .addTo(markersLayer.current!);
         });
         } catch (error: any) {

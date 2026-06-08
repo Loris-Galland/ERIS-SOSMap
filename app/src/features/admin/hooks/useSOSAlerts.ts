@@ -23,15 +23,15 @@ export interface SOSAlertAdmin {
   altitude: number;
   battery_level: number;
   notes: string;
-  blood_type: string;
-  allergies: string;
-  medical_conditions: string;
-  current_condition: string;
   created_at: string;
   incident_type?: string;
   victim_count?: number;
   trigger_source?: string;
   photo_data?: string;
+  blood_type?: string;
+  allergies?: string;
+  medical_conditions?: string;
+  current_condition?: string;
 }
 
 export function useSOSAlerts() {
@@ -44,7 +44,7 @@ export function useSOSAlerts() {
     setLoading(true);
     const { data, error } = await supabase
       .from('sos_alerts')
-      .select('*')
+      .select('id, user_id, first_name, last_name, status, transmission_method, latitude, longitude, altitude, battery_level, notes, created_at')
       .order('created_at', { ascending: false })
       .limit(100);
 

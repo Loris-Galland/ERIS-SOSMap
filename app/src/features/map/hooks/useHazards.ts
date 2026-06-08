@@ -25,6 +25,10 @@ export function useHazards({ mapInstance, isActive, isAdmin, isMapReady }: UseHa
   const [showHazardAlert, setShowHazardAlert] = useState(true);
   const [showHazardReportModal, setShowHazardReportModal] = useState(false);
   const [hazardToDelete, setHazardToDelete] = useState<string | null>(null);
+  
+  // State to temporarily store the drawn shape before validation
+  const [pendingGeometry, setPendingGeometry] = useState<any>(null);
+
   const hazardLayerGroup = useRef<L.LayerGroup | null>(null);
 
   const loadHazards = useCallback(async () => {
@@ -42,12 +46,14 @@ export function useHazards({ mapInstance, isActive, isAdmin, isMapReady }: UseHa
     hazards.forEach((hazard: any) => {
       let iconHtml = '';
       let colorClass = '';
+      let hexColor = '#ef4444'; //Default color (red) for the drawing
 
       switch (hazard.type) {
-        case 'fire': iconHtml = 'local_fire_department'; colorClass = 'bg-red-500'; break;
-        case 'flood': iconHtml = 'water_drop'; colorClass = 'bg-blue-500'; break;
-        case 'road_blocked': iconHtml = 'block'; colorClass = 'bg-orange-500'; break;
-        case 'landslide': iconHtml = 'landslide'; colorClass = 'bg-purple-500'; break;
+        case 'fire': iconHtml = 'local_fire_department'; colorClass = 'bg-red-500'; hexColor = '#ef4444'; break;
+        case 'flood': iconHtml = 'water_drop'; colorClass = 'bg-blue-500'; hexColor = '#3b82f6'; break;
+        case 'road_blocked': iconHtml = 'block'; colorClass = 'bg-orange-500'; hexColor = '#f97316'; break;
+        case 'landslide': iconHtml = 'landslide'; colorClass = 'bg-purple-500'; hexColor = '#a855f7'; break;
+        case 'other': iconHtml = 'warning'; colorClass = 'bg-yellow-500'; hexColor = '#eab308'; break;
       }
 
       const icon = L.divIcon({
@@ -60,6 +66,7 @@ export function useHazards({ mapInstance, isActive, isAdmin, isMapReady }: UseHa
       });
 
       if (hazardLayerGroup.current) {
+        // Add the classic marker (kept intact)
         const marker = L.marker([hazard.lat, hazard.lon], { icon });
         
         marker.on('click', () => {
@@ -74,6 +81,22 @@ export function useHazards({ mapInstance, isActive, isAdmin, isMapReady }: UseHa
         });
 
         marker.addTo(hazardLayerGroup.current);
+
+        // Draw the geometric shape around the marker if it exists
+        if (hazard.shape_type === 'circle' && hazard.shape_metadata?.radius) {
+          L.circle([hazard.lat, hazard.lon], {
+            radius: hazard.shape_metadata.radius,
+            color: hexColor,
+            fillOpacity: 0.3,
+            weight: 2
+          }).addTo(hazardLayerGroup.current);
+        } else if (hazard.shape_type === 'rectangle' && hazard.shape_metadata?.bounds) {
+          L.rectangle(hazard.shape_metadata.bounds, {
+            color: hexColor,
+            fillOpacity: 0.3,
+            weight: 2
+          }).addTo(hazardLayerGroup.current);
+        }
       }
     });
   }, [mapInstance, isAdmin]);
@@ -99,15 +122,33 @@ export function useHazards({ mapInstance, isActive, isAdmin, isMapReady }: UseHa
     };
   }, [isActive, mapInstance, loadHazards, isMapReady]);
 
+  // Modified to use pendingGeometry if the user has drawn something
   const handleReportHazard = async (
     userId: string,
-    type: 'fire' | 'flood' | 'road_blocked' | 'landslide',
+    type: 'fire' | 'flood' | 'road_blocked' | 'landslide' | string,
     lat: number,
     lng: number
   ) => {
-    if (lat === 0) return;
-    await reportHazard(userId, type, lat, lng);
+    let finalLat = lat;
+    let finalLng = lng;
+    let shapeType: 'point' | 'circle' | 'rectangle' = 'point';
+    let shapeMetadata = undefined;
+
+    // If a shape was drawn with Leaflet Draw, we replace the simple point with the shape
+    if (pendingGeometry) {
+      finalLat = pendingGeometry.lat;
+      finalLng = pendingGeometry.lng;
+      shapeType = pendingGeometry.shape_type;
+      shapeMetadata = pendingGeometry.shape_metadata;
+    }
+
+    if (finalLat === 0) return;
+
+    // The service call now uses the shape parameters
+    await reportHazard(userId, type as any, finalLat, finalLng, shapeType as any, shapeMetadata);
+    
     setShowHazardReportModal(false);
+    setPendingGeometry(null); // Clear the drawing after submission
     loadHazards();
   };
 
@@ -128,6 +169,8 @@ export function useHazards({ mapInstance, isActive, isAdmin, isMapReady }: UseHa
     handleReportHazard,
     hazardToDelete, 
     setHazardToDelete, 
-    handleDeleteHazard 
+    handleDeleteHazard,
+    pendingGeometry, 
+    setPendingGeometry 
   };
 }

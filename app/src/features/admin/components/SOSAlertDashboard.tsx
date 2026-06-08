@@ -171,7 +171,7 @@ function AlertCard({ alert, isExpanded, onToggle, onUpdateStatus }: AlertCardPro
                     `alert.preset${alert.incident_type.charAt(0) + alert.incident_type.slice(1).toLowerCase()}`,
                     alert.incident_type,
                   )
-                : 'GENERAL'}
+                : 'OTHER'}
             </span>
 
             {/* Victim Count */}

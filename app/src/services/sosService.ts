@@ -6,12 +6,20 @@
  * link, and mesh broadcast. Failed alerts are queued in Dexie for retry.
  * Connects to: Supabase 'sos_alerts', localDb sosQueue and userProfile, and the
  * capacitor-eris-sosmap plugin for native network and mesh capabilities.
+ * ERIS-RescueAI reads sos_alerts directly via their own Supabase service-role
+ * client — no explicit API call needed from this side.
  */
 
 import { db } from '../db/localDb';
 import { supabase } from '../db/supabaseClient';
 import { CapacitorErisSosmap } from 'capacitor-eris-sosmap';
 import { Capacitor } from '@capacitor/core';
+
+export interface SOSSensorData {
+  fall_detected?: boolean;
+  crash_detected?: boolean;
+  inactivity_detected?: boolean;
+}
 
 // Background retry engine
 // This runs whenever dispatchSOS is called and flushes any previously queued alerts.
@@ -86,10 +94,11 @@ export const dispatchSOS = async (
   batteryLevel: number = 100,
   notes: string = '',
   context?: { incidentType?: string | null; victimCount?: number; photoData?: string | null; triggerSource?: 'MANUAL' | 'AUTO' | 'DISCRETE' | 'SHAKE'; }
+  //sensorData?: SOSSensorData,
 ) => {
-  // Try to flush any previously failed SOS alerts first
-  // FIX: Do not use 'await' to avoid blocking the offline dispatch
-  flushRetryQueue().catch(e => console.warn('[ERIS] Background flush error:', e));
+  const isGuest = localStorage.getItem('eris_is_guest') === 'true' || userId.startsWith('guest');
+
+  flushRetryQueue().catch(() => {});
 
   // Use user input or a default message
   const finalNotes = notes.trim() !== '' ? notes : 'Manual SOS alert triggered';
@@ -144,15 +153,14 @@ export const dispatchSOS = async (
   });
 
   try {
-    // Trigger native network check and hardware fallback logic
     const nativeResult = await CapacitorErisSosmap.triggerEmergency({
       latitude: position.lat,
       longitude: position.lng,
       userId,
     });
 
-    if (nativeResult.transmissionMethod === 'INTERNET') {
-      // Send directly to Supabase and select the generated data to get the ID
+    // Guests skip the Supabase path — SMS + local queue only
+    if (nativeResult.transmissionMethod === 'INTERNET' && !isGuest) {
       const { data, error } = await supabase
         .from('sos_alerts')
         .insert({
@@ -164,7 +172,6 @@ export const dispatchSOS = async (
 
       if (error) throw error;
 
-      // Keep a local history of successful alerts in Dexie
       dexiePayload.status = 'delivered';
       dexiePayload.transmission_method = 'INTERNET';
       const localId = await db.sosQueue.add(dexiePayload);
@@ -179,10 +186,7 @@ export const dispatchSOS = async (
       // Trigger the SMS fallback notification
       await triggerOfflineNotification(position, finalNotes);
 
-      // Broadcast to local Mesh Network (Bluetooth/Wi-Fi Direct)
-      console.log('[ERIS] Offline: Broadcasting SOS to local Mesh Network...');
-      CapacitorErisSosmap.broadcastMeshMessage({ message: meshPayload })
-        .catch((err) => console.warn('[ERIS] Mesh broadcast failed:', err));
+      CapacitorErisSosmap.broadcastMeshMessage({ message: meshPayload }).catch(() => {});
 
       return { success: true, method: nativeResult.transmissionMethod, localId };
     }
@@ -197,28 +201,26 @@ export const dispatchSOS = async (
     // Trigger the SMS fallback
     await triggerOfflineNotification(position, finalNotes);
 
-    // Broadcast to local Mesh Network even on total failure
-    console.log('[ERIS] Total Failure: Broadcasting SOS to local Mesh Network...');
-    CapacitorErisSosmap.broadcastMeshMessage({ message: meshPayload })
-      .catch((err) => console.warn('[ERIS] Mesh broadcast failed:', err));
+    CapacitorErisSosmap.broadcastMeshMessage({ message: meshPayload }).catch(() => {});
 
     return { success: false, method: 'QUEUED_FOR_RETRY', localId };
   }
 };
 
-// Function to revoke the sent SOS alert
-export const revokeSOS = async (supabaseId?: string, localId?: number) => {
+export const revokeSOS = async (userId: string, supabaseId?: string, localId?: number) => {
   try {
     if (supabaseId) {
-      await supabase.from('sos_alerts').delete().eq('id', supabaseId);
+      await supabase
+        .from('sos_alerts')
+        .update({ status: 'revoked' })
+        .eq('id', supabaseId)
+        .eq('user_id', userId);
     }
     if (localId) {
-      await db.sosQueue.delete(localId);
+      await db.sosQueue.update(localId, { status: 'revoked' as any });
     }
-    console.log('[ERIS] SOS Alert revoked successfully');
     return true;
   } catch (error) {
-    console.error('[ERIS] Failed to revoke SOS:', error);
     return false;
   }
 };

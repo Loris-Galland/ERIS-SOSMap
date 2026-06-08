@@ -10,7 +10,9 @@
 
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Device } from '@capacitor/device';
 import L from 'leaflet';
+import 'leaflet-draw';
 import { useGPS } from './hooks/useGPS';
 import { useWeather } from './hooks/useWeather';
 import { useHazards } from './hooks/useHazards';
@@ -42,6 +44,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
   const mapRef = useRef<HTMLDivElement | null>(null);
   const [isMapReady, setIsMapReady] = useState(false);
   const currentUserId = session?.user?.id || getGuestId();
+  const [isDrawingMode, setIsDrawingMode] = useState(false);
 
   const [offlineMode, setOfflineMode] = useState(false);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
@@ -84,6 +87,8 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
     hazardToDelete,
     setHazardToDelete,
     handleDeleteHazard,
+    pendingGeometry,
+    setPendingGeometry,
   } = useHazards({ mapInstance, isActive, isAdmin, isMapReady });
 
   const { isLoading: isPoisLoading } = usePOIs({ mapInstance, activeFilters });
@@ -277,6 +282,88 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
     setSearchQuery('');
     setSearchResults([]);
   };
+
+  useEffect(() => {
+    if (!mapInstance.current || !isDrawingMode) return;
+
+    const map = mapInstance.current;
+
+    const drawnItems = new L.FeatureGroup();
+    map.addLayer(drawnItems);
+
+    const drawControl = new L.Control.Draw({
+      position: 'topright',
+      draw: {
+        polyline: false,
+        polygon: false,
+        circlemarker: false,
+        marker: {},
+        circle: {},
+        rectangle: {},
+      },
+      edit: {
+        featureGroup: drawnItems,
+        edit: false,
+        remove: false,
+      },
+    });
+    map.addControl(drawControl);
+
+    const onDrawCreated = (e: any) => {
+      const { layerType, layer } = e;
+
+      let newGeo: any = { shape_metadata: {} };
+
+      if (layerType === 'marker') {
+        const { lat, lng } = layer.getLatLng();
+        newGeo = { lat, lng, shape_type: 'point' };
+      } else if (layerType === 'circle') {
+        const { lat, lng } = layer.getLatLng();
+        const r = layer.getRadius() > 5 ? layer.getRadius() : 50;
+        newGeo = { lat, lng, shape_type: 'circle', shape_metadata: { radius: r }, sliderSize: r };
+      } else if (layerType === 'rectangle') {
+        const bounds = layer.getBounds();
+        const center = bounds.getCenter();
+
+        const isTap = bounds.getNorthEast().distanceTo(bounds.getSouthWest()) < 10;
+
+        let finalBounds = bounds;
+        let size = 50;
+
+        if (isTap) {
+          finalBounds = center.toBounds(100);
+          size = 50;
+        } else {
+          size = center.distanceTo(bounds.getNorthEast()) * 0.7;
+        }
+
+        newGeo = {
+          lat: center.lat,
+          lng: center.lng,
+          shape_type: 'rectangle',
+          sliderSize: size,
+          shape_metadata: {
+            bounds: [
+              [finalBounds.getNorthEast().lat, finalBounds.getNorthEast().lng],
+              [finalBounds.getSouthWest().lat, finalBounds.getSouthWest().lng],
+            ],
+          },
+        };
+      }
+
+      setPendingGeometry(newGeo);
+      setIsDrawingMode(false);
+      setShowHazardReportModal(true);
+    };
+
+    map.on(L.Draw.Event.CREATED, onDrawCreated);
+
+    return () => {
+      map.off(L.Draw.Event.CREATED, onDrawCreated);
+      map.removeControl(drawControl);
+      map.removeLayer(drawnItems);
+    };
+  }, [isDrawingMode, mapInstance, setPendingGeometry, setShowHazardReportModal]);
 
   return (
     <div className="relative w-full h-full">
@@ -601,11 +688,13 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
 
         {/* Report hazard button */}
         <button
-          onClick={() => setShowHazardReportModal(true)}
-          className="w-12 h-12 bg-eris-alert [.theme-dark_&]:bg-orange-400 rounded-full flex items-center justify-center text-white [.theme-contrasted_&]:border-2 [.theme-contrasted_&]:!border-black hover:bg-orange-400 transition-colors shadow-lg shadow-eris-alert/30 active:scale-95"
-          title="Report Hazard"
+          onClick={() => setIsDrawingMode(!isDrawingMode)}
+          className={`w-12 h-12 ${isDrawingMode ? 'bg-gray-500' : 'bg-eris-alert'} [.theme-dark_&]:bg-orange-400 rounded-full flex items-center justify-center text-white [.theme-contrasted_&]:border-2 [.theme-contrasted_&]:!border-black hover:bg-orange-400 transition-colors shadow-lg shadow-eris-alert/30 active:scale-95`}
+          title={isDrawingMode ? 'Cancel Draw' : 'Report Hazard'}
         >
-          <span className="material-symbols-outlined [.theme-contrasted_&]:!text-black text-xl">warning</span>
+          <span className="material-symbols-outlined [.theme-contrasted_&]:!text-black text-xl">
+            {isDrawingMode ? 'close' : 'warning'}
+          </span>
         </button>
 
         {/* Re-center on my location button */}
@@ -765,6 +854,47 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
             <p className="text-gray-400 text-xs mb-5 leading-relaxed">
               {t('hazard.reportDesc', 'Warn other ERIS users about immediate dangers at your current location.')}
             </p>
+            {/* ─── NOUVEAU : CURSEUR DE TAILLE DE ZONE ─── */}
+            {pendingGeometry && pendingGeometry.shape_type !== 'point' && (
+              <div className="mb-5 bg-gray-800/40 p-4 rounded-2xl border border-gray-700/50">
+                <div className="flex justify-between items-center mb-2">
+                  <label className="text-gray-300 text-xs font-bold uppercase tracking-wider">Zone Size (Radius)</label>
+                  <span className="text-orange-400 font-bold text-sm">{Math.round(pendingGeometry.sliderSize)} m</span>
+                </div>
+                <input
+                  type="range"
+                  min="10"
+                  max="1500"
+                  step="10"
+                  value={pendingGeometry.sliderSize}
+                  onChange={(e) => {
+                    const newSize = parseInt(e.target.value);
+                    const center = L.latLng(pendingGeometry.lat, pendingGeometry.lng);
+
+                    let newShapeMetadata = {};
+                    if (pendingGeometry.shape_type === 'circle') {
+                      newShapeMetadata = { radius: newSize };
+                    } else if (pendingGeometry.shape_type === 'rectangle') {
+                      const newBounds = center.toBounds(newSize * 2); // toBounds prend le diamètre complet
+                      newShapeMetadata = {
+                        bounds: [
+                          [newBounds.getNorthEast().lat, newBounds.getNorthEast().lng],
+                          [newBounds.getSouthWest().lat, newBounds.getSouthWest().lng],
+                        ],
+                      };
+                    }
+
+                    // On met à jour la géométrie en temps réel !
+                    setPendingGeometry({
+                      ...pendingGeometry,
+                      sliderSize: newSize,
+                      shape_metadata: newShapeMetadata,
+                    });
+                  }}
+                  className="w-full h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-orange-500"
+                />
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-3 mb-2">
               {[
                 {
@@ -794,6 +924,13 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
                   label: t('alert.presetLandslide', 'Landslide'),
                   color: 'text-purple-400 [.theme-contrasted_&]:text-white',
                   bg: 'bg-purple-400/20 [.theme-contrasted_&]:bg-transparent [.theme-contrasted_&]:border [.theme-contrasted_&]:border-white',
+                },
+                {
+                  type: 'warning',
+                  icon: 'warning',
+                  label: 'Other',
+                  color: 'text-yellow-400 [.theme-contrasted_&]:text-white',
+                  bg: 'bg-yellow-400/20 [.theme-contrasted_&]:bg-transparent [.theme-contrasted_&]:border [.theme-contrasted_&]:border-white',
                 },
               ].map((hazard) => (
                 <button
