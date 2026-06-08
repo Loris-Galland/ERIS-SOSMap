@@ -92,6 +92,7 @@ export default function App() {
           { lat: userPosition.lat, lng: userPosition.lng, alt: userPosition.alt },
           100,
           'AUTOMATIC FALL DETECTED',
+          { fall_detected: true },
         );
       } catch (err) {
         console.error('[ERIS] Auto fall SOS failed', err);
@@ -119,6 +120,7 @@ export default function App() {
           { lat: userPosition.lat, lng: userPosition.lng, alt: userPosition.alt },
           100,
           'AUTOMATIC CRASH DETECTED',
+          { crash_detected: true },
         );
       } catch (err) {
         console.error('[ERIS] Auto crash SOS failed', err);
