@@ -35,7 +35,18 @@
     "longitude": "经度",
     "altitude": "海拔",
     "networkActive": "已连接 — ERIS 网络运行中",
-    "networkOffline": "离线 — 硬件备用通道已就绪"
+    "networkOffline": "离线 — 硬件备用通道已就绪",
+    "emergencyType": "紧急类型",
+    "presetFire": "火灾",
+    "presetFlood": "洪水",
+    "presetMedical": "医疗",
+    "presetLandslide": "山体滑坡",
+    "presetCrash": "车祸",
+    "presetOther": "其他",
+    "victims": "受害者人数",
+    "addPhoto": "添加照片",
+    "photoAttached": "已附加照片",
+    "audioNotice": "将自动开始5分钟的后台录音。"
   },
   "settings": {
     "title": "设置",
@@ -76,7 +87,15 @@
     "discrete_sos_desc": "触发静音 SOS，无警报声",
     "discrete_none": "已禁用",
     "discrete_tap": "快速点击 4 次",
-    "discrete_flip": "翻转手机 3 次"
+    "discrete_flip": "翻转手机 3 次",
+    "audioRecordingDesc": "在选定的紧急情况下在后台录制长达5分钟的环境音频，以收集证据。",
+    "audioConsent1": "在您配置的紧急触发期间，最多自动在后台录制5分钟的音频。",
+    "audioGranularTitle": "自动录音用于：",
+    "sosTypeCrash": "车辆碰撞检测",
+    "sosTypeFall": "跌倒检测",
+    "sosTypeDiscrete": "隐蔽求救 (潜行模式)",
+    "sosTypeShake": "摇晃求救",
+    "sosTypeManual": "手动按下按钮"
   },
   "discrete": {
     "banner_title": "已触发静音 SOS",
@@ -344,7 +363,25 @@
     "revokeBtn": "撤销管理员",
     "grantBtn": "授予管理员",
     "errorUsers": "加载用户时出错：",
-    "noUsers": "未找到用户"
+    "noUsers": "未找到用户",
+    "audio": {
+      "title": "音频证据",
+      "adminDesc": "在紧急警报期间捕获的后台音频",
+      "stats": "{{count}} 个录音",
+      "triggerFall": "检测到跌倒",
+      "triggerCrash": "检测到车祸",
+      "triggerShake": "摇晃设备",
+      "triggerDiscrete": "静音/隐蔽 SOS",
+      "triggerManual": "手动按下按钮",
+      "userId": "用户：",
+      "expiresAt": "过期：",
+      "noUrl": "暂无URL",
+      "download": "下载",
+      "delete": "删除",
+      "confirmDelete": "永久删除此录音？",
+      "noRecordings": "暫無錄音",
+      "viewAlert": "打开关联的 SOS 警报"
+    }
   },
   "fall": {
     "detectedTitle": "检测到跌倒",

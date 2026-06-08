@@ -35,7 +35,18 @@
     "longitude": "KINH ĐỘ",
     "altitude": "ĐỘ CAO",
     "networkActive": "Đã kết nối — Mạng ERIS",
-    "networkOffline": "Ngoại tuyến — Thiết bị dự phòng sẵn sàng"
+    "networkOffline": "Ngoại tuyến — Thiết bị dự phòng sẵn sàng",
+    "emergencyType": "Loại Khẩn cấp",
+    "presetFire": "Hỏa hoạn",
+    "presetFlood": "Lũ lụt",
+    "presetMedical": "Y tế",
+    "presetLandslide": "Sạt lở đất",
+    "presetCrash": "Tai nạn",
+    "presetOther": "Khác",
+    "victims": "Nạn nhân",
+    "addPhoto": "Thêm Ảnh",
+    "photoAttached": "Ảnh đính kèm",
+    "audioNotice": "Ghi âm nền 5 phút sẽ tự động bắt đầu."
   },
   "settings": {
     "title": "Cài đặt",
@@ -76,7 +87,15 @@
     "discrete_sos_desc": "Kích hoạt SOS im lặng không có còi báo động hoặc chuông",
     "discrete_none": "Đã tắt",
     "discrete_tap": "Chạm nhanh 4 lần",
-    "discrete_flip": "Lật điện thoại 3 lần"
+    "discrete_flip": "Lật điện thoại 3 lần",
+    "audioRecordingDesc": "Ghi lại tối đa 5 phút âm thanh môi trường ở chế độ nền trong các trường hợp khẩn cấp để thu thập bằng chứng.",
+    "audioConsent1": "Tối đa 5 phút âm thanh được ghi tự động ở chế độ nền trong các trường hợp kích hoạt khẩn cấp của bạn.",
+    "audioGranularTitle": "Tự động ghi âm cho:",
+    "sosTypeCrash": "Phát hiện tai nạn xe",
+    "sosTypeFall": "Phát hiện té ngã",
+    "sosTypeDiscrete": "SOS Bí mật (Tàng hình)",
+    "sosTypeShake": "Lắc để gửi SOS",
+    "sosTypeManual": "Nhấn nút thủ công"
   },
   "discrete": {
     "banner_title": "Đã kích hoạt SOS im lặng",
@@ -344,7 +363,25 @@
     "revokeBtn": "Thu hồi quyền quản trị",
     "grantBtn": "Cấp quyền quản trị",
     "errorUsers": "Lỗi khi tải người dùng:",
-    "noUsers": "Không tìm thấy người dùng"
+    "noUsers": "Không tìm thấy người dùng",
+    "audio": {
+      "title": "Bằng chứng âm thanh",
+      "adminDesc": "Âm thanh nền được ghi lại trong các cảnh báo khẩn cấp",
+      "stats": "{{count}} bản ghi",
+      "triggerFall": "Phát hiện ngã",
+      "triggerCrash": "Phát hiện tai nạn",
+      "triggerShake": "Lắc thiết bị",
+      "triggerDiscrete": "SOS Im lặng/Bí mật",
+      "triggerManual": "Nhấn nút thủ công",
+      "userId": "Người dùng:",
+      "expiresAt": "Hết hạn:",
+      "noUrl": "Không có URL",
+      "download": "Tải xuống",
+      "delete": "Xóa",
+      "confirmDelete": "Xóa vĩnh viễn bản ghi này?",
+      "noRecordings": "Chưa có bản ghi âm nào.",
+      "viewAlert": "Mở Cảnh báo SOS được liên kết"
+    }
   },
   "fall": {
     "detectedTitle": "PHÁT HIỆN TÉ NGÃ",

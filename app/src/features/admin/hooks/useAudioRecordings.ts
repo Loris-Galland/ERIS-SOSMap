@@ -10,11 +10,12 @@ import { supabase } from '../../../db/supabaseClient';
 export interface AudioRecordingAdmin {
   id: string;
   user_id: string;
-  trigger_type: 'fall' | 'crash';
+  trigger_type: 'fall' | 'crash' | 'shake' | 'discrete' | 'manual';
   duration_seconds: number;
   file_path: string;
   created_at: string;
   expires_at: string;
+  alert_id?: string | null;
   signedUrl?: string;
 }
 

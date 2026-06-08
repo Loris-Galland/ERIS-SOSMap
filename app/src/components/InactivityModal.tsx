@@ -24,6 +24,11 @@ export default function InactivityModal({ onCancel, onConfirmSOS }: InactivityMo
     audio.loop = true;
     audio.play().catch(() => console.log('Audio autoplay blocked'));
 
+    // Vibrate heavily to get the user's attention
+    if (navigator.vibrate) {
+      navigator.vibrate([500, 200, 500, 200, 1000]);
+    }
+
     const timer = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
@@ -41,6 +46,8 @@ export default function InactivityModal({ onCancel, onConfirmSOS }: InactivityMo
       audio.pause();
     };
   }, [onConfirmSOS]);
+
+  const progress = ((60 - countdown) / 60) * 100;
 
   return (
     <div className="fixed inset-0 z-[99999] bg-orange-900/90 backdrop-blur-xl flex flex-col items-center justify-center p-6 animate-in fade-in zoom-in duration-300">

@@ -28,6 +28,10 @@ interface SOSAlert {
   allergies?: string;
   medical_conditions?: string;
   current_condition?: string;
+  incident_type?: string;
+  victim_count?: number;
+  trigger_source?: string;
+  photo_data?: string;
 }
 
 interface SOSHistoryScreenProps {
@@ -128,6 +132,10 @@ export default function SOSHistoryScreen({ onClose }: SOSHistoryScreenProps) {
               allergies: item.allergies,
               medical_conditions: item.medical_conditions,
               current_condition: item.current_condition,
+              incident_type: item.incident_type,
+              victim_count: item.victim_count,
+              trigger_source: item.trigger_source,
+              photo_data: item.photo_data,
             });
           });
         }
@@ -162,6 +170,10 @@ export default function SOSHistoryScreen({ onClose }: SOSHistoryScreenProps) {
             allergies: item.allergies,
             medical_conditions: item.medical_conditions,
             current_condition: item.current_condition,
+            incident_type: item.incidentType,
+            victim_count: item.victimCount,
+            trigger_source: item.triggerSource,
+            photo_data: item.photoData,
           });
         }
       });
@@ -330,6 +342,56 @@ export default function SOSHistoryScreen({ onClose }: SOSHistoryScreenProps) {
                   </div>
                 </div>
               </section>
+
+              {/* --- EMERGENCY CONTEXT --- */}
+              <section>
+                <h4 className="text-eris-text-muted text-[10px] font-bold uppercase tracking-widest mb-3">
+                  {t('history.contextSection', 'Emergency Context')}
+                </h4>
+                <div className="bg-eris-surface-alt/40 border border-eris-border/50 rounded-2xl p-4 grid grid-cols-3 gap-3 text-center">
+                  <div>
+                    <p className="text-eris-text-subtle text-[9px] font-bold uppercase tracking-wider mb-1">
+                      {t('history.incidentType', 'Incident')}
+                    </p>
+                    <p className="text-eris-text text-xs font-bold capitalize">
+                      {selectedAlert.incident_type
+                        ? t(
+                            `alert.preset${selectedAlert.incident_type.charAt(0) + selectedAlert.incident_type.slice(1).toLowerCase()}`,
+                            selectedAlert.incident_type,
+                          )
+                        : t('history.medUnknown', 'Unknown')}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-eris-text-subtle text-[9px] font-bold uppercase tracking-wider mb-1">
+                      {t('history.victims', 'Victims')}
+                    </p>
+                    <p className="text-eris-text text-xs font-bold">{selectedAlert.victim_count ?? 1}</p>
+                  </div>
+                  <div>
+                    <p className="text-eris-text-subtle text-[9px] font-bold uppercase tracking-wider mb-1">
+                      {t('history.triggerSource', 'Trigger')}
+                    </p>
+                    <p className="text-eris-text text-xs font-bold">{selectedAlert.trigger_source ?? 'MANUAL'}</p>
+                  </div>
+                </div>
+              </section>
+
+              {/* --- ATTACHED PHOTO --- */}
+              {selectedAlert.photo_data && (
+                <section>
+                  <h4 className="text-eris-text-muted text-[10px] font-bold uppercase tracking-widest mb-3">
+                    {t('history.photoSection', 'Attached Photo')}
+                  </h4>
+                  <div className="bg-eris-surface-alt/40 border border-eris-border/50 rounded-2xl overflow-hidden flex justify-center p-2">
+                    <img
+                      src={`data:image/jpeg;base64,${selectedAlert.photo_data}`}
+                      alt="Emergency Scene"
+                      className="max-w-full h-auto object-contain max-h-48 rounded-xl"
+                    />
+                  </div>
+                </section>
+              )}
 
               <section>
                 <h4 className="text-eris-text-muted text-[10px] font-bold uppercase tracking-widest mb-3">

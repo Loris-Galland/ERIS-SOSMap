@@ -13,7 +13,7 @@ import type { RiskEventRecord } from '../features/risk/types';
 export interface PendingAudioUpload {
   id?: number;
   user_id: string;
-  trigger_type: 'fall' | 'crash';
+  trigger_type: 'fall' | 'crash' | 'manual' | 'discrete' | 'shake';
   blob: Blob;
   duration_seconds: number;
   created_at: number;
@@ -39,6 +39,11 @@ export interface PendingSOS {
   medical_conditions?: string;
   current_condition?: string;
   is_relay?: boolean;
+
+  incidentType?: string; 
+  victimCount?: number;
+  triggerSource?: 'MANUAL' | 'AUTO' | 'DISCRETE' | 'SHAKE';
+  photoData?: string; // Base64 encoded image string for offline storage
 }
 
 export interface LocalUserProfile {

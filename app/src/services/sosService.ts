@@ -14,6 +14,7 @@ import { db } from '../db/localDb';
 import { supabase } from '../db/supabaseClient';
 import { CapacitorErisSosmap } from 'capacitor-eris-sosmap';
 import { Capacitor } from '@capacitor/core';
+
 export interface SOSSensorData {
   fall_detected?: boolean;
   crash_detected?: boolean;
@@ -40,7 +41,11 @@ export const flushRetryQueue = async () => {
         blood_type: item.blood_type,
         allergies: item.allergies,
         medical_conditions: item.medical_conditions,
-        current_condition: item.current_condition
+        current_condition: item.current_condition,
+        incident_type: item.incidentType, 
+        victim_count: item.victimCount,
+        trigger_source: item.triggerSource,
+        photo_data: item.photoData
       });
       if (!error) {
         await db.sosQueue.update(item.id!, {
@@ -88,7 +93,8 @@ export const dispatchSOS = async (
   position: { lat: number; lng: number; alt: number },
   batteryLevel: number = 100,
   notes: string = '',
-  sensorData?: SOSSensorData,
+  context?: { incidentType?: string | null; victimCount?: number; photoData?: string | null; triggerSource?: 'MANUAL' | 'AUTO' | 'DISCRETE' | 'SHAKE'; }
+  //sensorData?: SOSSensorData,
 ) => {
   const isGuest = localStorage.getItem('eris_is_guest') === 'true' || userId.startsWith('guest');
 
@@ -120,7 +126,11 @@ export const dispatchSOS = async (
     blood_type: profile?.bloodType || 'Unknown',
     allergies: profile?.allergies || 'None',
     medical_conditions: profile?.medicalConditions || 'None',
-    current_condition: profile?.currentCondition || 'Unknown'
+    current_condition: profile?.currentCondition || 'Unknown',
+    incident_type: context?.incidentType || undefined,
+    victim_count: context?.victimCount || 1,
+    trigger_source: context?.triggerSource || 'MANUAL',
+    photo_data: context?.photoData || undefined,
   };
 
   // Payload merged with Dexie specific requirements
@@ -130,6 +140,10 @@ export const dispatchSOS = async (
     lon: position.lng,
     status: 'pending' as any,
     timestamp: Date.now(),
+    incidentType: context?.incidentType || undefined,
+    victimCount: context?.victimCount || 1,
+    triggerSource: context?.triggerSource || 'MANUAL',
+    photoData: context?.photoData || undefined,
   };
 
   // Prepare the stringified payload to bounce across the Mesh Network 

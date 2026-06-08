@@ -9,11 +9,13 @@ android {
 
 apply from: "../capacitor-cordova-android-plugins/cordova.variables.gradle"
 dependencies {
+    implementation project(':capacitor-camera')
     implementation project(':capacitor-device')
     implementation project(':capacitor-geolocation')
     implementation project(':capacitor-network')
     implementation project(':capgo-capacitor-flash')
     implementation project(':capacitor-eris-sosmap')
+    implementation project(':capacitor-voice-recorder')
 
 }
 

@@ -10,8 +10,8 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 interface FallDetectionModalProps {
+  onConfirmSOS: (isTimeout: boolean) => void;
   onCancel: () => void;
-  onConfirmSOS: () => void;
   type?: 'fall' | 'crash';
 }
 
@@ -20,10 +20,8 @@ export default function FallDetectionModal({ onCancel, onConfirmSOS, type = 'fal
   const [countdown, setCountdown] = useState(15);
 
   const isCrash = type === 'crash';
-  const icon    = isCrash ? 'car_crash' : 'personal_injury';
-  const title   = isCrash
-    ? t('crash.detectedTitle', 'CRASH DETECTED')
-    : t('fall.detectedTitle', 'FALL DETECTED');
+  const icon = isCrash ? 'car_crash' : 'personal_injury';
+  const title = isCrash ? t('crash.detectedTitle', 'CRASH DETECTED') : t('fall.detectedTitle', 'FALL DETECTED');
   const message = isCrash
     ? t('crash.detectedMessage', 'A vehicle crash was detected. An automatic SOS alert will be sent in...')
     : t('fall.detectedMessage', 'An automatic SOS alert will be sent with your location in...');
@@ -38,7 +36,7 @@ export default function FallDetectionModal({ onCancel, onConfirmSOS, type = 'fal
         if (prev <= 1) {
           clearInterval(timer);
           audio.pause();
-          onConfirmSOS();
+          onConfirmSOS(true);
           return 0;
         }
         return prev - 1;
@@ -71,7 +69,7 @@ export default function FallDetectionModal({ onCancel, onConfirmSOS, type = 'fal
         </button>
 
         <button
-          onClick={onConfirmSOS}
+          onClick={() => onConfirmSOS(false)}
           className="w-full py-4 bg-transparent border-2 border-red-500 text-red-300 font-bold rounded-2xl hover:bg-red-500/20 active:scale-95 transition-all"
         >
           {t('fall.sendNow', 'SEND SOS NOW')}

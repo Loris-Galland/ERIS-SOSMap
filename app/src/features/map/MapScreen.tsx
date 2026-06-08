@@ -21,12 +21,6 @@ import DiagnosticsModal from '../../features/settings/DiagnosticsModal';
 import { PRESET_REGIONS, MAP_STYLES } from '../../utils/MapUtils';
 import { useSOSMarkersAdmin } from '../../features/admin/hooks/useSOSMarkersAdmin';
 import { usePOIs, type POICategory } from './hooks/usePOIs';
-import { useFallDetection } from '../sos/hooks/useFallDetection';
-import FallDetectionModal from '../../components/FallDetectionModal';
-import { dispatchSOS } from '../../services/sosService';
-import { useCrashDetection } from '../sos/hooks/useCrashDetection';
-import { useInactivityMonitoring } from '../sos/hooks/useInactivityMonitoring';
-import InactivityModal from '../../components/InactivityModal';
 
 interface MapScreenProps {
   isActive: boolean;
@@ -71,13 +65,6 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [localSearchableRegions, setLocalSearchableRegions] = useState<any[]>([]);
 
-  // Fall detection state
-  const [showFallModal, setShowFallModal] = useState(false);
-  const [fallModalTrigger, setFallModalTrigger] = useState<'fall' | 'crash'>('fall');
-
-  // Inactivity monitoring state
-  const [showInactivityModal, setShowInactivityModal] = useState(false);
-
   // ─── HOOKS ───
   const { mapInstance, showLayerMenu, setShowLayerMenu, currentMapStyle, changeMapStyle } = useMapLayers({
     mapRef,
@@ -116,97 +103,6 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
     isActive,
     isAdmin,
   });
-
-  // Logic for fall detection
-  const handleFallDetected = useCallback(() => {
-    console.log('FALL DETECTED BY ACCELEROMETER!');
-    setFallModalTrigger('fall');
-    setShowFallModal(true);
-  }, []);
-
-  // Activate continuous fall detection
-  useFallDetection(handleFallDetected, true);
-
-  // Logic for motorcycle crash detection
-  const handleCrashDetected = useCallback(() => {
-    console.log('MOTORCYCLE CRASH DETECTED!');
-    setFallModalTrigger('crash');
-    setShowFallModal(true); // Reuses the red countdown modal with the siren
-  }, []);
-
-  // Compute speed safely or default to 0 if useGPS doesn't provide it yet
-  const currentSpeed = (userPosition as any).speed || 0;
-
-  // Activate continuous crash detection based on GPS speed and impact forces
-  useCrashDetection({
-    currentSpeedKmh: currentSpeed,
-    onCrashDetected: handleCrashDetected,
-    isActive: isActive,
-  });
-
-  const handleSOSConfirm = async () => {
-    setShowFallModal(false);
-
-    if (userPosition.lat !== 0 && userPosition.lng !== 0) {
-      try {
-        let battery = 100;
-        try { const info = await Device.getBatteryInfo(); battery = Math.round((info.batteryLevel ?? 1) * 100); } catch {}
-        await dispatchSOS(
-          currentUserId,
-          { lat: userPosition.lat, lng: userPosition.lng, alt: userPosition.alt },
-          battery,
-          'AUTOMATIC FALL/CRASH DETECTED',
-          { fall_detected: fallModalTrigger === 'fall', crash_detected: fallModalTrigger === 'crash' },
-        );
-        console.log('SOS SENT AUTOMATICALLY!');
-        onNavigateToAlerts();
-      } catch (error) {
-        console.error('Failed to send SOS:', error);
-        alert(t('fall.sosFailed', 'Failed to send SOS. Please try again manually.'));
-      }
-    } else {
-      console.warn('Cannot send SOS: No GPS location available.');
-      alert(t('fall.noGps', 'Cannot send SOS: Acquiring position...'));
-      onNavigateToAlerts();
-    }
-  };
-
-  // --- Logic for Inactivity Monitoring ---
-  const handleInactivityDetected = useCallback(() => {
-    console.log('PROLONGED INACTIVITY DETECTED!');
-    setShowInactivityModal(true);
-  }, []);
-
-  const { resetTimer: resetInactivityTimer } = useInactivityMonitoring(handleInactivityDetected, true);
-
-  const handleInactivityCancel = () => {
-    setShowInactivityModal(false);
-    resetInactivityTimer(); // Restart the clock because the user is fine
-  };
-
-  const handleInactivitySOS = async () => {
-    setShowInactivityModal(false);
-
-    if (userPosition.lat !== 0 && userPosition.lng !== 0) {
-      try {
-        let battery = 100;
-        try { const info = await Device.getBatteryInfo(); battery = Math.round((info.batteryLevel ?? 1) * 100); } catch {}
-        await dispatchSOS(
-          currentUserId,
-          { lat: userPosition.lat, lng: userPosition.lng, alt: userPosition.alt },
-          battery,
-          'AUTOMATIC SOS: PROLONGED INACTIVITY DETECTED',
-          { inactivity_detected: true },
-        );
-        onNavigateToAlerts();
-      } catch (error) {
-        console.error('Failed to send SOS:', error);
-      }
-    } else {
-      console.warn('Cannot send SOS: No GPS location available.');
-      onNavigateToAlerts();
-    }
-  };
 
   // Fetch weather when GPS position changes
   useEffect(() => {
@@ -262,7 +158,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
     const customRegs = savedCustom ? JSON.parse(savedCustom) : [];
     const formattedCustom = customRegs.map((r: any) => ({
       place_id: r.id,
-      display_name: `${r.name}, Custom zone`,
+      display_name: `${r.name}, ${t('offline.customZone', 'Custom zone')}`,
       boundingbox: [r.bounds.southWest[0], r.bounds.northEast[0], r.bounds.southWest[1], r.bounds.northEast[1]],
       isOffline: true,
     }));
@@ -271,7 +167,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
     const downloadedIds = savedOffline ? JSON.parse(savedOffline) : [];
     const downloadedPresets = PRESET_REGIONS.filter((pr) => downloadedIds.includes(pr.id)).map((pr) => ({
       place_id: pr.id.toString(),
-      display_name: `${pr.name}, Saved zone`,
+      display_name: `${pr.name}, ${t('offline.savedZone', 'Saved zone')}`,
       boundingbox: [
         pr.bounds.getSouthWest().lat,
         pr.bounds.getNorthEast().lat,
@@ -634,7 +530,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
                   ? 'bg-yellow-500/20 [.theme-contrasted_&]:bg-gray-500'
                   : 'bg-eris-danger/20 [.theme-contrasted_&]:bg-gray-500'
             }`}
-            title="Expand Location"
+            title={t('map.expandLocation', 'Expand Location')}
           >
             <div className="relative flex items-center justify-center">
               {/* Satellite status-indicator */}
@@ -661,7 +557,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
           <div
             onClick={() => setIsLocationExpanded(false)}
             className="bg-eris-surface/80 backdrop-blur-md border border-eris-border/50 rounded-2xl p-4 shadow-xl cursor-pointer hover:bg-eris-surface/90 transition-colors"
-            title="Click to minimize"
+            title={t('map.minimize', 'Click to minimize')}
           >
             <div className="flex items-center gap-3 mb-2">
               <span
@@ -947,7 +843,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
         <div className="absolute inset-0 z-[18000] bg-[#0f141e]/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="bg-gray-900 border border-gray-700/50 rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-in zoom-in-95 duration-200">
             <div className="flex justify-between items-center mb-2">
-              <h3 className="text-white text-lg font-bold">Report a Hazard</h3>
+              <h3 className="text-white text-lg font-bold">{t('hazard.reportTitle', 'Report a Hazard')}</h3>
               <button
                 onClick={() => setShowHazardReportModal(false)}
                 className="w-8 h-8 flex items-center justify-center bg-gray-800 rounded-full text-gray-400 hover:text-white active:scale-95"
@@ -956,7 +852,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
               </button>
             </div>
             <p className="text-gray-400 text-xs mb-5 leading-relaxed">
-              Warn other ERIS users about immediate dangers at your current location.
+              {t('hazard.reportDesc', 'Warn other ERIS users about immediate dangers at your current location.')}
             </p>
             {/* ─── NOUVEAU : CURSEUR DE TAILLE DE ZONE ─── */}
             {pendingGeometry && pendingGeometry.shape_type !== 'point' && (
@@ -1004,28 +900,28 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
                 {
                   type: 'fire',
                   icon: 'local_fire_department',
-                  label: 'Wildfire',
+                  label: t('alert.presetFire', 'Wildfire'),
                   color: 'text-red-400 [.theme-contrasted_&]:text-white',
                   bg: 'bg-red-400/20 [.theme-contrasted_&]:bg-transparent [.theme-contrasted_&]:border [.theme-contrasted_&]:border-white',
                 },
                 {
                   type: 'flood',
                   icon: 'water_drop',
-                  label: 'Flood',
+                  label: t('alert.presetFlood', 'Flood'),
                   color: 'text-blue-400 [.theme-contrasted_&]:text-white',
                   bg: 'bg-blue-400/20 [.theme-contrasted_&]:bg-transparent [.theme-contrasted_&]:border [.theme-contrasted_&]:border-white',
                 },
                 {
                   type: 'road_blocked',
                   icon: 'block',
-                  label: 'Road Blocked',
+                  label: t('alert.presetRoad', 'Road Blocked'),
                   color: 'text-orange-400 [.theme-contrasted_&]:text-white',
                   bg: 'bg-orange-400/20 [.theme-contrasted_&]:bg-transparent [.theme-contrasted_&]:border [.theme-contrasted_&]:border-white',
                 },
                 {
                   type: 'landslide',
                   icon: 'landslide',
-                  label: 'Landslide',
+                  label: t('alert.presetLandslide', 'Landslide'),
                   color: 'text-purple-400 [.theme-contrasted_&]:text-white',
                   bg: 'bg-purple-400/20 [.theme-contrasted_&]:bg-transparent [.theme-contrasted_&]:border [.theme-contrasted_&]:border-white',
                 },
@@ -1090,12 +986,6 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
 
       {/* ─── DIAGNOSTICS ─── */}
       {showDiagnostics && <DiagnosticsModal onClose={() => setShowDiagnostics(false)} gpsStatus={gpsStatus} />}
-
-      {/* ─── FALL DETECTION MODAL ─── */}
-      {showFallModal && <FallDetectionModal onCancel={() => setShowFallModal(false)} onConfirmSOS={handleSOSConfirm} />}
-
-      {/* ─── INACTIVITY MODAL ─── */}
-      {showInactivityModal && <InactivityModal onCancel={handleInactivityCancel} onConfirmSOS={handleInactivitySOS} />}
     </div>
   );
 }

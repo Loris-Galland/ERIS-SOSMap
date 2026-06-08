@@ -35,7 +35,18 @@
     "longitude": "LONGITUDE",
     "altitude": "ALTITUDE",
     "networkActive": "Connecté — Réseau ERIS Actif",
-    "networkOffline": "Hors-ligne — Relais Matériel Prêt"
+    "networkOffline": "Hors-ligne — Relais Matériel Prêt",
+    "emergencyType": "Type d'Urgence",
+    "presetFire": "Incendie",
+    "presetFlood": "Inondation",
+    "presetMedical": "Médical",
+    "presetLandslide": "Éboulement",
+    "presetCrash": "Accident",
+    "presetOther": "Autre",
+    "victims": "Victimes",
+    "addPhoto": "Ajouter Photo",
+    "photoAttached": "Photo Jointe",
+    "audioNotice": "Un enregistrement audio en arrière-plan de 5 minutes démarrera automatiquement."
   },
   "settings": {
     "title": "Paramètres",
@@ -78,14 +89,20 @@
     "discrete_tap": "4 Tapes Rapides",
     "discrete_flip": "3 Retournements du Téléphone",
     "audioRecording": "Enregistrement audio d'urgence",
-    "audioRecordingDesc": "Enregistre l'ambiance sonore lors d'une chute ou d'un accident détecté",
     "audioConsentTitle": "Avant d'activer l'enregistrement audio",
-    "audioConsent1": "L'audio est enregistré uniquement lors d'une chute ou d'un accident confirmé.",
+    "audioRecordingDesc": "Enregistrez jusqu'à 5 minutes d'audio en arrière-plan lors de situations d'urgence afin de recueillir des preuves.",
+    "audioConsent1": "Jusqu'à 5 minutes d'audio sont enregistrées automatiquement en arrière-plan lors du déclenchement de vos alertes d'urgence configurées.",
     "audioConsent2": "Les enregistrements sont stockés de manière sécurisée et supprimés au bout de 30 jours.",
     "audioConsent3": "Seuls vous et vos contacts d'urgence y ont accès.",
     "audioConsent4": "Vous pouvez désactiver cette option à tout moment depuis cet écran.",
     "audioConsent5": "Cette fonctionnalité traite des données de santé (RGPD Art. 9).",
-    "audioConsentAccept": "Je comprends — Activer"
+    "audioConsentAccept": "Je comprends — Activer",
+    "audioGranularTitle": "Enregistrer automatiquement pour :",
+    "sosTypeCrash": "Détection d'accident de voiture",
+    "sosTypeFall": "Détection de chute",
+    "sosTypeDiscrete": "SOS Discret (Furtif)",
+    "sosTypeShake": "Secouer pour SOS",
+    "sosTypeManual": "Pression manuelle du bouton"
   },
   "discrete": {
     "banner_title": "SOS Silencieux Déclenché",
@@ -360,13 +377,17 @@
       "stats": "{{count}} enregistrement(s)",
       "triggerFall": "Chute détectée",
       "triggerCrash": "Accident détecté",
+      "triggerShake": "Secouement",
+      "triggerDiscrete": "SOS Discret/Silencieux",
+      "triggerManual": "Pression manuelle du bouton",
       "userId": "Utilisateur :",
       "expiresAt": "Expire le :",
       "noUrl": "URL signée indisponible",
       "download": "Télécharger",
       "delete": "Supprimer",
       "confirmDelete": "Supprimer définitivement cet enregistrement ?",
-      "noRecordings": "Aucun enregistrement pour l'instant"
+      "noRecordings": "Aucun enregistrement pour l'instant",
+      "viewAlert": "Voir l'alerte SOS associée"
     }
   },
   "fall": {
