@@ -6,12 +6,19 @@
  * link, and mesh broadcast. Failed alerts are queued in Dexie for retry.
  * Connects to: Supabase 'sos_alerts', localDb sosQueue and userProfile, and the
  * capacitor-eris-sosmap plugin for native network and mesh capabilities.
+ * ERIS-RescueAI reads sos_alerts directly via their own Supabase service-role
+ * client — no explicit API call needed from this side.
  */
 
 import { db } from '../db/localDb';
 import { supabase } from '../db/supabaseClient';
 import { CapacitorErisSosmap } from 'capacitor-eris-sosmap';
 import { Capacitor } from '@capacitor/core';
+export interface SOSSensorData {
+  fall_detected?: boolean;
+  crash_detected?: boolean;
+  inactivity_detected?: boolean;
+}
 
 // Background retry engine
 // This runs whenever dispatchSOS is called and flushes any previously queued alerts.
@@ -81,6 +88,7 @@ export const dispatchSOS = async (
   position: { lat: number; lng: number; alt: number },
   batteryLevel: number = 100,
   notes: string = '',
+  sensorData?: SOSSensorData,
 ) => {
   const isGuest = localStorage.getItem('eris_is_guest') === 'true' || userId.startsWith('guest');
 

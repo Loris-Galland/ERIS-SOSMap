@@ -73,6 +73,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
 
   // Fall detection state
   const [showFallModal, setShowFallModal] = useState(false);
+  const [fallModalTrigger, setFallModalTrigger] = useState<'fall' | 'crash'>('fall');
 
   // Inactivity monitoring state
   const [showInactivityModal, setShowInactivityModal] = useState(false);
@@ -119,6 +120,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
   // Logic for fall detection
   const handleFallDetected = useCallback(() => {
     console.log('FALL DETECTED BY ACCELEROMETER!');
+    setFallModalTrigger('fall');
     setShowFallModal(true);
   }, []);
 
@@ -128,6 +130,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
   // Logic for motorcycle crash detection
   const handleCrashDetected = useCallback(() => {
     console.log('MOTORCYCLE CRASH DETECTED!');
+    setFallModalTrigger('crash');
     setShowFallModal(true); // Reuses the red countdown modal with the siren
   }, []);
 
@@ -153,6 +156,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
           { lat: userPosition.lat, lng: userPosition.lng, alt: userPosition.alt },
           battery,
           'AUTOMATIC FALL/CRASH DETECTED',
+          { fall_detected: fallModalTrigger === 'fall', crash_detected: fallModalTrigger === 'crash' },
         );
         console.log('SOS SENT AUTOMATICALLY!');
         onNavigateToAlerts();
@@ -192,6 +196,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
           { lat: userPosition.lat, lng: userPosition.lng, alt: userPosition.alt },
           battery,
           'AUTOMATIC SOS: PROLONGED INACTIVITY DETECTED',
+          { inactivity_detected: true },
         );
         onNavigateToAlerts();
       } catch (error) {
