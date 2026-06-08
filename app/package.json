@@ -13,6 +13,7 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@capacitor/camera": "^8.2.0",
     "@capacitor/cli": "^8.3.0",
     "@capacitor/core": "^8.3.0",
     "@capacitor/device": "^8.0.2",
@@ -22,6 +23,7 @@
     "@capgo/capacitor-flash": "^8.0.27",
     "@supabase/supabase-js": "^2.103.3",
     "capacitor-eris-sosmap": "file:..",
+    "capacitor-voice-recorder": "^1.1.1",
     "dexie": "^4.4.2",
     "dexie-react-hooks": "^4.4.0",
     "i18next": "^26.0.8",

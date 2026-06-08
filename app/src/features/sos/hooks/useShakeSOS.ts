@@ -10,6 +10,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Motion } from '@capacitor/motion';
 import { type PluginListenerHandle } from '@capacitor/core';
 import { dispatchSOS } from '../../../services/sosService';
+import { useAudioRecording } from '../../audio/hooks/useAudioRecording';
 
 interface ShakeConfig {
   threshold: number;       // Acceleration force needed to count as a shake (G-force/standard is ~15-25)
@@ -48,6 +49,9 @@ export const useShakeSOS = (
   // State control locks
   const hasTriggeredRef = useRef<boolean>(false);
   const onCooldownRef = useRef<boolean>(false);
+
+  // Initialize the audio recorder
+  const { startRecording, stopRecording, cancelRecording, linkAudioToAlert } = useAudioRecording(userId);
 
   const startListening = async () => {
     if (motionListenerRef.current) return;
@@ -123,7 +127,7 @@ export const useShakeSOS = (
       motionListenerRef.current = null;
     }
     setIsListening(false);
-    cancelSOS();
+    //cancelSOS();
   };
 
   // ─── COUNTDOWN LOGIC ───
@@ -133,6 +137,7 @@ export const useShakeSOS = (
     
     setCountdown(5);
     setIsCounting(true);
+    startRecording('shake');
   };
 
   // Manage the countdown tick second by second
@@ -160,7 +165,22 @@ export const useShakeSOS = (
     try {
       const position = getPosition();
       const battery = getBatteryLevel();
-      await dispatchSOS(userId, position, battery, 'Automated emergency SOS triggered by device shake hardware event.');
+
+      const result = await dispatchSOS(
+        userId, 
+        position, 
+        battery, 
+        'Automated emergency SOS triggered by device shake hardware event.',
+        {
+          incidentType: 'OTHER',
+          victimCount: 1,
+          triggerSource: 'SHAKE'
+        }
+      );
+
+      if (result && (result as any).supabaseId) {
+         linkAudioToAlert((result as any).supabaseId);
+      }
     } catch (error) {
       console.error('[SHAKE HOOK] Automatic dispatch workflow failed', error);
     } finally {
@@ -177,6 +197,7 @@ export const useShakeSOS = (
     
     setIsCounting(false);
     setCountdown(5);
+    cancelRecording();
     
     hasTriggeredRef.current = false;
     onCooldownRef.current = false; 

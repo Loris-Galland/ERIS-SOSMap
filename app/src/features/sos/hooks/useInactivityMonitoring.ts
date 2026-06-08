@@ -20,8 +20,18 @@ export function useInactivityMonitoring(onInactivityDetected: () => void, isActi
     let accelListener: any;
     let checkInterval: any;
 
+    const handleScreenInteraction = () => {
+      if (!isActive) return;
+      lastMovementTime.current = Date.now();
+    };
+
     const startMonitoring = async () => {
       if (!isActive) return;
+
+      window.addEventListener('touchstart', handleScreenInteraction, { passive: true });
+      window.addEventListener('click', handleScreenInteraction, { passive: true });
+      window.addEventListener('scroll', handleScreenInteraction, { passive: true });
+      window.addEventListener('keydown', handleScreenInteraction, { passive: true });
 
       try {
         // Listen to micro-movements of the phone
@@ -63,6 +73,11 @@ export function useInactivityMonitoring(onInactivityDetected: () => void, isActi
     return () => {
       if (accelListener) accelListener.remove();
       if (checkInterval) clearInterval(checkInterval);
+
+      window.removeEventListener('touchstart', handleScreenInteraction);
+      window.removeEventListener('click', handleScreenInteraction);
+      window.removeEventListener('scroll', handleScreenInteraction);
+      window.removeEventListener('keydown', handleScreenInteraction);
     };
   }, [isActive, onInactivityDetected]);
 

@@ -24,6 +24,14 @@ export interface SOSAlertAdmin {
   battery_level: number;
   notes: string;
   created_at: string;
+  incident_type?: string;
+  victim_count?: number;
+  trigger_source?: string;
+  photo_data?: string;
+  blood_type?: string;
+  allergies?: string;
+  medical_conditions?: string;
+  current_condition?: string;
 }
 
 export function useSOSAlerts() {
