@@ -108,58 +108,49 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
   } = useHazards({ mapInstance, isActive, isAdmin, isMapReady });
 
   const { isLoading: isPoisLoading } = usePOIs({ mapInstance, activeFilters });
-  /// === GESTION DE LA DESTINATION (APPUI LONG ET CLIC SUR POI) ===
+  // === GESTION DE LA DESTINATION (NATIVE LEAFLET - COMPATIBLE MOBILE) ===
   useEffect(() => {
     if (!mapInstance.current) return;
     const map = mapInstance.current;
 
-    const handleMapClick = (e: any) => {
+    // Cette fonction extrait les coordonnées de tout ce que l'on touche
+    const onMapOrMarkerClick = (e: any) => {
       if (isDrawingMode) return;
-      if (e.latlng) {
-        setSelectedDestination({ lat: e.latlng.lat, lng: e.latlng.lng });
+
+      // On cherche les coordonnées (soit du clic sur la carte, soit du centre du marqueur cliqué)
+      let latlng = e.latlng;
+      if (!latlng && e.target && typeof e.target.getLatLng === 'function') {
+        latlng = e.target.getLatLng();
       }
-    };
-
-    const handleLongPress = (e: any) => {
-      if (isDrawingMode) return;
-      if (e.latlng) {
-        setSelectedDestination({ lat: e.latlng.lat, lng: e.latlng.lng });
-      }
-    };
-
-    const handlePopupOrTooltipOpen = (e: any) => {
-      // Ignorer notre propre drapeau
-      if (destMarkerRef.current && e.popup === destMarkerRef.current.getPopup()) return;
-
-      // Chercher si c'est un popup ou un tooltip qui vient de s'ouvrir
-      const overlay = e.popup || e.tooltip;
-      if (!overlay) return;
-
-      const marker = overlay._source;
-      const latlng =
-        marker && typeof marker.getLatLng === 'function'
-          ? marker.getLatLng()
-          : typeof overlay.getLatLng === 'function'
-            ? overlay.getLatLng()
-            : null;
 
       if (latlng && latlng.lat && latlng.lng) {
         setSelectedDestination({ lat: latlng.lat, lng: latlng.lng });
       }
     };
 
-    map.on('click', handleMapClick);
-    map.on('contextmenu', handleLongPress);
+    // 1. On écoute les appuis sur le fond de la carte
+    map.on('click', onMapOrMarkerClick);
+    map.on('contextmenu', onMapOrMarkerClick); // L'appui long sur mobile
 
-    // On écoute les DEUX types d'infobulles (Popup et Tooltip) !
-    map.on('popupopen', handlePopupOrTooltipOpen);
-    map.on('tooltipopen', handlePopupOrTooltipOpen);
+    // 2. On greffe le clic tactile sur TOUS les POIs (Pharmacies, Hôpitaux)
+    const bindLayerClick = (layer: any) => {
+      if (layer && typeof layer.on === 'function') {
+        layer.off('click', onMapOrMarkerClick); // Sécurité anti-doublon
+        layer.on('click', onMapOrMarkerClick);
+      }
+    };
+
+    // A. Pour les POIs qui sont déjà chargés
+    map.eachLayer(bindLayerClick);
+
+    // B. Pour les nouveaux POIs qui apparaissent quand on bouge la carte
+    const handleLayerAdd = (e: any) => bindLayerClick(e.layer);
+    map.on('layeradd', handleLayerAdd);
 
     return () => {
-      map.off('click', handleMapClick);
-      map.off('contextmenu', handleLongPress);
-      map.off('popupopen', handlePopupOrTooltipOpen);
-      map.off('tooltipopen', handlePopupOrTooltipOpen);
+      map.off('click', onMapOrMarkerClick);
+      map.off('contextmenu', onMapOrMarkerClick);
+      map.off('layeradd', handleLayerAdd);
     };
   }, [mapInstance, isDrawingMode]);
   // === DESSIN DU DRAPEAU DE DESTINATION ===
@@ -917,37 +908,28 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
         </button>
 
         {/* ─── ROUTING BUTTON ─── */}
+        {/* ─── BOUTON D'ÉVACUATION EXTERNE (Google Maps / Waze) ─── */}
         <button
           onClick={() => {
-            if (routeCoordinates.length > 0) {
-              clearRoute();
-              setSelectedDestination(null); // Efface le drapeau quand on efface la route
-            } else if (selectedDestination && userPosition.lat !== 0) {
-              computeRoute(
-                userPosition.lat,
-                userPosition.lng,
-                selectedDestination.lat,
-                selectedDestination.lng,
-                hazardsList || [],
-              );
+            if (selectedDestination && userPosition.lat !== 0) {
+              // 1. Création de l'URL universelle de direction Google Maps
+              const url = `https://www.google.com/maps/dir/?api=1&origin=${userPosition.lat},${userPosition.lng}&destination=${selectedDestination.lat},${selectedDestination.lng}&travelmode=driving`;
+
+              // 2. Sur mobile (Capacitor), '_system' force l'ouverture dans l'app native (Google Maps, Waze, Safari, etc.)
+              window.open(url, '_system');
+
+              // 3. (Optionnel) Efface le drapeau vert une fois l'app GPS ouverte
+              setSelectedDestination(null);
             } else if (!selectedDestination) {
-              alert("Veuillez d'abord cliquer sur la carte pour choisir une destination.");
+              alert("Veuillez d'abord cliquer sur la carte pour poser un drapeau de destination.");
             } else {
-              alert('Position GPS non disponible pour calculer un trajet.');
+              alert('Position GPS de départ non disponible.');
             }
           }}
-          className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors shadow-lg active:scale-95 ${
-            routeCoordinates.length > 0
-              ? 'bg-eris-danger text-white hover:bg-red-600'
-              : 'bg-green-600 text-white hover:bg-green-500'
-          } [.theme-contrasted_&]:border-2 [.theme-contrasted_&]:!border-black`}
-          title={routeCoordinates.length > 0 ? 'Clear Safe Route' : 'Find Evacuation Route'}
+          className="w-12 h-12 bg-green-600 text-white hover:bg-green-500 rounded-full flex items-center justify-center transition-colors shadow-lg active:scale-95 [.theme-contrasted_&]:border-2 [.theme-contrasted_&]:!border-black"
+          title="Ouvrir le GPS (Google Maps/Waze)"
         >
-          <span
-            className={`material-symbols-outlined text-xl [.theme-contrasted_&]:!text-black ${isComputing ? 'animate-spin' : ''}`}
-          >
-            {isComputing ? 'sync' : routeCoordinates.length > 0 ? 'route' : 'directions_run'}
-          </span>
+          <span className="material-symbols-outlined text-xl [.theme-contrasted_&]:!text-black">directions_car</span>
         </button>
         {/* Re-center on my location button */}
         <button
