@@ -89,7 +89,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
     handleDeleteHazard,
     pendingGeometry,
     setPendingGeometry,
-  } = useHazards({ mapInstance, isActive, isAdmin, isMapReady });
+  } = useHazards({ mapInstance, isActive, isAdmin, isMapReady, userId: currentUserId });
 
   const { isLoading: isPoisLoading } = usePOIs({ mapInstance, activeFilters });
 

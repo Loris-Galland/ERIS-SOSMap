@@ -18,9 +18,10 @@ interface UseHazardsProps {
   isActive: boolean;
   isAdmin: boolean;
   isMapReady: boolean;
+  userId: string;
 }
 
-export function useHazards({ mapInstance, isActive, isAdmin, isMapReady }: UseHazardsProps) {
+export function useHazards({ mapInstance, isActive, isAdmin, isMapReady, userId }: UseHazardsProps) {
   const [hazardsList, setHazardsList] = useState<any[]>([]);
   const [showHazardAlert, setShowHazardAlert] = useState(true);
   const [showHazardReportModal, setShowHazardReportModal] = useState(false);
@@ -155,7 +156,7 @@ export function useHazards({ mapInstance, isActive, isAdmin, isMapReady }: UseHa
   // Function to handle the actual deletion from the modal
   const handleDeleteHazard = async () => {
     if (!hazardToDelete) return;
-    await removeHazard(hazardToDelete);
+    await removeHazard(hazardToDelete, userId, isAdmin);
     setHazardToDelete(null); // Close the modal
     loadHazards(); // Refresh the map
   };

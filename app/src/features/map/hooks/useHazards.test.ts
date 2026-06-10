@@ -55,6 +55,7 @@ const DEFAULT_PROPS = {
   isActive: false,
   isAdmin: false,
   isMapReady: false,
+  userId: 'user-1',
 };
 
 beforeEach(() => {
@@ -160,7 +161,7 @@ describe('useHazards — handleDeleteHazard', () => {
       await result.current.handleDeleteHazard();
     });
 
-    expect(mockRemoveHazard).toHaveBeenCalledWith('target-uuid');
+    expect(mockRemoveHazard).toHaveBeenCalledWith('target-uuid', DEFAULT_PROPS.userId, DEFAULT_PROPS.isAdmin);
   });
 
   it('resets hazardToDelete to null after deletion', async () => {

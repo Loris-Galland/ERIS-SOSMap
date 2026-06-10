@@ -166,22 +166,44 @@ describe('removeHazard', () => {
     mockHazardsFilter.mockReturnValue({ delete: vi.fn().mockResolvedValue(undefined) } as any);
   });
 
-  it('deletes from Supabase and Dexie when online', async () => {
+  it('deletes from Supabase (scoped to the owner) and Dexie when online', async () => {
     Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
+    const eqMock = vi.fn();
+    const chainable: any = { eq: eqMock };
+    eqMock.mockReturnValue(chainable);
+    chainable.then = (resolve: any) => resolve({ error: null });
     mockFrom.mockReturnValue({
-      delete: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
+      delete: vi.fn().mockReturnValue(chainable),
     } as any);
 
-    await removeHazard('target-uuid');
+    await removeHazard('target-uuid', USER_ID);
 
     expect(mockFrom).toHaveBeenCalledWith('hazards');
+    expect(eqMock).toHaveBeenCalledWith('id', 'target-uuid');
+    expect(eqMock).toHaveBeenCalledWith('user_id', USER_ID);
     expect(mockHazardsFilter).toHaveBeenCalledOnce();
+  });
+
+  it('lets admins delete a hazard without scoping to user_id', async () => {
+    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
+    const eqMock = vi.fn();
+    const chainable: any = { eq: eqMock };
+    eqMock.mockReturnValue(chainable);
+    chainable.then = (resolve: any) => resolve({ error: null });
+    mockFrom.mockReturnValue({
+      delete: vi.fn().mockReturnValue(chainable),
+    } as any);
+
+    await removeHazard('target-uuid', USER_ID, true);
+
+    expect(eqMock).toHaveBeenCalledWith('id', 'target-uuid');
+    expect(eqMock).not.toHaveBeenCalledWith('user_id', USER_ID);
   });
 
   it('deletes only from Dexie when offline', async () => {
     Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
 
-    await removeHazard('target-uuid');
+    await removeHazard('target-uuid', USER_ID);
 
     expect(mockFrom).not.toHaveBeenCalled();
     expect(mockHazardsFilter).toHaveBeenCalledOnce();
