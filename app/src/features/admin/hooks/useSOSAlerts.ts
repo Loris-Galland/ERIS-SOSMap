@@ -2,7 +2,8 @@
  * Hook that fetches and maintains a real-time list of SOS alerts for the admin dashboard.
  * Performs an initial load from the sos_alerts Supabase table, then subscribes to
  * INSERT and UPDATE events via Postgres changes to keep the list live. Exports
- * updateAlertStatus to write status changes back to Supabase with an optimistic UI update.
+ * updateAlertStatus, which calls the update_sos_alert_status RPC (server-side admin
+ * check) with an optimistic UI update.
  * Consumed by SOSAlertDashboard and types are shared with useSOSMarkersAdmin.
  */
 
@@ -56,12 +57,13 @@ export function useSOSAlerts() {
     setLoading(false);
   };
 
-  // Update a single alert status directly in Supabase
+  // Update a single alert status via the update_sos_alert_status RPC
+  // (SECURITY DEFINER, verifies the caller is an admin server-side)
   const updateAlertStatus = async (id: string, status: AlertStatus) => {
-    const { error } = await supabase
-      .from('sos_alerts')
-      .update({ status })
-      .eq('id', id);
+    const { error } = await supabase.rpc('update_sos_alert_status', {
+      alert_id: id,
+      new_status: status,
+    });
 
     if (!error) {
       // Optimistic update — reflect change immediately in the UI

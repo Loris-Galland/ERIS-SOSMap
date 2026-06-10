@@ -88,11 +88,16 @@ export const fetchHazards = async () => {
   return [...remoteHazards, ...localHazards];
 };
 
-export const removeHazard = async (uuid: string) => {
+export const removeHazard = async (uuid: string, userId: string, isAdmin: boolean = false) => {
   try {
     if (navigator.onLine) {
-      // Delete from Supabase 
-      const { error } = await supabase.from('hazards').delete().eq('id', uuid);
+      // Delete from Supabase. Non-admins may only delete their own reports;
+      // admins rely on the RLS policy to allow deleting any hazard.
+      let query = supabase.from('hazards').delete().eq('id', uuid);
+      if (!isAdmin) {
+        query = query.eq('user_id', userId);
+      }
+      const { error } = await query;
       if (error) throw error;
     }
   } catch (error) {
