@@ -197,7 +197,7 @@ function AlertCard({ alert, isExpanded, onToggle, onUpdateStatus }: AlertCardPro
                     ? 'visibility_off'
                     : 'touch_app'}
               </span>
-              {alert.trigger_source || 'MANUAL'} TRIGGER
+              {alert.trigger_source || t('admin.triggerManual', 'MANUAL')} {t('admin.triggerLabel', 'TRIGGER')}
             </span>
           </div>
 
@@ -230,7 +230,7 @@ function AlertCard({ alert, isExpanded, onToggle, onUpdateStatus }: AlertCardPro
             <div className="bg-orange-500/10 border border-orange-500/30 rounded-xl p-4">
               <p className="text-[10px] font-bold text-orange-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
                 <span className="material-symbols-outlined text-[14px]">chat_bubble</span>
-                Notes
+                {t('alert.notes', 'Notes')}
               </p>
               <p className="text-eris-text text-sm italic">"{alert.notes}"</p>
             </div>

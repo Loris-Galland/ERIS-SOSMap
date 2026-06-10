@@ -589,7 +589,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
           <button
             onClick={() => setIsWeatherExpanded(true)}
             className={`w-12 h-12 backdrop-blur-md border border-eris-border/50 rounded-full flex items-center justify-center transition-colors shadow-lg active:scale-95 ${currentWeather.bg} [.theme-contrasted_&]:bg-eris-surface`}
-            title="Expand Weather"
+            title={t('map.expandWeather', 'Expand Weather')}
           >
             <span
               className={`material-symbols-outlined text-xl ${currentWeather.color} ${
@@ -603,7 +603,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
           <div
             onClick={() => setIsWeatherExpanded(false)}
             className="bg-eris-surface/80 backdrop-blur-md border border-eris-border/50 rounded-2xl p-2.5 shadow-xl flex items-center gap-4 cursor-pointer hover:bg-eris-surface/90 transition-colors"
-            title="Click to minimize"
+            title={t('map.minimize', 'Click to minimize')}
           >
             <div className="flex items-center gap-2">
               <div
@@ -690,7 +690,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
         <button
           onClick={() => setIsDrawingMode(!isDrawingMode)}
           className={`w-12 h-12 ${isDrawingMode ? 'bg-gray-500' : 'bg-eris-alert'} [.theme-dark_&]:bg-orange-400 rounded-full flex items-center justify-center text-white [.theme-contrasted_&]:border-2 [.theme-contrasted_&]:!border-black hover:bg-orange-400 transition-colors shadow-lg shadow-eris-alert/30 active:scale-95`}
-          title={isDrawingMode ? 'Cancel Draw' : 'Report Hazard'}
+          title={isDrawingMode ? t('map.cancelDraw', 'Cancel Draw') : t('map.reportHazardBtn', 'Report Hazard')}
         >
           <span className="material-symbols-outlined [.theme-contrasted_&]:!text-black text-xl">
             {isDrawingMode ? 'close' : 'warning'}

@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import i18n from '../i18n';
 
 interface Props {
   children: ReactNode;
@@ -24,13 +25,13 @@ export default class ErrorBoundary extends Component<Props, State> {
       return (
         <div className="flex flex-col items-center justify-center h-screen w-full bg-gray-950 text-white px-6 text-center gap-4">
           <span className="material-symbols-outlined text-5xl text-red-500">error</span>
-          <h1 className="text-xl font-bold">Une erreur inattendue s'est produite</h1>
-          <p className="text-gray-400 text-sm">Redémarre l'application pour continuer.</p>
+          <h1 className="text-xl font-bold">{i18n.t('errorBoundary.title')}</h1>
+          <p className="text-gray-400 text-sm">{i18n.t('errorBoundary.message')}</p>
           <button
             className="mt-4 px-6 py-2 bg-red-600 rounded-full text-sm font-semibold"
             onClick={() => this.setState({ hasError: false })}
           >
-            Réessayer
+            {i18n.t('errorBoundary.retry')}
           </button>
         </div>
       );

@@ -39,6 +39,7 @@
     "emergencyType": "Loại Khẩn cấp",
     "presetFire": "Hỏa hoạn",
     "presetFlood": "Lũ lụt",
+    "presetRoad": "Đường bị chặn",
     "presetMedical": "Y tế",
     "presetLandslide": "Sạt lở đất",
     "presetCrash": "Tai nạn",
@@ -46,6 +47,9 @@
     "victims": "Nạn nhân",
     "addPhoto": "Thêm Ảnh",
     "photoAttached": "Ảnh đính kèm",
+    "autoFallNote": "PHÁT HIỆN TÉ NGÃ TỰ ĐỘNG: Đã phát hiện té ngã và người dùng không phản hồi.",
+    "autoCrashNote": "PHÁT HIỆN TAI NẠN TỰ ĐỘNG: Cảm biến thiết bị phát hiện va chạm xe nghiêm trọng.",
+    "autoInactivityNote": "SOS TỰ ĐỘNG: Phát hiện không hoạt động trong thời gian dài.",
     "audioNotice": "Ghi âm nền 5 phút sẽ tự động bắt đầu."
   },
   "settings": {
@@ -75,11 +79,21 @@
     "offlineCache": "Bộ nhớ bản đồ ngoại tuyến",
     "offlineCacheDesc": "Hiện đang dùng {{size}}",
     "clearCache": "Xóa bộ nhớ",
+    "calculatingCache": "Đang tính toán...",
+    "clearCacheConfirm": "Bạn có chắc muốn xóa bộ nhớ đệm bản đồ ngoại tuyến không?",
+    "cacheClearedSuccess": "Đã xóa bộ nhớ đệm bản đồ thành công.",
+    "cacheClearError": "Lỗi khi xóa bộ nhớ đệm.",
+    "accessDeniedTitle": "Truy cập bị từ chối",
+    "cacheAccessError": "Không thể truy cập bộ nhớ đệm cục bộ.",
+    "unexpectedError": "Đã xảy ra lỗi không mong muốn.",
     "diagnosticsTitle": "Chẩn đoán hệ thống",
     "connected": "Đã kết nối",
     "searching": "Đang tìm...",
     "runTest": "Chạy kiểm tra mạng",
     "logoutBtn": "Đăng xuất khỏi hệ thống ERIS",
+    "powerMgmtTitle": "Quản lý nguồn điện",
+    "autoSosBattery": "Tự động SOS (Pin yếu nghiêm trọng)",
+    "autoSosBatteryDesc": "Tự động gửi vị trí cuối cùng khi pin còn 1%",
     "sosTitle": "SOS",
     "shake_sos_title": "Lắc để gửi SOS",
     "shake_sos_desc": "Tự động gửi tín hiệu SOS khi lắc thiết bị.",
@@ -88,8 +102,15 @@
     "discrete_none": "Đã tắt",
     "discrete_tap": "Chạm nhanh 4 lần",
     "discrete_flip": "Lật điện thoại 3 lần",
+    "audioRecording": "Ghi âm khẩn cấp",
+    "audioConsentTitle": "Trước khi bật ghi âm",
     "audioRecordingDesc": "Ghi lại tối đa 5 phút âm thanh môi trường ở chế độ nền trong các trường hợp khẩn cấp để thu thập bằng chứng.",
     "audioConsent1": "Tối đa 5 phút âm thanh được ghi tự động ở chế độ nền trong các trường hợp kích hoạt khẩn cấp của bạn.",
+    "audioConsent2": "Bản ghi âm được lưu trữ an toàn và xóa sau 30 ngày.",
+    "audioConsent3": "Chỉ bạn và những người liên hệ khẩn cấp của bạn mới có thể truy cập.",
+    "audioConsent4": "Bạn có thể tắt tính năng này bất cứ lúc nào từ màn hình này.",
+    "audioConsent5": "Tính năng này xử lý dữ liệu sức khỏe (Điều 9 GDPR).",
+    "audioConsentAccept": "Tôi hiểu — Bật",
     "audioGranularTitle": "Tự động ghi âm cho:",
     "sosTypeCrash": "Phát hiện tai nạn xe",
     "sosTypeFall": "Phát hiện té ngã",
@@ -147,7 +168,9 @@
     "updateContactError": "Lỗi khi cập nhật",
     "confirmDelete": "Bạn có chắc chắn muốn xóa liên hệ này không?",
     "deleteAccountBtn": "Xóa tài khoản của tôi",
-    "deleting": "Đang xóa..."
+    "deleting": "Đang xóa...",
+    "offlineMode": "Chế độ ngoại tuyến",
+    "contactSavedOffline": "Liên hệ đã được lưu cục bộ. Sẽ được đồng bộ khi mạng được khôi phục."
   },
   "offline": {
     "title": "Bản đồ ngoại tuyến",
@@ -157,6 +180,7 @@
     "updatedJustNow": "Vừa cập nhật",
     "customSize": "Kích thước tùy chỉnh",
     "customZone": "Khu vực tùy chỉnh",
+    "savedZone": "Khu vực đã lưu",
     "confirmDelete": "Xóa ${name} khỏi bộ nhớ?",
     "updateSuccess": "Cập nhật ${name} thành công.",
     "localStorage": "Bộ nhớ trong",
@@ -290,7 +314,9 @@
     "power": "Nguồn",
     "charging": "(Đang sạc)",
     "sosCloud": "Tín hiệu SOS của bạn sẽ được gửi đi toàn cầu đến ERIS Cloud.",
-    "sosMesh": "Không có internet. Tín hiệu SOS của bạn sẽ dựa vào Mạng lưới cục bộ và tin nhắn SMS dự phòng."
+    "sosMesh": "Không có internet. Tín hiệu SOS của bạn sẽ dựa vào Mạng lưới cục bộ và tin nhắn SMS dự phòng.",
+    "loraModule": "Mô-đun LoRa",
+    "meshNetwork": "Mạng lưới"
   },
   "lowBattery": {
     "low": "Pin yếu",
@@ -314,11 +340,17 @@
   },
   "hazard": {
     "deleteTitle": "Xóa cảnh báo",
-    "deleteConfirm": "Bạn có chắc chắn muốn xóa vĩnh viễn cảnh báo nguy hiểm này không?"
+    "deleteConfirm": "Bạn có chắc chắn muốn xóa vĩnh viễn cảnh báo nguy hiểm này không?",
+    "areaWarning": "Cảnh báo khu vực",
+    "avalancheRisk": "Nguy cơ lở tuyết cao được báo cáo trong khu vực hiện tại của bạn. Tránh các địa hình dốc."
   },
   "common": {
     "cancel": "Hủy",
-    "delete": "Xóa"
+    "delete": "Xóa",
+    "clear": "Xóa",
+    "ok": "OK",
+    "success": "Thành công",
+    "error": "Lỗi"
   },
   "admin": {
     "panelTitle": "Bảng điều khiển quản trị",
@@ -364,6 +396,8 @@
     "grantBtn": "Cấp quyền quản trị",
     "errorUsers": "Lỗi khi tải người dùng:",
     "noUsers": "Không tìm thấy người dùng",
+    "triggerManual": "THỦ CÔNG",
+    "triggerLabel": "KÍCH HOẠT",
     "audio": {
       "title": "Bằng chứng âm thanh",
       "adminDesc": "Âm thanh nền được ghi lại trong các cảnh báo khẩn cấp",
@@ -387,7 +421,9 @@
     "detectedTitle": "PHÁT HIỆN TÉ NGÃ",
     "detectedMessage": "Cảnh báo SOS tự động sẽ được gửi với vị trí của bạn trong...",
     "imFine": "TÔI ỔN — HỦY",
-    "sendNow": "GỬI SOS NGAY"
+    "sendNow": "GỬI SOS NGAY",
+    "sosFailed": "Gửi SOS không thành công. Vui lòng thử lại theo cách thủ công.",
+    "noGps": "Không thể gửi SOS: Đang xác định vị trí..."
   },
   "crash": {
     "detectedTitle": "PHÁT HIỆN TAI NẠN",
@@ -416,9 +452,33 @@
     "sendSOS": "Gửi SOS",
     "autoSOS": "SOS tự động sau {{seconds}}s"
   },
+  "audio": {
+    "recBadge": "REC"
+  },
   "shake": {
     "banner_title": "Gửi SOS trong {{seconds}}s",
     "banner_badge": "Lắc phần cứng",
     "banner_cancel": "HỦY GỬI"
+  },
+  "beacon": {
+    "title": "Đèn hiệu khẩn cấp",
+    "volumeHintBefore": "Bạn cũng có thể nhấn",
+    "volumeHintBold": "nút âm lượng vật lý",
+    "volumeHintAfter": "trên điện thoại để bật/tắt đèn hiệu.",
+    "beaconOn": "ĐÈN HIỆU\nĐANG BẬT",
+    "tapToActivate": "CHẠM ĐỂ\nKÍCH HOẠT"
+  },
+  "refresh": "Làm mới bản đồ",
+  "map": {
+    "expandLocation": "Mở rộng vị trí",
+    "minimize": "Nhấn để thu nhỏ",
+    "expandWeather": "Mở rộng thời tiết",
+    "cancelDraw": "Hủy vẽ",
+    "reportHazardBtn": "Báo cáo nguy hiểm"
+  },
+  "errorBoundary": {
+    "title": "Đã xảy ra lỗi không mong muốn",
+    "message": "Khởi động lại ứng dụng để tiếp tục.",
+    "retry": "Thử lại"
   }
 }

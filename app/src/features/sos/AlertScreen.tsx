@@ -457,7 +457,7 @@ export default function AlertScreen() {
         <button
           onClick={() => setShowBeacon(true)}
           className="absolute left-2 top-6 w-10 h-10 bg-eris-danger/10 border border-eris-danger/30 rounded-full flex items-center justify-center text-eris-danger hover:bg-eris-danger/20 active:scale-95 transition-all"
-          title="Distress Beacon"
+          title={t('beacon.title')}
         >
           <span className="material-symbols-outlined text-xl">flashlight_on</span>
         </button>

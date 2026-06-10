@@ -39,6 +39,7 @@
     "emergencyType": "Emergency Type",
     "presetFire": "Fire",
     "presetFlood": "Flood",
+    "presetRoad": "Road Blocked",
     "presetMedical": "Medical",
     "presetLandslide": "Landslide",
     "presetCrash": "Crash",
@@ -78,6 +79,13 @@
     "offlineCache": "Offline Map Cache",
     "offlineCacheDesc": "Currently using {{size}}",
     "clearCache": "Clear Cache",
+    "calculatingCache": "Calculating...",
+    "clearCacheConfirm": "Are you sure you want to clear the offline map cache?",
+    "cacheClearedSuccess": "The map cache has been successfully cleared.",
+    "cacheClearError": "Error clearing cache.",
+    "accessDeniedTitle": "Access Denied",
+    "cacheAccessError": "Unable to access local cache.",
+    "unexpectedError": "An unexpected error has occurred.",
     "diagnosticsTitle": "System Diagnostics",
     "connected": "Connected",
     "searching": "Searching...",
@@ -338,7 +346,11 @@
   },
   "common": {
     "cancel": "Cancel",
-    "delete": "Delete"
+    "delete": "Delete",
+    "clear": "Clear",
+    "ok": "OK",
+    "success": "Success",
+    "error": "Error"
   },
   "admin": {
     "panelTitle": "Admin Panel",
@@ -384,6 +396,8 @@
     "grantBtn": "Grant Admin",
     "errorUsers": "Error loading users:",
     "noUsers": "No users found",
+    "triggerManual": "MANUAL",
+    "triggerLabel": "TRIGGER",
     "audio": {
       "title": "Audio Recordings",
       "adminDesc": "Background audio captured during emergency alerts",
@@ -445,5 +459,26 @@
     "banner_title": "Sending SOS in {{seconds}}s",
     "banner_badge": "Hardware Shake",
     "banner_cancel": "CANCEL DISPATCH"
+  },
+  "beacon": {
+    "title": "Distress Beacon",
+    "volumeHintBefore": "You can also press the",
+    "volumeHintBold": "Physical Volume Buttons",
+    "volumeHintAfter": "on your phone to toggle the beacon.",
+    "beaconOn": "BEACON\nON",
+    "tapToActivate": "TAP TO\nACTIVATE"
+  },
+  "refresh": "Refresh Map",
+  "map": {
+    "expandLocation": "Expand Location",
+    "minimize": "Click to minimize",
+    "expandWeather": "Expand Weather",
+    "cancelDraw": "Cancel Draw",
+    "reportHazardBtn": "Report Hazard"
+  },
+  "errorBoundary": {
+    "title": "An unexpected error has occurred",
+    "message": "Restart the app to continue.",
+    "retry": "Retry"
   }
 }
