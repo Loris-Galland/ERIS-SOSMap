@@ -27,7 +27,6 @@ import { dispatchSOS } from '../../services/sosService';
 import { useCrashDetection } from '../sos/hooks/useCrashDetection';
 import { useInactivityMonitoring } from '../sos/hooks/useInactivityMonitoring';
 import InactivityModal from '../../components/InactivityModal';
-import { useRouting } from './hooks/useRouting';
 
 interface MapScreenProps {
   isActive: boolean;
@@ -52,6 +51,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
   const [isMapReady, setIsMapReady] = useState(false);
   const currentUserId = session?.user?.id || getGuestId();
   const [isDrawingMode, setIsDrawingMode] = useState(false);
+  const [isPickingDestination, setIsPickingDestination] = useState(false);
   const [selectedDestination, setSelectedDestination] = useState<{ lat: number; lng: number } | null>(null);
   const destMarkerRef = useRef<L.Marker | null>(null);
 
@@ -105,93 +105,63 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
     pendingGeometry,
     setPendingGeometry,
     hazardsList,
-  } = useHazards({ mapInstance, isActive, isAdmin, isMapReady });
+  } = useHazards({ mapInstance, isActive, isAdmin, isMapReady }) as any;
 
   const { isLoading: isPoisLoading } = usePOIs({ mapInstance, activeFilters });
-  // === GESTION DE LA DESTINATION (APPUI COURT / CLIC SIMPLE) ===
+
+  //DESTINATION CLICK HANDLING VIA LEAFLET DRAW
   useEffect(() => {
-    if (!mapInstance.current) return;
+    if (!mapInstance.current || !isPickingDestination) return;
+
     const map = mapInstance.current;
 
-    const setDest = (lat: number, lng: number) => {
-      if (isDrawingMode) return;
+    // Enable Leaflet Draw marker creation tool
+    const markerDrawer = new (L.Draw.Marker as any)(map, {
+      icon: L.divIcon({
+        className: 'bg-transparent',
+        html: `<div style="background-color: #10B981; width: 34px; height: 34px; border-radius: 50%; border: 3px solid white; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 8px rgba(0,0,0,0.4);"><span class="material-symbols-outlined" style="color: white; font-size: 20px;">flag</span></div>`,
+        iconSize: [34, 34],
+        iconAnchor: [17, 34],
+      }),
+    });
+
+    markerDrawer.enable();
+
+    // When the user taps the screen and draws the marker
+    const onDestinationCreated = (e: any) => {
+      const { layer } = e;
+      const { lat, lng } = layer.getLatLng();
+
       setSelectedDestination({ lat, lng });
+      setIsPickingDestination(false);
+      markerDrawer.disable();
     };
 
-    // 1. Appui court sur la carte vide
-    const onMapClick = (e: any) => {
-      if (e.latlng) setDest(e.latlng.lat, e.latlng.lng);
-    };
-
-    // 2. Appui court sur une icône (Hôpital, Pharmacie, etc.)
-    const onLayerClick = (e: any) => {
-      if (e.latlng) {
-        setDest(e.latlng.lat, e.latlng.lng);
-      } else if (e.target && typeof e.target.getLatLng === 'function') {
-        const ll = e.target.getLatLng();
-        if (ll) setDest(ll.lat, ll.lng);
-      }
-    };
-
-    // Attacher le clic sur tous les marqueurs
-    const attachClickToLayer = (layer: any) => {
-      if (layer && typeof layer.on === 'function' && layer.getLatLng) {
-        layer.off('click', onLayerClick);
-        layer.on('click', onLayerClick);
-      }
-    };
-    map.eachLayer(attachClickToLayer);
-    map.on('layeradd', (e: any) => attachClickToLayer(e.layer));
-
-    // 3. Sécurité : écouter l'ouverture des infobulles (Popup / Tooltip)
-    const onPopupOrTooltip = (e: any) => {
-      const overlay = e.popup || e.tooltip;
-      if (!overlay) return;
-
-      if (destMarkerRef.current && overlay === destMarkerRef.current.getPopup()) return;
-
-      const ll = typeof overlay.getLatLng === 'function' ? overlay.getLatLng() : null;
-      const sourceLl =
-        overlay._source && typeof overlay._source.getLatLng === 'function' ? overlay._source.getLatLng() : null;
-
-      if (ll) {
-        setDest(ll.lat, ll.lng);
-      } else if (sourceLl) {
-        setDest(sourceLl.lat, sourceLl.lng);
-      }
-    };
-
-    // Écouteurs globaux (Uniquement le CLICK standard)
-    map.on('click', onMapClick);
-    map.on('popupopen', onPopupOrTooltip);
-    map.on('tooltipopen', onPopupOrTooltip);
+    map.on(L.Draw.Event.CREATED, onDestinationCreated);
 
     return () => {
-      map.off('click', onMapClick);
-      map.off('popupopen', onPopupOrTooltip);
-      map.off('tooltipopen', onPopupOrTooltip);
+      map.off(L.Draw.Event.CREATED, onDestinationCreated);
+      markerDrawer.disable();
     };
-  }, [mapInstance, isDrawingMode]);
-  // === DESSIN DU DRAPEAU DE DESTINATION ===
+  }, [isPickingDestination, mapInstance]);
+
+  // DRAWING AND MAINTAINING THE FLAG ON THE MAP
   useEffect(() => {
     if (!mapInstance.current) return;
 
     if (selectedDestination) {
       if (!destMarkerRef.current) {
-        // Création de l'icône de drapeau vert
         const flagIcon = L.divIcon({
           className: 'bg-transparent',
-          html: `<div style="background-color: #10B981; width: 32px; height: 32px; border-radius: 50%; border: 3px solid white; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px rgba(0,0,0,0.3);"><span class="material-symbols-outlined" style="color: white; font-size: 18px;">flag</span></div>`,
-          iconSize: [32, 32],
-          iconAnchor: [16, 32],
-          popupAnchor: [0, -32],
+          html: `<div style="background-color: #10B981; width: 34px; height: 34px; border-radius: 50%; border: 3px solid white; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 8px rgba(0,0,0,0.4);"><span class="material-symbols-outlined" style="color: white; font-size: 20px;">flag</span></div>`,
+          iconSize: [34, 34],
+          iconAnchor: [17, 34],
+          popupAnchor: [0, -34],
         });
 
         destMarkerRef.current = L.marker([selectedDestination.lat, selectedDestination.lng], { icon: flagIcon })
           .addTo(mapInstance.current)
-          .bindPopup(
-            '<b style="color: #10B981;">Destination Sélectionnée</b><br/>Appuyez sur le bouton vert pour calculer l\'itinéraire sécurisé.',
-          );
+          .bindPopup('<b style="color: #10B981;">Destination Validated</b><br/>Tap the green car icon to navigate.');
       } else {
         destMarkerRef.current.setLatLng([selectedDestination.lat, selectedDestination.lng]);
       }
@@ -202,38 +172,12 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
       }
     }
   }, [selectedDestination, mapInstance]);
-  // === INITIALISATION DU ROUTING D'URGENCE (DIJKSTRA) ===
-  const { routeCoordinates, isComputing, computeRoute, clearRoute } = useRouting();
-  const routingLayerRef = useRef<L.Polyline | null>(null);
-
-  // === DESSIN DU CHEMIN SUR LA CARTE (Vanilla Leaflet) ===
-  useEffect(() => {
-    if (!mapInstance.current) return;
-
-    if (routingLayerRef.current) {
-      mapInstance.current.removeLayer(routingLayerRef.current);
-      routingLayerRef.current = null;
-    }
-
-    if (routeCoordinates.length > 0) {
-      routingLayerRef.current = L.polyline(routeCoordinates, {
-        color: '#10B981',
-        weight: 6,
-        opacity: 0.8,
-        dashArray: '10, 10',
-        lineCap: 'round',
-        lineJoin: 'round',
-      }).addTo(mapInstance.current);
-
-      mapInstance.current.fitBounds(routingLayerRef.current.getBounds(), { padding: [50, 50] });
-    }
-  }, [routeCoordinates, mapInstance]);
 
   const toggleFilter = (category: POICategory) => {
     setActiveFilters((prev) => (prev.includes(category) ? [] : [category]));
   };
 
-  // Admin SOS markers overlay — US40
+  // Admin SOS markers overlay
   useSOSMarkersAdmin({
     mapInstance,
     isActive,
@@ -856,7 +800,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
             <div className="w-px h-6 bg-gray-700/50" />
             <button
               onClick={(e) => {
-                e.stopPropagation(); // Prevents minimizing the widget when clicking "Report"
+                e.stopPropagation();
                 setShowWeatherReport(true);
               }}
               className="w-8 h-8 rounded-full bg-eris-surface-alt/80 flex items-center justify-center text-eris-text-muted hover:text-eris-text hover:bg-gray-700 transition-colors active:scale-95"
@@ -870,98 +814,128 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
 
       {/* ─── LAYER MENU + CONTROLS ─── */}
       <div className="absolute top-[120px] right-4 z-[10000] flex flex-col gap-3">
-        <div className="relative">
-          <button
-            onClick={() => setShowLayerMenu(!showLayerMenu)}
-            className={`w-12 h-12 border border-eris-border/50 rounded-full flex items-center justify-center transition-colors shadow-lg active:scale-95 ${
-              showLayerMenu
-                ? 'bg-eris-surface-alt text-eris-text'
-                : 'bg-eris-surface/90 text-eris-text-muted hover:bg-eris-surface-alt'
-            }`}
-          >
-            <span className="material-symbols-outlined text-xl">layers</span>
-          </button>
+        {/*Hide Layer button if drawing or picking destination */}
+        {!isDrawingMode && !isPickingDestination && (
+          <div className="relative">
+            <button
+              onClick={() => setShowLayerMenu(!showLayerMenu)}
+              className={`w-12 h-12 border border-eris-border/50 rounded-full flex items-center justify-center transition-colors shadow-lg active:scale-95 ${
+                showLayerMenu
+                  ? 'bg-eris-surface-alt text-eris-text'
+                  : 'bg-eris-surface/90 text-eris-text-muted hover:bg-eris-surface-alt'
+              }`}
+            >
+              <span className="material-symbols-outlined text-xl">layers</span>
+            </button>
 
-          {showLayerMenu && (
-            <div className="absolute right-14 top-0 bg-eris-surface/95 backdrop-blur-md border border-eris-border rounded-2xl shadow-2xl overflow-hidden flex flex-col w-44 z-[1000] animate-in fade-in zoom-in duration-150">
-              <div className="px-3 py-2 bg-eris-surface-alt/50 border-b border-eris-border">
-                <span className="text-[10px] font-bold text-eris-text-muted uppercase tracking-wider">
-                  {t('offlineViewer.mapType', 'Map Type')}
-                </span>
+            {showLayerMenu && (
+              <div className="absolute right-14 top-0 bg-eris-surface/95 backdrop-blur-md border border-eris-border rounded-2xl shadow-2xl overflow-hidden flex flex-col w-44 z-[1000] animate-in fade-in zoom-in duration-150">
+                <div className="px-3 py-2 bg-eris-surface-alt/50 border-b border-eris-border">
+                  <span className="text-[10px] font-bold text-eris-text-muted uppercase tracking-wider">
+                    {t('offlineViewer.mapType', 'Map Type')}
+                  </span>
+                </div>
+                {Object.entries(MAP_STYLES)
+                  .sort(([keyA], [keyB]) => {
+                    const currentDefault =
+                      visualTheme === 'light' ? 'light' : visualTheme === 'contrasted' ? 'contrasted' : 'dark';
+                    if (keyA === currentDefault) return -1;
+                    if (keyB === currentDefault) return 1;
+                    return 0;
+                  })
+                  .map(([key, style]) => (
+                    <button
+                      key={key}
+                      onClick={() => changeMapStyle(key)}
+                      className={`px-4 py-3 text-left text-xs font-bold flex items-center gap-3 border-b border-eris-border/50 last:border-0 transition-colors ${
+                        currentMapStyle === key
+                          ? 'text-eris-primary bg-eris-surface-alt/80'
+                          : 'text-eris-text-muted hover:bg-eris-surface-alt/40'
+                      }`}
+                    >
+                      <span className="material-symbols-outlined text-base">{style.icon}</span>
+                      {t(`mapStyles.${key}`, style.name)}
+                    </button>
+                  ))}
               </div>
-              {Object.entries(MAP_STYLES)
-                .sort(([keyA], [keyB]) => {
-                  const currentDefault =
-                    visualTheme === 'light' ? 'light' : visualTheme === 'contrasted' ? 'contrasted' : 'dark';
-                  if (keyA === currentDefault) return -1;
-                  if (keyB === currentDefault) return 1;
-                  return 0;
-                })
-                .map(([key, style]) => (
-                  <button
-                    key={key}
-                    onClick={() => changeMapStyle(key)}
-                    className={`px-4 py-3 text-left text-xs font-bold flex items-center gap-3 border-b border-eris-border/50 last:border-0 transition-colors ${
-                      currentMapStyle === key
-                        ? 'text-eris-primary bg-eris-surface-alt/80'
-                        : 'text-eris-text-muted hover:bg-eris-surface-alt/40'
-                    }`}
-                  >
-                    <span className="material-symbols-outlined text-base">{style.icon}</span>
-                    {t(`mapStyles.${key}`, style.name)}
-                  </button>
-                ))}
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
 
-        {/* Report hazard button */}
-        <button
-          onClick={() => setIsDrawingMode(!isDrawingMode)}
-          className={`w-12 h-12 ${isDrawingMode ? 'bg-gray-500' : 'bg-eris-alert'} [.theme-dark_&]:bg-orange-400 rounded-full flex items-center justify-center text-white [.theme-contrasted_&]:border-2 [.theme-contrasted_&]:!border-black hover:bg-orange-400 transition-colors shadow-lg shadow-eris-alert/30 active:scale-95`}
-          title={isDrawingMode ? 'Cancel Draw' : 'Report Hazard'}
-        >
-          <span className="material-symbols-outlined [.theme-contrasted_&]:!text-black text-xl">
-            {isDrawingMode ? 'close' : 'warning'}
-          </span>
-        </button>
+        {/*Hide Hazard button if picking destination */}
+        {!isPickingDestination && (
+          <button
+            onClick={() => setIsDrawingMode(!isDrawingMode)}
+            className={`w-12 h-12 ${isDrawingMode ? 'bg-gray-500' : 'bg-eris-alert'} [.theme-dark_&]:bg-orange-400 rounded-full flex items-center justify-center text-white [.theme-contrasted_&]:border-2 [.theme-contrasted_&]:!border-black hover:bg-orange-400 transition-colors shadow-lg shadow-eris-alert/30 active:scale-95`}
+            title={isDrawingMode ? 'Cancel Draw' : 'Report Hazard'}
+          >
+            <span className="material-symbols-outlined [.theme-contrasted_&]:!text-black text-xl">
+              {isDrawingMode ? 'close' : 'warning'}
+            </span>
+          </button>
+        )}
 
-        {/* ─── ROUTING BUTTON ─── */}
-        {/* ─── BOUTON D'ÉVACUATION EXTERNE (Google Maps / Waze) ─── */}
-        {/* ─── BOUTON D'ÉVACUATION EXTERNE (Google Maps / Waze) ─── */}
-        <button
-          onClick={() => {
-            if (selectedDestination && userPosition.lat !== 0) {
-              // URL Universelle officielle de Google Maps pour générer un itinéraire
-              const url = `https://www.google.com/maps/dir/?api=1&origin=${userPosition.lat},${userPosition.lng}&destination=${selectedDestination.lat},${selectedDestination.lng}&travelmode=driving`;
+        {/*TARGET BUTTON (To activate destination picking mode) */}
+        {!isDrawingMode && !selectedDestination && (
+          <button
+            onClick={() => setIsPickingDestination(!isPickingDestination)}
+            className={`w-12 h-12 rounded-full flex items-center justify-center text-white transition-colors shadow-lg active:scale-95 [.theme-contrasted_&]:border-2 [.theme-contrasted_&]:!border-black ${
+              isPickingDestination ? 'bg-gray-500' : 'bg-emerald-500 hover:bg-emerald-400'
+            }`}
+            title={isPickingDestination ? 'Cancel target' : 'Pick a destination'}
+          >
+            <span className="material-symbols-outlined text-xl [.theme-contrasted_&]:!text-black">
+              {isPickingDestination ? 'close' : 'my_location'}
+            </span>
+          </button>
+        )}
 
-              // Ouvre l'application native
-              window.open(url, '_system');
+        {/*GOOGLE MAPS / WAZE CAR BUTTON (Shows only when destination is picked) */}
+        {selectedDestination && !isDrawingMode && !isPickingDestination && (
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={() => {
+                if (userPosition.lat !== 0) {
+                  // Universal official Google Maps Intent URL
+                  const url = `https://www.google.com/maps/dir/?api=1&origin=${userPosition.lat},${userPosition.lng}&destination=${selectedDestination.lat},${selectedDestination.lng}&travelmode=driving`;
+                  window.open(url, '_system');
+                  setSelectedDestination(null);
+                } else {
+                  alert('Starting GPS position not available.');
+                }
+              }}
+              className="w-12 h-12 bg-green-600 text-white hover:bg-green-500 rounded-full flex items-center justify-center transition-colors shadow-lg active:scale-95 [.theme-contrasted_&]:border-2 [.theme-contrasted_&]:!border-black"
+              title="Go (Google Maps)"
+            >
+              <span className="material-symbols-outlined text-xl [.theme-contrasted_&]:!text-black">
+                directions_car
+              </span>
+            </button>
 
-              // Retire le drapeau vert une fois l'app ouverte
-              setSelectedDestination(null);
-            } else if (!selectedDestination) {
-              alert("Veuillez d'abord cliquer sur la carte ou sur un lieu pour choisir une destination.");
-            } else {
-              alert('Position GPS non disponible pour calculer un trajet.');
-            }
-          }}
-          className="w-12 h-12 bg-green-600 text-white hover:bg-green-500 rounded-full flex items-center justify-center transition-colors shadow-lg active:scale-95 [.theme-contrasted_&]:border-2 [.theme-contrasted_&]:!border-black"
-          title="Ouvrir le GPS (Google Maps/Waze)"
-        >
-          <span className="material-symbols-outlined text-xl [.theme-contrasted_&]:!text-black">directions_car</span>
-        </button>
-        {/* Re-center on my location button */}
-        <button
-          onClick={() => {
-            if (mapInstance.current && userPosition.lat !== 0) {
-              mapInstance.current.setView([userPosition.lat, userPosition.lng], 15);
-            }
-          }}
-          className="w-12 h-12 bg-eris-primary rounded-full flex items-center justify-center text-eris-text [.theme-light_&]:text-white [.theme-contrasted_&]:border-2 [.theme-contrasted_&]:!border-black hover:bg-eris-primary transition-colors shadow-lg shadow-blue-900/30 active:scale-95"
-        >
-          <span className="material-symbols-outlined [.theme-contrasted_&]:!text-black text-xl">my_location</span>
-        </button>
+            {/* Cancel destination button */}
+            <button
+              onClick={() => setSelectedDestination(null)}
+              className="w-12 h-12 bg-gray-500 text-white hover:bg-gray-400 rounded-full flex items-center justify-center transition-colors shadow-lg active:scale-95 [.theme-contrasted_&]:border-2 [.theme-contrasted_&]:!border-black"
+              title="Clear target"
+            >
+              <span className="material-symbols-outlined text-xl [.theme-contrasted_&]:!text-black">close</span>
+            </button>
+          </div>
+        )}
+
+        {/* Hide My Location button if drawing or picking destination */}
+        {!isDrawingMode && !isPickingDestination && (
+          <button
+            onClick={() => {
+              if (mapInstance.current && userPosition.lat !== 0) {
+                mapInstance.current.setView([userPosition.lat, userPosition.lng], 15);
+              }
+            }}
+            className="w-12 h-12 bg-eris-primary rounded-full flex items-center justify-center text-eris-text [.theme-light_&]:text-white [.theme-contrasted_&]:border-2 [.theme-contrasted_&]:!border-black hover:bg-eris-primary transition-colors shadow-lg shadow-blue-900/30 active:scale-95"
+          >
+            <span className="material-symbols-outlined [.theme-contrasted_&]:!text-black text-xl">near_me</span>
+          </button>
+        )}
       </div>
 
       {/* ─── HAZARD ALERT BANNER ─── */}
@@ -1108,7 +1082,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
             <p className="text-gray-400 text-xs mb-5 leading-relaxed">
               Warn other ERIS users about immediate dangers at your current location.
             </p>
-            {/* ─── NOUVEAU : CURSEUR DE TAILLE DE ZONE ─── */}
+            {/* ─── AREA SIZE SLIDER ─── */}
             {pendingGeometry && pendingGeometry.shape_type !== 'point' && (
               <div className="mb-5 bg-gray-800/40 p-4 rounded-2xl border border-gray-700/50">
                 <div className="flex justify-between items-center mb-2">
@@ -1129,7 +1103,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
                     if (pendingGeometry.shape_type === 'circle') {
                       newShapeMetadata = { radius: newSize };
                     } else if (pendingGeometry.shape_type === 'rectangle') {
-                      const newBounds = center.toBounds(newSize * 2); // toBounds prend le diamètre complet
+                      const newBounds = center.toBounds(newSize * 2);
                       newShapeMetadata = {
                         bounds: [
                           [newBounds.getNorthEast().lat, newBounds.getNorthEast().lng],
@@ -1138,7 +1112,6 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
                       };
                     }
 
-                    // On met à jour la géométrie en temps réel !
                     setPendingGeometry({
                       ...pendingGeometry,
                       sliderSize: newSize,
