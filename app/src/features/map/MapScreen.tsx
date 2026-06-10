@@ -108,23 +108,22 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
   } = useHazards({ mapInstance, isActive, isAdmin, isMapReady });
 
   const { isLoading: isPoisLoading } = usePOIs({ mapInstance, activeFilters });
-  // === GESTION DE LA DESTINATION (ULTRA-ROBUSTE POUR MOBILE ET PC) ===
+  // === GESTION DE LA DESTINATION (APPUI COURT / CLIC SIMPLE) ===
   useEffect(() => {
     if (!mapInstance.current) return;
     const map = mapInstance.current;
 
-    // Fonction centralisée pour valider la destination
     const setDest = (lat: number, lng: number) => {
       if (isDrawingMode) return;
       setSelectedDestination({ lat, lng });
     };
 
-    // 1. Clic direct sur le fond de la carte
+    // 1. Appui court sur la carte vide
     const onMapClick = (e: any) => {
       if (e.latlng) setDest(e.latlng.lat, e.latlng.lng);
     };
 
-    // 2. Clic direct sur une icône (Hôpital, Pharmacie, etc.)
+    // 2. Appui court sur une icône (Hôpital, Pharmacie, etc.)
     const onLayerClick = (e: any) => {
       if (e.latlng) {
         setDest(e.latlng.lat, e.latlng.lng);
@@ -134,22 +133,21 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
       }
     };
 
-    // 3. Forcer l'écouteur de clic sur tous les POIs (présents et futurs)
+    // Attacher le clic sur tous les marqueurs
     const attachClickToLayer = (layer: any) => {
       if (layer && typeof layer.on === 'function' && layer.getLatLng) {
-        layer.off('click', onLayerClick); // Évite les doublons
+        layer.off('click', onLayerClick);
         layer.on('click', onLayerClick);
       }
     };
     map.eachLayer(attachClickToLayer);
     map.on('layeradd', (e: any) => attachClickToLayer(e.layer));
 
-    // 4. Sécurité : écouter l'ouverture des infobulles (Popup / Tooltip)
+    // 3. Sécurité : écouter l'ouverture des infobulles (Popup / Tooltip)
     const onPopupOrTooltip = (e: any) => {
       const overlay = e.popup || e.tooltip;
       if (!overlay) return;
 
-      // On ignore notre propre drapeau vert
       if (destMarkerRef.current && overlay === destMarkerRef.current.getPopup()) return;
 
       const ll = typeof overlay.getLatLng === 'function' ? overlay.getLatLng() : null;
@@ -163,15 +161,13 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
       }
     };
 
-    // Abonnement aux événements
+    // Écouteurs globaux (Uniquement le CLICK standard)
     map.on('click', onMapClick);
-    map.on('contextmenu', onMapClick); // Appui long sur mobile
     map.on('popupopen', onPopupOrTooltip);
     map.on('tooltipopen', onPopupOrTooltip);
 
     return () => {
       map.off('click', onMapClick);
-      map.off('contextmenu', onMapClick);
       map.off('popupopen', onPopupOrTooltip);
       map.off('tooltipopen', onPopupOrTooltip);
     };
