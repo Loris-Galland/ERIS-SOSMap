@@ -64,10 +64,17 @@ export const flushRetryQueue = async () => {
 // ==========================================
 // OFFLINE EMERGENCY NOTIFICATION (SMS)
 // ==========================================
+// Mirrors the sanitizeText helper in supabase/functions/notify-contacts —
+// strips line breaks and caps length before interpolating into the SMS body.
+const sanitizeText = (value: unknown, maxLength: number): string =>
+  String(value ?? '')
+    .replace(/[\r\n]/g, ' ')
+    .slice(0, maxLength);
+
 const triggerOfflineNotification = async (position: {lat: number, lng: number}, notes: string) => {
   try {
     const mapLink = `https://maps.google.com/?q=${position.lat},${position.lng}`;
-    const message = `URGENT (ERIS) : J'ai déclenché un SOS. Ma position : ${mapLink}. Notes : ${notes}`;
+    const message = `URGENT (ERIS) : J'ai déclenché un SOS. Ma position : ${mapLink}. Notes : ${sanitizeText(notes, 200)}`;
     
     // Attempt to retrieve local emergency numbers if they are cached in Dexie
     let phones = "";
@@ -210,11 +217,16 @@ export const dispatchSOS = async (
 export const revokeSOS = async (userId: string, supabaseId?: string, localId?: number) => {
   try {
     if (supabaseId) {
-      await supabase
+      const { data, error } = await supabase
         .from('sos_alerts')
         .update({ status: 'revoked' })
         .eq('id', supabaseId)
-        .eq('user_id', userId);
+        .eq('user_id', userId)
+        .select('id');
+
+      if (error) throw error;
+      // No row matched (already revoked, wrong owner, or deleted) — surface the no-op
+      if (!data || data.length === 0) return false;
     }
     if (localId) {
       await db.sosQueue.update(localId, { status: 'revoked' as any });
