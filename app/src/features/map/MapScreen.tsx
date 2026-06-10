@@ -108,49 +108,72 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
   } = useHazards({ mapInstance, isActive, isAdmin, isMapReady });
 
   const { isLoading: isPoisLoading } = usePOIs({ mapInstance, activeFilters });
-  // === GESTION DE LA DESTINATION (NATIVE LEAFLET - COMPATIBLE MOBILE) ===
+  // === GESTION DE LA DESTINATION (ULTRA-ROBUSTE POUR MOBILE ET PC) ===
   useEffect(() => {
     if (!mapInstance.current) return;
     const map = mapInstance.current;
 
-    // Cette fonction extrait les coordonnées de tout ce que l'on touche
-    const onMapOrMarkerClick = (e: any) => {
+    // Fonction centralisée pour valider la destination
+    const setDest = (lat: number, lng: number) => {
       if (isDrawingMode) return;
+      setSelectedDestination({ lat, lng });
+    };
 
-      // On cherche les coordonnées (soit du clic sur la carte, soit du centre du marqueur cliqué)
-      let latlng = e.latlng;
-      if (!latlng && e.target && typeof e.target.getLatLng === 'function') {
-        latlng = e.target.getLatLng();
-      }
+    // 1. Clic direct sur le fond de la carte
+    const onMapClick = (e: any) => {
+      if (e.latlng) setDest(e.latlng.lat, e.latlng.lng);
+    };
 
-      if (latlng && latlng.lat && latlng.lng) {
-        setSelectedDestination({ lat: latlng.lat, lng: latlng.lng });
+    // 2. Clic direct sur une icône (Hôpital, Pharmacie, etc.)
+    const onLayerClick = (e: any) => {
+      if (e.latlng) {
+        setDest(e.latlng.lat, e.latlng.lng);
+      } else if (e.target && typeof e.target.getLatLng === 'function') {
+        const ll = e.target.getLatLng();
+        if (ll) setDest(ll.lat, ll.lng);
       }
     };
 
-    // 1. On écoute les appuis sur le fond de la carte
-    map.on('click', onMapOrMarkerClick);
-    map.on('contextmenu', onMapOrMarkerClick); // L'appui long sur mobile
+    // 3. Forcer l'écouteur de clic sur tous les POIs (présents et futurs)
+    const attachClickToLayer = (layer: any) => {
+      if (layer && typeof layer.on === 'function' && layer.getLatLng) {
+        layer.off('click', onLayerClick); // Évite les doublons
+        layer.on('click', onLayerClick);
+      }
+    };
+    map.eachLayer(attachClickToLayer);
+    map.on('layeradd', (e: any) => attachClickToLayer(e.layer));
 
-    // 2. On greffe le clic tactile sur TOUS les POIs (Pharmacies, Hôpitaux)
-    const bindLayerClick = (layer: any) => {
-      if (layer && typeof layer.on === 'function') {
-        layer.off('click', onMapOrMarkerClick); // Sécurité anti-doublon
-        layer.on('click', onMapOrMarkerClick);
+    // 4. Sécurité : écouter l'ouverture des infobulles (Popup / Tooltip)
+    const onPopupOrTooltip = (e: any) => {
+      const overlay = e.popup || e.tooltip;
+      if (!overlay) return;
+
+      // On ignore notre propre drapeau vert
+      if (destMarkerRef.current && overlay === destMarkerRef.current.getPopup()) return;
+
+      const ll = typeof overlay.getLatLng === 'function' ? overlay.getLatLng() : null;
+      const sourceLl =
+        overlay._source && typeof overlay._source.getLatLng === 'function' ? overlay._source.getLatLng() : null;
+
+      if (ll) {
+        setDest(ll.lat, ll.lng);
+      } else if (sourceLl) {
+        setDest(sourceLl.lat, sourceLl.lng);
       }
     };
 
-    // A. Pour les POIs qui sont déjà chargés
-    map.eachLayer(bindLayerClick);
-
-    // B. Pour les nouveaux POIs qui apparaissent quand on bouge la carte
-    const handleLayerAdd = (e: any) => bindLayerClick(e.layer);
-    map.on('layeradd', handleLayerAdd);
+    // Abonnement aux événements
+    map.on('click', onMapClick);
+    map.on('contextmenu', onMapClick); // Appui long sur mobile
+    map.on('popupopen', onPopupOrTooltip);
+    map.on('tooltipopen', onPopupOrTooltip);
 
     return () => {
-      map.off('click', onMapOrMarkerClick);
-      map.off('contextmenu', onMapOrMarkerClick);
-      map.off('layeradd', handleLayerAdd);
+      map.off('click', onMapClick);
+      map.off('contextmenu', onMapClick);
+      map.off('popupopen', onPopupOrTooltip);
+      map.off('tooltipopen', onPopupOrTooltip);
     };
   }, [mapInstance, isDrawingMode]);
   // === DESSIN DU DRAPEAU DE DESTINATION ===
@@ -909,21 +932,22 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
 
         {/* ─── ROUTING BUTTON ─── */}
         {/* ─── BOUTON D'ÉVACUATION EXTERNE (Google Maps / Waze) ─── */}
+        {/* ─── BOUTON D'ÉVACUATION EXTERNE (Google Maps / Waze) ─── */}
         <button
           onClick={() => {
             if (selectedDestination && userPosition.lat !== 0) {
-              // 1. Création de l'URL universelle de direction Google Maps
+              // URL Universelle officielle de Google Maps pour générer un itinéraire
               const url = `https://www.google.com/maps/dir/?api=1&origin=${userPosition.lat},${userPosition.lng}&destination=${selectedDestination.lat},${selectedDestination.lng}&travelmode=driving`;
 
-              // 2. Sur mobile (Capacitor), '_system' force l'ouverture dans l'app native (Google Maps, Waze, Safari, etc.)
+              // Ouvre l'application native
               window.open(url, '_system');
 
-              // 3. (Optionnel) Efface le drapeau vert une fois l'app GPS ouverte
+              // Retire le drapeau vert une fois l'app ouverte
               setSelectedDestination(null);
             } else if (!selectedDestination) {
-              alert("Veuillez d'abord cliquer sur la carte pour poser un drapeau de destination.");
+              alert("Veuillez d'abord cliquer sur la carte ou sur un lieu pour choisir une destination.");
             } else {
-              alert('Position GPS de départ non disponible.');
+              alert('Position GPS non disponible pour calculer un trajet.');
             }
           }}
           className="w-12 h-12 bg-green-600 text-white hover:bg-green-500 rounded-full flex items-center justify-center transition-colors shadow-lg active:scale-95 [.theme-contrasted_&]:border-2 [.theme-contrasted_&]:!border-black"
