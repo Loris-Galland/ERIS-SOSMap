@@ -42,7 +42,7 @@ export default function AuthScreen({ onOpenSettings }: AuthScreenProps) {
   };
 
   return (
-    <div className="min-h-screen bg-eris-bg flex flex-col items-center justify-center p-6 relative overflow-hidden font-sans">
+    <div className="min-h-screen bg-eris-bg flex flex-col items-center justify-center p-6 py-12 relative overflow-y-auto font-sans">
       {onOpenSettings && (
         <button
           onClick={onOpenSettings}
