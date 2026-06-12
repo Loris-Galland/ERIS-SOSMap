@@ -802,7 +802,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
             title={isPickingDestination ? 'Cancel target' : 'Pick a destination'}
           >
             <span className="material-symbols-outlined text-xl [.theme-contrasted_&]:!text-black">
-              {isPickingDestination ? 'close' : 'my_location'}
+              {isPickingDestination ? 'close' : 'near_me'}
             </span>
           </button>
         )}
@@ -850,7 +850,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
             }}
             className="w-12 h-12 bg-eris-primary rounded-full flex items-center justify-center text-eris-text [.theme-light_&]:text-white [.theme-contrasted_&]:border-2 [.theme-contrasted_&]:!border-black hover:bg-eris-primary transition-colors shadow-lg shadow-blue-900/30 active:scale-95"
           >
-            <span className="material-symbols-outlined [.theme-contrasted_&]:!text-black text-xl">near_me</span>
+            <span className="material-symbols-outlined [.theme-contrasted_&]:!text-black text-xl">my_location</span>
           </button>
         )}
       </div>
