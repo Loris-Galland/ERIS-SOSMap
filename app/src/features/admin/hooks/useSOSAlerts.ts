@@ -45,7 +45,7 @@ export function useSOSAlerts() {
     setLoading(true);
     const { data, error } = await supabase
       .from('sos_alerts')
-      .select('id, user_id, first_name, last_name, status, transmission_method, latitude, longitude, altitude, battery_level, notes, created_at')
+      .select('id, user_id, first_name, last_name, status, transmission_method, latitude, longitude, altitude, battery_level, notes, created_at, incident_type, victim_count, trigger_source, photo_data, blood_type, allergies, medical_conditions, current_condition')
       .order('created_at', { ascending: false })
       .limit(100);
 
