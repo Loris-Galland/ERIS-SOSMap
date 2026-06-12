@@ -1,14 +1,12 @@
 /*
- * Handles uploading emergency audio recordings to Supabase Storage.
- * Upload path: emergency-recordings/<user_id>/<trigger>_<timestamp>.webm
- *
- * Offline fallback: if the upload fails for any reason (no connectivity,
- * storage quota, etc.) the blob and its metadata are persisted to the
- * Dexie pendingAudioUploads table. The next successful upload attempt
- * triggers flushPendingUploads() to drain the local queue.
- *
- * Retry limit: 3 attempts per record before it is abandoned to avoid
- * filling IndexedDB indefinitely.
+ * audioUploadService — uploads emergency audio blobs to Supabase Storage
+ * (bucket: emergency_recordings) and inserts a metadata row in the database.
+ * If the upload fails (offline or storage error), the blob is saved locally
+ * to the Dexie pendingAudioUploads table for later retry.
+ * flushPendingUploads() drains that queue whenever a live upload succeeds.
+ * Each pending record is retried up to MAX_RETRIES (3) times before being
+ * abandoned to avoid filling IndexedDB indefinitely.
+ * Consumed exclusively by useAudioRecording.
  */
 
 import { supabase } from '../../../db/supabaseClient';
@@ -24,6 +22,7 @@ interface UploadParams {
   userId: string;
   triggerType: TriggerType;
   durationSeconds: number;
+  alertId?: string | null;
 }
 
 // Entry point — attempts an upload, queues locally on failure
@@ -32,7 +31,7 @@ export async function uploadAudio(params: UploadParams): Promise<void> {
     await attemptUpload(params);
     // Back online: drain any queued recordings in the background
     flushPendingUploads(params.userId).catch(() => {});
-  } catch {
+  } catch (error: any) {
     console.warn('[AUDIO] Upload failed — saving locally for retry');
     await db.pendingAudioUploads.add({
       user_id:          params.userId,
@@ -46,7 +45,7 @@ export async function uploadAudio(params: UploadParams): Promise<void> {
 }
 
 // Send the blob to Supabase Storage and insert the metadata row
-async function attemptUpload({ blob, userId, triggerType, durationSeconds }: UploadParams): Promise<void> {
+async function attemptUpload({ blob, userId, triggerType, durationSeconds, alertId }: UploadParams): Promise<void> {
   const fileName  = `${userId}/${triggerType}_${Date.now()}.webm`;
   const expiresAt = new Date(Date.now() + RETENTION_DAYS * 24 * 60 * 60 * 1_000).toISOString();
 
@@ -61,7 +60,14 @@ async function attemptUpload({ blob, userId, triggerType, durationSeconds }: Upl
 
   const { error: dbError } = await supabase
     .from('emergency_recordings')
-    .insert({ user_id: userId, trigger_type: triggerType, file_path: fileName, duration_seconds: durationSeconds, expires_at: expiresAt });
+    .insert({ 
+      user_id: userId,
+      trigger_type: triggerType, 
+      file_path: fileName, 
+      duration_seconds: durationSeconds, 
+      expires_at: expiresAt, 
+      alert_id: alertId || null 
+    });
 
   if (dbError) {
     // Remove orphaned storage file if the metadata insert failed

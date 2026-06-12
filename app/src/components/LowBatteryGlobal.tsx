@@ -1,3 +1,11 @@
+/*
+ * Global battery monitor component for the ERIS app.
+ * Exports LowBatteryGlobal (default), a headless component mounted at the app root.
+ * Polls @capacitor/device every 30 seconds: shows a warning modal at 20% and,
+ * if the user has enabled the auto-SOS setting, dispatches a final SOS via
+ * sosService at 1%. Connects to Supabase auth to attach the correct user ID.
+ */
+
 import { useEffect, useState, useRef } from 'react';
 import { Device } from '@capacitor/device';
 import { Geolocation } from '@capacitor/geolocation';

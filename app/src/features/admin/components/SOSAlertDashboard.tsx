@@ -1,5 +1,10 @@
-// app/src/features/admin/components/SOSAlertDashboard.tsx
-// Real-time SOS alert dashboard for admins — US38 & US39
+/*
+ * Real-time SOS alert dashboard for admins (US38 & US39).
+ * Displays all SOS alerts fetched and subscribed via useSOSAlerts, with
+ * status-based filtering and an accordion layout for per-alert details.
+ * Admins can update alert status (pending -> in_progress -> resolved) directly
+ * from this screen; changes are written back to Supabase optimistically.
+ */
 
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -72,7 +77,7 @@ function getMapsLink(lat: number, lng: number): string {
   return `http://googleusercontent.com/maps.google.com/maps?q=${lat},${lng}`;
 }
 
-// ─── CARTE EXPANDABLE (Mode Accordéon) ───
+// ─── EXPANDABLE CARD (Accordion Mode) ───
 interface AlertCardProps {
   alert: SOSAlertAdmin;
   isExpanded: boolean;
@@ -86,12 +91,12 @@ function AlertCard({ alert, isExpanded, onToggle, onUpdateStatus }: AlertCardPro
   const [updating, setUpdating] = useState(false);
   const badge = getStatusBadge(alert.status, t);
 
-  // Auto-scroll intelligent quand la carte s'ouvre
+  // Intelligent auto-scroll when the card is opened
   useEffect(() => {
     if (isExpanded && cardRef.current) {
       setTimeout(() => {
         cardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 320); // Attend la fin de l'animation CSS (300ms) pour bien calculer la hauteur
+      }, 320); // Wait for the CSS animation to finish (300ms) to properly calculate the height
     }
   }, [isExpanded]);
 
@@ -104,10 +109,10 @@ function AlertCard({ alert, isExpanded, onToggle, onUpdateStatus }: AlertCardPro
   return (
     <div
       ref={cardRef}
-      // scroll-mt-24 permet de ne pas cacher le haut de la carte sous l'en-tête collant
+      // scroll-mt-24 prevents the top of the card from being hidden under the sticky header
       className={`scroll-mt-24 bg-eris-surface border transition-all duration-300 rounded-2xl overflow-hidden shadow-sm shrink-0 ${isExpanded ? 'border-eris-primary/50' : 'border-eris-border/50'}`}
     >
-      {/* En-tête de la carte (Toujours visible) */}
+      {/* Card header (Always visible) */}
       <button
         className={`w-full p-4 flex items-start gap-3 text-left transition-colors ${isExpanded ? 'bg-eris-surface-alt/30' : 'hover:bg-eris-surface-alt/20'}`}
         onClick={onToggle}
@@ -135,10 +140,10 @@ function AlertCard({ alert, isExpanded, onToggle, onUpdateStatus }: AlertCardPro
         </span>
       </button>
 
-      {/* Contenu Déroulant (Style Premium) */}
+      {/* Expanded content */}
       {isExpanded && (
         <div className="px-4 pb-4 border-t border-eris-border/30 pt-4 flex flex-col gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
-          {/* Lien GPS */}
+          {/* GPS link */}
           <a
             href={getMapsLink(alert.latitude, alert.longitude)}
             target="_blank"
@@ -156,7 +161,47 @@ function AlertCard({ alert, isExpanded, onToggle, onUpdateStatus }: AlertCardPro
             </div>
           </a>
 
-          {/* Infos médicales */}
+          {/* --- EMERGENCY CONTEXT BADGES --- */}
+          <div className="flex flex-wrap gap-2">
+            {/* Incident Type */}
+            <span className="bg-eris-primary/10 text-eris-primary border border-eris-primary/20 px-2 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
+              <span className="material-symbols-outlined text-[14px]">emergency</span>
+              {alert.incident_type
+                ? t(
+                    `alert.preset${alert.incident_type.charAt(0) + alert.incident_type.slice(1).toLowerCase()}`,
+                    alert.incident_type,
+                  )
+                : 'OTHER'}
+            </span>
+
+            {/* Victim Count */}
+            <span className="bg-eris-surface-alt text-eris-text border border-eris-border/50 px-2 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
+              <span className="material-symbols-outlined text-[14px]">group</span>
+              {alert.victim_count || 1} {t('history.victims', 'VICTIMS')}
+            </span>
+
+            {/* Trigger Source */}
+            <span
+              className={`px-2 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider border flex items-center gap-1 ${
+                alert.trigger_source === 'AUTO'
+                  ? 'bg-eris-danger/10 text-eris-danger border-eris-danger/20'
+                  : alert.trigger_source === 'DISCRETE'
+                    ? 'bg-purple-500/10 text-purple-400 border-purple-500/20'
+                    : 'bg-eris-surface-alt text-eris-text-muted border-eris-border/50'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[14px]">
+                {alert.trigger_source === 'AUTO'
+                  ? 'sensors'
+                  : alert.trigger_source === 'DISCRETE'
+                    ? 'visibility_off'
+                    : 'touch_app'}
+              </span>
+              {alert.trigger_source || t('admin.triggerManual', 'MANUAL')} {t('admin.triggerLabel', 'TRIGGER')}
+            </span>
+          </div>
+
+          {/* Medical informations */}
           <div className="bg-eris-bg border border-eris-border/50 rounded-xl p-4 flex flex-col gap-2.5">
             <p className="text-[10px] font-bold text-eris-text-subtle uppercase tracking-widest mb-1 flex items-center gap-1.5">
               <span className="material-symbols-outlined text-[14px]">medical_services</span>
@@ -180,18 +225,35 @@ function AlertCard({ alert, isExpanded, onToggle, onUpdateStatus }: AlertCardPro
             </p>
           </div>
 
-          {/* Notes additionnelles */}
+          {/* Additional notes */}
           {alert.notes && (
             <div className="bg-orange-500/10 border border-orange-500/30 rounded-xl p-4">
               <p className="text-[10px] font-bold text-orange-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
                 <span className="material-symbols-outlined text-[14px]">chat_bubble</span>
-                Notes
+                {t('alert.notes', 'Notes')}
               </p>
               <p className="text-eris-text text-sm italic">"{alert.notes}"</p>
             </div>
           )}
 
-          {/* Batterie et Transmission */}
+          {/* --- PHOTO VIEWER --- */}
+          {alert.photo_data && (
+            <div className="bg-eris-bg border border-eris-border/50 rounded-xl p-2 flex flex-col gap-2.5">
+              <p className="text-[10px] font-bold text-eris-text-subtle uppercase tracking-widest px-2 pt-2 flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-[14px]">photo_camera</span>
+                {t('history.photoSection', 'Attached Photo')}
+              </p>
+              <div className="rounded-lg overflow-hidden flex justify-center bg-black/20">
+                <img
+                  src={`data:image/jpeg;base64,${alert.photo_data}`}
+                  alt="Emergency Scene"
+                  className="max-w-full h-auto object-contain max-h-64 rounded-lg"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Battery  and Transmission */}
           <div className="flex items-center gap-6 pb-2">
             <div className="flex items-center gap-2 text-sm text-eris-text-muted">
               <span
@@ -240,17 +302,18 @@ function AlertCard({ alert, isExpanded, onToggle, onUpdateStatus }: AlertCardPro
   );
 }
 
-// ─── COMPOSANT PRINCIPAL (Dashboard) ───
+// ─── PRINCIPAL COMPONENT (Dashboard) ───
 interface SOSAlertDashboardProps {
   onBack: () => void;
+  targetAlertId?: string | null;
 }
 
-export default function SOSAlertDashboard({ onBack }: SOSAlertDashboardProps) {
+export default function SOSAlertDashboard({ onBack, targetAlertId }: SOSAlertDashboardProps) {
   const { t } = useTranslation();
   const { alerts, loading, error, updateAlertStatus, refetch } = useSOSAlerts();
 
   const [filter, setFilter] = useState<AlertStatus | 'all'>('all');
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(targetAlertId || null);
 
   const filtered = filter === 'all' ? alerts : alerts.filter((a) => a.status === filter);
 
@@ -263,15 +326,22 @@ export default function SOSAlertDashboard({ onBack }: SOSAlertDashboardProps) {
     { key: 'resolved', label: t('admin.statusResolved', 'Resolved') },
   ];
 
-  // Gère l'accordéon : Si on clique sur celui déjà ouvert, on le ferme. Sinon on l'ouvre.
+  // Manages the accordion: If you click on the one that is already open, you close it. Otherwise, you open it.
   const toggleExpand = (id: string) => {
     setExpandedId((prevId) => (prevId === id ? null : id));
   };
 
+  useEffect(() => {
+    if (targetAlertId) {
+      setFilter('all');
+      setExpandedId(targetAlertId);
+    }
+  }, [targetAlertId]);
+
   return (
-    // FIX SCROLL: absolute inset-0 et overflow-hidden forcent l'app à ne scroller que dans la liste
+    // FIX SCROLL: absolute inset-0 and overflow-hidden force the app to only scroll within the list
     <div className="flex flex-col absolute inset-0 bg-eris-bg text-eris-text overflow-hidden">
-      {/* En-tête */}
+      {/* header */}
       <div className="flex items-center gap-3 px-5 py-4 border-b border-eris-border/50 bg-eris-bg/80 backdrop-blur-md z-10 shrink-0">
         <button
           onClick={onBack}
@@ -295,7 +365,7 @@ export default function SOSAlertDashboard({ onBack }: SOSAlertDashboardProps) {
         </button>
       </div>
 
-      {/* Onglets de filtrage */}
+      {/* Filter tabs */}
       <div className="flex gap-2 px-5 py-3 overflow-x-auto border-b border-eris-border/30 bg-eris-bg/50 shrink-0 [&::-webkit-scrollbar]:hidden">
         {filters.map(({ key, label }) => (
           <button
@@ -320,7 +390,7 @@ export default function SOSAlertDashboard({ onBack }: SOSAlertDashboardProps) {
         ))}
       </div>
 
-      {/* Liste des alertes scrollable */}
+      {/* Scrollable alert list */}
       <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-3">
         {loading && alerts.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
@@ -355,7 +425,7 @@ export default function SOSAlertDashboard({ onBack }: SOSAlertDashboardProps) {
           />
         ))}
 
-        {/* Espace de sécurité pour scroller tout en bas */}
+        {/* Safe space to scroll to the bottom */}
         <div className="h-10 shrink-0"></div>
       </div>
     </div>

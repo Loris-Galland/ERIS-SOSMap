@@ -1,3 +1,10 @@
+/*
+ * Hook that loads and manages the full user list for the admin User Management screen.
+ * Fetches user profiles from the user_profiles Supabase table and exposes toggleAdminRole,
+ * which flips is_admin with an optimistic update and rolls back on RLS-blocked failures.
+ * Consumed by UserManagementScreen and exports the AdminUser type.
+ */
+
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../db/supabaseClient';
 
@@ -32,24 +39,22 @@ export function useUserManagement() {
   };
 
   const toggleAdminRole = async (userId: string, currentIsAdmin: boolean) => {
+    // Optimistic update
     setUsers((prev) =>
       prev.map((u) => (u.id === userId ? { ...u, is_admin: !currentIsAdmin } : u))
     );
 
-    const { data, error } = await supabase
-      .from('user_profiles')
-      .update({ is_admin: !currentIsAdmin })
-      .eq('id', userId)
-      .select();
+    // Server-side RPC — the SQL function verifies the caller is admin before writing
+    const { error } = await supabase.rpc('toggle_user_admin_role', {
+      target_user_id: userId,
+      new_value: !currentIsAdmin,
+    });
 
-    if (error || !data || data.length === 0) {
-      console.error("Failed to update admin role. Might be blocked by RLS policies.", error);
-
+    if (error) {
+      // Roll back optimistic update
       setUsers((prev) =>
         prev.map((u) => (u.id === userId ? { ...u, is_admin: currentIsAdmin } : u))
       );
-      
-      alert("Failed to update role. Please check Supabase RLS policies.");
       return false;
     }
 

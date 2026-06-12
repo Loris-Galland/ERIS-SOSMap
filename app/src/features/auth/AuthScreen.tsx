@@ -1,3 +1,12 @@
+/*
+ * AuthScreen — full-screen sign-in and sign-up form for the ERIS app.
+ * Manages email/password state locally and delegates authentication to the
+ * Supabase JS client (signInWithPassword / signUp).
+ * Accepts an optional onOpenSettings callback that reveals a settings button
+ * in the top-right corner, used before a session exists.
+ * Rendered by App.tsx when no active Supabase session is detected.
+ */
+
 import { useState } from 'react';
 import { supabase } from '../../db/supabaseClient';
 import { useTranslation } from 'react-i18next';
@@ -20,7 +29,7 @@ export default function AuthScreen({ onOpenSettings }: AuthScreenProps) {
       if (isSignUp) {
         const { error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
-        alert('Check your email for the login link!');
+        alert(t('auth.checkEmail', 'Check your email for the login link!'));
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
@@ -33,12 +42,12 @@ export default function AuthScreen({ onOpenSettings }: AuthScreenProps) {
   };
 
   return (
-    <div className="min-h-screen bg-eris-bg flex flex-col items-center justify-center p-6 relative overflow-hidden font-sans">
+    <div className="min-h-screen bg-eris-bg flex flex-col items-center justify-center p-6 py-12 relative overflow-y-auto font-sans">
       {onOpenSettings && (
         <button
           onClick={onOpenSettings}
           className="absolute top-6 right-6 w-12 h-12 bg-eris-surface/80 border border-eris-border rounded-full flex items-center justify-center text-eris-text-muted hover:text-eris-text hover:bg-eris-surface-alt transition-all active:scale-95 shadow-lg z-50 backdrop-blur-md"
-          title="Paramètres"
+          title={t('settings.title', 'Parameters')}
         >
           <span className="material-symbols-outlined text-2xl">settings</span>
         </button>
@@ -55,7 +64,7 @@ export default function AuthScreen({ onOpenSettings }: AuthScreenProps) {
             <span className="material-symbols-outlined text-4xl text-eris-primary">shield_lock</span>
           </div>
           <h1 className="text-3xl font-black text-eris-text tracking-tight mb-2">ERIS</h1>
-          <p className="text-eris-text-muted text-sm font-medium">Emergency Response & Info System</p>
+          <p className="text-eris-text-muted text-sm font-medium">{t('auth.systemDesc', 'Response & Info System')} </p>
         </div>
 
         {/* Auth Card */}

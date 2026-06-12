@@ -1,3 +1,8 @@
+/*
+ * Vitest unit tests for the Switch component.
+ * Covers rendering (active/inactive CSS classes, thumb position) and interaction (onClick calls).
+ * Connects to features/settings/components/Switch.tsx and uses @testing-library/react + userEvent.
+ */
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';

@@ -1,3 +1,11 @@
+/*
+ * useWeather.test.ts — Vitest unit tests for the useWeather hook.
+ * Stubs the global fetch and navigator.onLine to run entirely in-memory.
+ * Covers offline/no-network guard conditions, all WMO weather code mappings,
+ * temperature rounding, correct API URL construction, graceful network error
+ * handling, and the showWeatherReport state toggle.
+ */
+
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useWeather } from './useWeather';

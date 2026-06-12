@@ -1,3 +1,9 @@
+/*
+ * Floating banner that appears at the bottom of the screen when a shake gesture triggers the SOS pipeline.
+ * Exports the default ShakeSOSBanner component, rendered by the app shell while useShakeSOS is counting down.
+ * Styled in eris-danger red with a bounce animation to signal urgency; includes a cancel button.
+ * Connects to useShakeSOS and the i18n keys in the shake.* namespace.
+ */
 import { useTranslation } from 'react-i18next';
 
 interface ShakeSOSBannerProps {

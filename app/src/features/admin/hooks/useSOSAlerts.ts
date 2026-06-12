@@ -1,4 +1,11 @@
-// Fetches and subscribes in real-time to all SOS alerts for the admin dashboard
+/*
+ * Hook that fetches and maintains a real-time list of SOS alerts for the admin dashboard.
+ * Performs an initial load from the sos_alerts Supabase table, then subscribes to
+ * INSERT and UPDATE events via Postgres changes to keep the list live. Exports
+ * updateAlertStatus, which calls the update_sos_alert_status RPC (server-side admin
+ * check) with an optimistic UI update.
+ * Consumed by SOSAlertDashboard and types are shared with useSOSMarkersAdmin.
+ */
 
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../db/supabaseClient';
@@ -17,11 +24,15 @@ export interface SOSAlertAdmin {
   altitude: number;
   battery_level: number;
   notes: string;
-  blood_type: string;
-  allergies: string;
-  medical_conditions: string;
-  current_condition: string;
   created_at: string;
+  incident_type?: string;
+  victim_count?: number;
+  trigger_source?: string;
+  photo_data?: string;
+  blood_type?: string;
+  allergies?: string;
+  medical_conditions?: string;
+  current_condition?: string;
 }
 
 export function useSOSAlerts() {
@@ -34,7 +45,7 @@ export function useSOSAlerts() {
     setLoading(true);
     const { data, error } = await supabase
       .from('sos_alerts')
-      .select('*')
+      .select('id, user_id, first_name, last_name, status, transmission_method, latitude, longitude, altitude, battery_level, notes, created_at, incident_type, victim_count, trigger_source, photo_data, blood_type, allergies, medical_conditions, current_condition')
       .order('created_at', { ascending: false })
       .limit(100);
 
@@ -46,12 +57,13 @@ export function useSOSAlerts() {
     setLoading(false);
   };
 
-  // Update a single alert status directly in Supabase
+  // Update a single alert status via the update_sos_alert_status RPC
+  // (SECURITY DEFINER, verifies the caller is an admin server-side)
   const updateAlertStatus = async (id: string, status: AlertStatus) => {
-    const { error } = await supabase
-      .from('sos_alerts')
-      .update({ status })
-      .eq('id', id);
+    const { error } = await supabase.rpc('update_sos_alert_status', {
+      alert_id: id,
+      new_status: status,
+    });
 
     if (!error) {
       // Optimistic update — reflect change immediately in the UI

@@ -1,3 +1,9 @@
+/*
+ * Settings section for notification preferences.
+ * Exports NotificationsSection, which exposes toggles for push notifications and critical-alerts-only mode.
+ * Rendered inside SettingsScreen; uses the Switch component and i18n keys from the settings.* namespace.
+ * State is currently local; persistence to a backend or localStorage can be added when needed.
+ */
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Switch from '../components/Switch';

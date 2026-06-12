@@ -1,5 +1,12 @@
+/*
+ * Hook that listens for discrete (silent) SOS gestures and dispatches an SOS after a 5-second countdown.
+ * Supports two trigger methods configurable from SosSection: quad_tap (4 rapid screen taps)
+ * and device_flip (3 face-down phone flips detected via DeviceOrientationEvent).
+ * Exports useDiscreteSOS; connects to sosService for dispatch and DiscreteSOSBanner for the countdown UI.
+ */
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { dispatchSOS } from '../../../services/sosService';
+import { useAudioRecording } from '../../audio/hooks/useAudioRecording';
 
 type DiscreteTriggerMethod = 'none' | 'quad_tap' | 'device_flip';
 
@@ -22,6 +29,9 @@ export function useDiscreteSOS({ userId, userPosition, isActive }: useDiscreteSO
     (localStorage.getItem('eris_discrete_sos_method') as DiscreteTriggerMethod) || 'none'
   );
 
+  // Initialize the audio recorder
+  const { startRecording, stopRecording, cancelRecording, linkAudioToAlert } = useAudioRecording(userId);
+
   // Listen for the custom event we dispatched from SensorsSection
   useEffect(() => {
     const handlePrefChange = () => {
@@ -33,10 +43,26 @@ export function useDiscreteSOS({ userId, userPosition, isActive }: useDiscreteSO
 
   const executeSOS = useCallback(async () => {
     setIsCounting(false);
-    if (navigator.vibrate) navigator.vibrate([500]); // Final long vibration to confirm send
+    if (navigator.vibrate) navigator.vibrate([500]); 
     console.log('Silent discrete SOS dispatched');
-    await dispatchSOS(userId, userPosition, 100, 'Silent Discrete SOS');
-  }, [userId, userPosition]);
+
+    // Dispatch the SOS with the new explicit triggerSource
+    const result = await dispatchSOS(
+      userId, 
+      userPosition, 
+      100, 
+      'Silent Discrete SOS', 
+      { 
+        incidentType: 'OTHER', 
+        victimCount: 1, 
+        triggerSource: 'DISCRETE' 
+      }
+    );
+
+    if (result && (result as any).supabaseId) {
+      linkAudioToAlert((result as any).supabaseId);
+    }
+  }, [userId, userPosition, startRecording]);
 
   const startCountdown = useCallback(() => {
     if (isCounting) return;
@@ -44,6 +70,8 @@ export function useDiscreteSOS({ userId, userPosition, isActive }: useDiscreteSO
     // Subtle haptic feedback to acknowledge the gesture (Short double vibration)
     if (navigator.vibrate) navigator.vibrate([100, 50, 100]); 
     
+    startRecording('discrete');
+
     setIsCounting(true);
     setCountdown(5);
 
@@ -64,6 +92,8 @@ export function useDiscreteSOS({ userId, userPosition, isActive }: useDiscreteSO
     setIsCounting(false);
     setCountdown(5);
     tapCount.current = 0; // Reset taps
+
+    cancelRecording();
   }, []);
 
   useEffect(() => {

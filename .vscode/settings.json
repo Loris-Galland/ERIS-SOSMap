@@ -1,8 +1,8 @@
 {
   "java.project.importHint": "whenNeeded",
   "files.exclude": {
-    "android/": true,
-    "ios/": true
+    "android/": false,
+    "ios/": false
   },
   "java.diagnostics.filter": {
     "ignore": ["android/**/*.java"]

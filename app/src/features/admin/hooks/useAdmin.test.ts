@@ -1,3 +1,9 @@
+/*
+ * Vitest unit tests for the useAdmin hook.
+ * Covers the null-session short-circuit, successful admin detection,
+ * non-admin result, and Supabase error handling by mocking supabaseClient.
+ */
+
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 

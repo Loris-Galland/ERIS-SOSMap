@@ -15,14 +15,14 @@ export default function DiagnosticsSection() {
       </h3>
       <div className="bg-eris-surface-alt/40 border border-eris-border/50 rounded-3xl p-5 flex flex-col gap-4">
         <div className="flex justify-between items-center">
-          <span className="text-eris-text-muted text-sm">LoRa Module</span>
+          <span className="text-eris-text-muted text-sm">{t('diagnostics.loraModule', 'LoRa Module')}</span>
           <span className="flex items-center gap-2 text-eris-success text-xs font-bold bg-eris-success/10 px-3 py-1 rounded-full">
             <span className="w-1.5 h-1.5 bg-eris-success rounded-full animate-pulse"></span>{' '}
             {t('settings.connected', 'Connected')}
           </span>
         </div>
         <div className="flex justify-between items-center">
-          <span className="text-eris-text-muted text-sm">Mesh Network</span>
+          <span className="text-eris-text-muted text-sm">{t('diagnostics.meshNetwork', 'Mesh Network')}</span>
           <span className="text-eris-primary text-xs font-bold bg-eris-primary/10 px-3 py-1 rounded-full">
             {t('settings.searching', 'Searching...')}
           </span>

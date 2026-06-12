@@ -1,4 +1,10 @@
-// Displays active SOS alert markers on the map for admins only 
+/*
+ * Hook that renders live SOS alert markers on the Leaflet map instance for admins.
+ * Fetches non-resolved alerts from Supabase and places color-coded pulsing circle
+ * markers on the map, each with a popup showing the user name and current status.
+ * Subscribes to real-time Postgres changes to refresh markers automatically.
+ * Only activates when both isActive and isAdmin are true.
+ */
 
 import { useEffect, useRef } from 'react';
 import L from 'leaflet';

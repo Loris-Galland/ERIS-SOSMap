@@ -1,7 +1,22 @@
+/*
+ * Service module for hazard reporting and retrieval in the ERIS app.
+ * Exports reportHazard, fetchHazards, and removeHazard.
+ * Each operation targets both the Supabase 'hazards' table (when online) and
+ * the local Dexie database for offline-first support. Unsynced records are
+ * merged with remote data when fetchHazards is called while online.
+ */
+
 import { db } from '../db/localDb';
 import { supabase } from '../db/supabaseClient';
 
-export const reportHazard = async (userId: string, type: 'fire' | 'flood' | 'road_blocked' | 'landslide', lat: number, lon: number) => {
+export const reportHazard = async (
+  userId: string, 
+  type: 'fire' | 'flood' | 'road_blocked' | 'landslide' | string, 
+  lat: number, 
+  lon: number,
+  shape_type: 'point' | 'circle' | 'rectangle' = 'point',
+  shape_metadata?: any
+) => {
   const uuid = crypto.randomUUID();
   const timestamp = Date.now();
 
@@ -11,6 +26,8 @@ export const reportHazard = async (userId: string, type: 'fire' | 'flood' | 'roa
     type,
     lat,
     lon,
+    shape_type,
+    shape_metadata,
     timestamp,
     synced: false
   };
@@ -23,7 +40,9 @@ export const reportHazard = async (userId: string, type: 'fire' | 'flood' | 'roa
         user_id: userId,
         type: type,
         latitude: lat,
-        longitude: lon
+        longitude: lon,
+        shape_type: shape_type,
+        shape_metadata: shape_metadata
       });
 
       if (error) throw error;
@@ -34,7 +53,7 @@ export const reportHazard = async (userId: string, type: 'fire' | 'flood' | 'roa
   }
 
   // Save in Dexie for immediate display on the local map
-  await db.hazards.add(hazardData);
+  await db.hazards.add(hazardData as any);
   
   return hazardData;
 };
@@ -53,6 +72,8 @@ export const fetchHazards = async () => {
           type: h.type,
           lat: h.latitude,
           lon: h.longitude,
+          shape_type: h.shape_type || 'point',
+          shape_metadata: h.shape_metadata,
           timestamp: new Date(h.created_at).getTime(),
           synced: true
         }));
@@ -67,11 +88,16 @@ export const fetchHazards = async () => {
   return [...remoteHazards, ...localHazards];
 };
 
-export const removeHazard = async (uuid: string) => {
+export const removeHazard = async (uuid: string, userId: string, isAdmin: boolean = false) => {
   try {
     if (navigator.onLine) {
-      // Delete from Supabase 
-      const { error } = await supabase.from('hazards').delete().eq('id', uuid);
+      // Delete from Supabase. Non-admins may only delete their own reports;
+      // admins rely on the RLS policy to allow deleting any hazard.
+      let query = supabase.from('hazards').delete().eq('id', uuid);
+      if (!isAdmin) {
+        query = query.eq('user_id', userId);
+      }
+      const { error } = await query;
       if (error) throw error;
     }
   } catch (error) {
@@ -80,7 +106,7 @@ export const removeHazard = async (uuid: string) => {
 
   // Delete from local Dexie DB
   try {
-    await db.hazards.filter(hazard => hazard.uuid === uuid).delete();
+    await db.hazards.filter((hazard: any) => hazard.uuid === uuid).delete();
   } catch (err) {
     await db.hazards.delete(uuid as any); 
   }

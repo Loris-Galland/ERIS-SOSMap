@@ -1,3 +1,13 @@
+/*
+ * useGPS — React hook that continuously watches the device position via the
+ * Capacitor Geolocation plugin (falls back to web Geolocation on non-native).
+ * Exposes userPosition (lat, lng, alt, speed in km/h) and a gpsStatus string.
+ * Seeds the initial state from a localStorage cache (key: sosmap_last_location)
+ * so the last known position is available immediately on mount.
+ * Places and updates a Leaflet marker on the provided mapInstance ref.
+ * Consumed by MapScreen; speed is also forwarded to useCrashDetection.
+ */
+
 import { useEffect, useRef, useState } from 'react';
 import { Geolocation } from '@capacitor/geolocation';
 import { Capacitor } from '@capacitor/core';

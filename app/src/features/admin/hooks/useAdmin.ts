@@ -1,3 +1,9 @@
+/*
+ * Hook that checks whether the currently authenticated user has admin privileges.
+ * Queries the is_admin field in the user_profiles Supabase table on session change.
+ * Consumed by the top-level app router to conditionally render the AdminScreen.
+ */
+
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../db/supabaseClient';
 

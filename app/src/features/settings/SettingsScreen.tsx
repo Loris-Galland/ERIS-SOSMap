@@ -1,8 +1,8 @@
-/**
- * SettingsScreen.tsx
- *
- * Main orchestrator for the application settings.
- * It imports and stacks individual sections to keep the codebase clean and modular.
+/*
+ * Root settings screen that composes all setting sections into a single scrollable view.
+ * Exports the default SettingsScreen component, which is navigated to from the main app shell.
+ * Receives the current theme and onThemeChange callback as props, forwarding them to DisplaySection.
+ * Connects to all section components under features/settings/sections/.
  */
 import React from 'react';
 import { useTranslation } from 'react-i18next';

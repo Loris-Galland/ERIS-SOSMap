@@ -1,3 +1,10 @@
+/*
+ * LayerStylePicker.tsx
+ * Component that renders a grid of selectable tile-style buttons (dark, light,
+ * contrasted, satellite, etc.) sourced from MAP_STYLES in MapUtils. Used inside
+ * DownloadMapScreen to let the user choose which tile styles to include in a
+ * download. Highlights the active app theme as the default style.
+ */
 import React from 'react';
 import { MAP_STYLES } from '../../../utils/MapUtils';
 

@@ -1,12 +1,22 @@
+/*
+ * Full-screen distress beacon component for the ERIS app.
+ * Exports DistressSignalScreen (default), which activates a siren audio loop
+ * and a hardware flashlight strobe when toggled by the user or by the physical
+ * volume buttons. Uses @capgo/capacitor-flash for native flashlight access.
+ * Consumed by the SOS feature as a last-resort visual/audio signalling tool.
+ */
+
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { CapacitorFlash } from '@capgo/capacitor-flash';
+import { useTranslation } from 'react-i18next';
 
 interface DistressSignalScreenProps {
   onClose: () => void;
 }
 
 export default function DistressSignalScreen({ onClose }: DistressSignalScreenProps) {
+  const { t } = useTranslation();
   const [isActive, setIsActive] = useState(false);
 
   // Refs to hold instances without triggering re-renders
@@ -120,7 +130,7 @@ export default function DistressSignalScreen({ onClose }: DistressSignalScreenPr
         >
           <span className="material-symbols-outlined text-xl">arrow_back</span>
         </button>
-        <h2 className="text-eris-text font-bold text-xl tracking-tight">Distress Beacon</h2>
+        <h2 className="text-eris-text font-bold text-xl tracking-tight">{t('beacon.title')}</h2>
         <div className="w-10 h-10"></div>
       </header>
 
@@ -130,8 +140,9 @@ export default function DistressSignalScreen({ onClose }: DistressSignalScreenPr
         <div className="bg-eris-surface-alt/80 border border-eris-border rounded-2xl p-4 mb-12 flex items-center gap-3 max-w-xs z-10">
           <span className="material-symbols-outlined text-eris-primary text-3xl">volume_up</span>
           <p className="text-eris-text-muted text-xs font-medium leading-relaxed">
-            You can also press the <strong className="text-eris-text">Physical Volume Buttons</strong> on your phone to
-            toggle the beacon.
+            {t('beacon.volumeHintBefore')}{' '}
+            <strong className="text-eris-text">{t('beacon.volumeHintBold')}</strong>{' '}
+            {t('beacon.volumeHintAfter')}
           </p>
         </div>
 
@@ -155,7 +166,7 @@ export default function DistressSignalScreen({ onClose }: DistressSignalScreenPr
           <span
             className={`font-bold text-xl text-center px-4 leading-tight tracking-wide whitespace-pre-line ${isActive ? '[.theme-contrasted_&]:!text-white' : ''}`}
           >
-            {isActive ? 'BEACON\nON' : 'TAP TO\nACTIVATE'}
+            {isActive ? t('beacon.beaconOn') : t('beacon.tapToActivate')}
           </span>
         </button>
       </section>

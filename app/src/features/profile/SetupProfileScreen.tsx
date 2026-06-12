@@ -1,3 +1,10 @@
+/*
+ * SetupProfileScreen.tsx
+ * One-time onboarding form shown after a new user signs up. Collects first/last
+ * name, blood type, allergies, medical conditions, and medications, then upserts
+ * them to the Supabase user_profiles table. Marks the profile as complete in
+ * Supabase Auth user metadata and calls onComplete to leave the setup flow.
+ */
 import { useState } from 'react';
 import { supabase } from '../../db/supabaseClient';
 import { useTranslation } from 'react-i18next';

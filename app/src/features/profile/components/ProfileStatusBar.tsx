@@ -1,8 +1,9 @@
-/**
+﻿/*
  * ProfileStatusBar.tsx
- *
- * Displays the real-time GPS and Battery hardware status,
- * as well as the main Identity Card of the user.
+ * Profile sub-component that displays real-time device status (GPS coordinates
+ * and battery level) alongside the user's identity card (name, ERIS-ID, and
+ * verified badge). Receives hardware data from useProfileData via ProfileScreen;
+ * has no state of its own and is purely presentational.
  */
 import React from 'react';
 import { useTranslation } from 'react-i18next';

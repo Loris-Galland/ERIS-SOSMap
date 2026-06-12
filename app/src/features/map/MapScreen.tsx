@@ -1,6 +1,18 @@
+/*
+ * MapScreen — the primary map view of the ERIS app, rendered when the map tab is active.
+ * Composes useMapLayers (Leaflet init), useGPS (position tracking), useWeather,
+ * useHazards, usePOIs, useFallDetection, useCrashDetection, useInactivityMonitoring,
+ * and useSOSMarkersAdmin into a single interactive screen.
+ * Handles geographic search via Nominatim (online) or cached local regions (offline),
+ * POI filter pills, layer switching, and automatic SOS dispatch on detected emergencies.
+ * Exported as the default component consumed by App.tsx tab navigation.
+ */
+
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Device } from '@capacitor/device';
 import L from 'leaflet';
+import 'leaflet-draw';
 import { useGPS } from './hooks/useGPS';
 import { useWeather } from './hooks/useWeather';
 import { useHazards } from './hooks/useHazards';
@@ -38,6 +50,10 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
   const mapRef = useRef<HTMLDivElement | null>(null);
   const [isMapReady, setIsMapReady] = useState(false);
   const currentUserId = session?.user?.id || getGuestId();
+  const [isDrawingMode, setIsDrawingMode] = useState(false);
+  const [isPickingDestination, setIsPickingDestination] = useState(false);
+  const [selectedDestination, setSelectedDestination] = useState<{ lat: number; lng: number } | null>(null);
+  const destMarkerRef = useRef<L.Marker | null>(null);
 
   const [offlineMode, setOfflineMode] = useState(false);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
@@ -86,15 +102,82 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
     hazardToDelete,
     setHazardToDelete,
     handleDeleteHazard,
-  } = useHazards({ mapInstance, isActive, isAdmin, isMapReady });
+    pendingGeometry,
+    setPendingGeometry,
+    hazardsList,
+  } = useHazards({ mapInstance, isActive, isAdmin, isMapReady, userId: currentUserId });
 
   const { isLoading: isPoisLoading } = usePOIs({ mapInstance, activeFilters });
+
+  // DESTINATION CLICK HANDLING VIA LEAFLET DRAW
+  useEffect(() => {
+    if (!mapInstance.current || !isPickingDestination) return;
+
+    const map = mapInstance.current;
+
+    // Enable Leaflet Draw marker creation tool
+    const markerDrawer = new (L.Draw.Marker as any)(map, {
+      icon: L.divIcon({
+        className: 'bg-transparent',
+        html: `<div style="background-color: #10B981; width: 34px; height: 34px; border-radius: 50%; border: 3px solid white; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 8px rgba(0,0,0,0.4);"><span class="material-symbols-outlined" style="color: white; font-size: 20px;">flag</span></div>`,
+        iconSize: [34, 34],
+        iconAnchor: [17, 34],
+      }),
+    });
+
+    markerDrawer.enable();
+
+    // When the user taps the screen and draws the marker
+    const onDestinationCreated = (e: any) => {
+      const { layer } = e;
+      const { lat, lng } = layer.getLatLng();
+
+      setSelectedDestination({ lat, lng });
+      setIsPickingDestination(false);
+      markerDrawer.disable();
+    };
+
+    map.on(L.Draw.Event.CREATED, onDestinationCreated);
+
+    return () => {
+      map.off(L.Draw.Event.CREATED, onDestinationCreated);
+      markerDrawer.disable();
+    };
+  }, [isPickingDestination, mapInstance]);
+
+  // DRAWING AND MAINTAINING THE FLAG ON THE MAP
+  useEffect(() => {
+    if (!mapInstance.current) return;
+
+    if (selectedDestination) {
+      if (!destMarkerRef.current) {
+        const flagIcon = L.divIcon({
+          className: 'bg-transparent',
+          html: `<div style="background-color: #10B981; width: 34px; height: 34px; border-radius: 50%; border: 3px solid white; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 8px rgba(0,0,0,0.4);"><span class="material-symbols-outlined" style="color: white; font-size: 20px;">flag</span></div>`,
+          iconSize: [34, 34],
+          iconAnchor: [17, 34],
+          popupAnchor: [0, -34],
+        });
+
+        destMarkerRef.current = L.marker([selectedDestination.lat, selectedDestination.lng], { icon: flagIcon })
+          .addTo(mapInstance.current)
+          .bindPopup('<b style="color: #10B981;">Destination Validated</b><br/>Tap the green car icon to navigate.');
+      } else {
+        destMarkerRef.current.setLatLng([selectedDestination.lat, selectedDestination.lng]);
+      }
+    } else {
+      if (destMarkerRef.current) {
+        mapInstance.current.removeLayer(destMarkerRef.current);
+        destMarkerRef.current = null;
+      }
+    }
+  }, [selectedDestination, mapInstance]);
 
   const toggleFilter = (category: POICategory) => {
     setActiveFilters((prev) => (prev.includes(category) ? [] : [category]));
   };
 
-  // Admin SOS markers overlay — US40
+  // Admin SOS markers overlay
   useSOSMarkersAdmin({
     mapInstance,
     isActive,
@@ -103,7 +186,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
 
   // Logic for fall detection
   const handleFallDetected = useCallback(() => {
-    console.log('🚨 FALL DETECTED BY ACCELEROMETER!');
+    console.log('FALL DETECTED BY ACCELEROMETER!');
     setShowFallModal(true);
   }, []);
 
@@ -112,7 +195,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
 
   // Logic for motorcycle crash detection
   const handleCrashDetected = useCallback(() => {
-    console.log('🚨 MOTORCYCLE CRASH DETECTED!');
+    console.log('MOTORCYCLE CRASH DETECTED!');
     setShowFallModal(true); // Reuses the red countdown modal with the siren
   }, []);
 
@@ -129,13 +212,17 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
   const handleSOSConfirm = async () => {
     setShowFallModal(false);
 
-    // Check if we have a valid position
     if (userPosition.lat !== 0 && userPosition.lng !== 0) {
       try {
+        let battery = 100;
+        try {
+          const info = await Device.getBatteryInfo();
+          battery = Math.round((info.batteryLevel ?? 1) * 100);
+        } catch {}
         await dispatchSOS(
           currentUserId,
           { lat: userPosition.lat, lng: userPosition.lng, alt: userPosition.alt },
-          100,
+          battery,
           'AUTOMATIC FALL/CRASH DETECTED',
         );
         console.log('SOS SENT AUTOMATICALLY!');
@@ -153,7 +240,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
 
   // --- Logic for Inactivity Monitoring ---
   const handleInactivityDetected = useCallback(() => {
-    console.log('🚨 PROLONGED INACTIVITY DETECTED!');
+    console.log('PROLONGED INACTIVITY DETECTED!');
     setShowInactivityModal(true);
   }, []);
 
@@ -167,13 +254,17 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
   const handleInactivitySOS = async () => {
     setShowInactivityModal(false);
 
-    // Check if we have a valid position
     if (userPosition.lat !== 0 && userPosition.lng !== 0) {
       try {
+        let battery = 100;
+        try {
+          const info = await Device.getBatteryInfo();
+          battery = Math.round((info.batteryLevel ?? 1) * 100);
+        } catch {}
         await dispatchSOS(
           currentUserId,
           { lat: userPosition.lat, lng: userPosition.lng, alt: userPosition.alt },
-          100,
+          battery,
           'AUTOMATIC SOS: PROLONGED INACTIVITY DETECTED',
         );
         onNavigateToAlerts();
@@ -240,7 +331,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
     const customRegs = savedCustom ? JSON.parse(savedCustom) : [];
     const formattedCustom = customRegs.map((r: any) => ({
       place_id: r.id,
-      display_name: `${r.name}, Custom zone`,
+      display_name: `${r.name}, ${t('offline.customZone', 'Custom zone')}`,
       boundingbox: [r.bounds.southWest[0], r.bounds.northEast[0], r.bounds.southWest[1], r.bounds.northEast[1]],
       isOffline: true,
     }));
@@ -249,7 +340,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
     const downloadedIds = savedOffline ? JSON.parse(savedOffline) : [];
     const downloadedPresets = PRESET_REGIONS.filter((pr) => downloadedIds.includes(pr.id)).map((pr) => ({
       place_id: pr.id.toString(),
-      display_name: `${pr.name}, Saved zone`,
+      display_name: `${pr.name}, ${t('offline.savedZone', 'Saved zone')}`,
       boundingbox: [
         pr.bounds.getSouthWest().lat,
         pr.bounds.getNorthEast().lat,
@@ -368,7 +459,9 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
   return (
     <div className="relative w-full h-full">
       {/* ─── LEAFLET MAP ─── */}
-      <div ref={mapRef} className="absolute inset-0 z-0" />
+      <div className={`absolute inset-0 z-0 ${currentMapStyle === 'terrain_dark' ? 'dark-terrain-active' : ''}`}>
+        <div ref={mapRef} className="w-full h-full" />
+      </div>
 
       {/* ─── SEARCH & REFRESH BAR ─── */}
       <div className="flex items-center px-4 py-3 bg-eris-bg/80 backdrop-blur-md z-[9999] gap-3 absolute top-0 left-0 right-0">
@@ -528,7 +621,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
                   ? 'bg-yellow-500/20 [.theme-contrasted_&]:bg-gray-500'
                   : 'bg-eris-danger/20 [.theme-contrasted_&]:bg-gray-500'
             }`}
-            title="Expand Location"
+            title={t('map.expandLocation', 'Expand Location')}
           >
             <div className="relative flex items-center justify-center">
               {/* Satellite status-indicator */}
@@ -555,7 +648,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
           <div
             onClick={() => setIsLocationExpanded(false)}
             className="bg-eris-surface/80 backdrop-blur-md border border-eris-border/50 rounded-2xl p-4 shadow-xl cursor-pointer hover:bg-eris-surface/90 transition-colors"
-            title="Click to minimize"
+            title={t('map.minimize', 'Click to minimize')}
           >
             <div className="flex items-center gap-3 mb-2">
               <span
@@ -587,7 +680,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
           <button
             onClick={() => setIsWeatherExpanded(true)}
             className={`w-12 h-12 backdrop-blur-md border border-eris-border/50 rounded-full flex items-center justify-center transition-colors shadow-lg active:scale-95 ${currentWeather.bg} [.theme-contrasted_&]:bg-eris-surface`}
-            title="Expand Weather"
+            title={t('map.expandWeather', 'Expand Weather')}
           >
             <span
               className={`material-symbols-outlined text-xl ${currentWeather.color} ${
@@ -601,7 +694,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
           <div
             onClick={() => setIsWeatherExpanded(false)}
             className="bg-eris-surface/80 backdrop-blur-md border border-eris-border/50 rounded-2xl p-2.5 shadow-xl flex items-center gap-4 cursor-pointer hover:bg-eris-surface/90 transition-colors"
-            title="Click to minimize"
+            title={t('map.minimize', 'Click to minimize')}
           >
             <div className="flex items-center gap-2">
               <div
@@ -625,7 +718,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
             <div className="w-px h-6 bg-gray-700/50" />
             <button
               onClick={(e) => {
-                e.stopPropagation(); // Prevents minimizing the widget when clicking "Report"
+                e.stopPropagation();
                 setShowWeatherReport(true);
               }}
               className="w-8 h-8 rounded-full bg-eris-surface-alt/80 flex items-center justify-center text-eris-text-muted hover:text-eris-text hover:bg-gray-700 transition-colors active:scale-95"
@@ -639,95 +732,128 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
 
       {/* ─── LAYER MENU + CONTROLS ─── */}
       <div className="absolute top-[120px] right-4 z-[10000] flex flex-col gap-3">
-        <div className="relative">
-          <button
-            onClick={() => setShowLayerMenu(!showLayerMenu)}
-            className={`w-12 h-12 border border-eris-border/50 rounded-full flex items-center justify-center transition-colors shadow-lg active:scale-95 ${
-              showLayerMenu
-                ? 'bg-eris-surface-alt text-eris-text'
-                : 'bg-eris-surface/90 text-eris-text-muted hover:bg-eris-surface-alt'
-            }`}
-          >
-            <span className="material-symbols-outlined text-xl">layers</span>
-          </button>
-
-          {showLayerMenu && (
-            <div className="absolute right-14 top-0 bg-eris-surface/95 backdrop-blur-md border border-eris-border rounded-2xl shadow-2xl overflow-hidden flex flex-col w-44 z-[1000] animate-in fade-in zoom-in duration-150">
-              <div className="px-3 py-2 bg-eris-surface-alt/50 border-b border-eris-border">
-                <span className="text-[10px] font-bold text-eris-text-muted uppercase tracking-wider">
-                  {t('offlineViewer.mapType', 'Map Type')}
-                </span>
-              </div>
-              {Object.entries(MAP_STYLES)
-                .sort(([keyA], [keyB]) => {
-                  const currentDefault =
-                    visualTheme === 'light' ? 'light' : visualTheme === 'contrasted' ? 'contrasted' : 'dark';
-                  if (keyA === currentDefault) return -1;
-                  if (keyB === currentDefault) return 1;
-                  return 0;
-                })
-                .map(([key, style]) => (
-                  <button
-                    key={key}
-                    onClick={() => changeMapStyle(key)}
-                    className={`px-4 py-3 text-left text-xs font-bold flex items-center gap-3 border-b border-eris-border/50 last:border-0 transition-colors ${
-                      currentMapStyle === key
-                        ? 'text-eris-primary bg-eris-surface-alt/80'
-                        : 'text-eris-text-muted hover:bg-eris-surface-alt/40'
-                    }`}
-                  >
-                    <span className="material-symbols-outlined text-base">{style.icon}</span>
-                    {t(`mapStyles.${key}`, style.name)}
-                  </button>
-                ))}
-            </div>
-          )}
-        </div>
-
-        {/* Report hazard button */}
-        <button
-          onClick={() => setShowHazardReportModal(true)}
-          className="w-12 h-12 bg-eris-alert [.theme-dark_&]:bg-orange-400 rounded-full flex items-center justify-center text-white [.theme-contrasted_&]:border-2 [.theme-contrasted_&]:!border-black hover:bg-orange-400 transition-colors shadow-lg shadow-eris-alert/30 active:scale-95"
-          title="Report Hazard"
-        >
-          <span className="material-symbols-outlined [.theme-contrasted_&]:!text-black text-xl">warning</span>
-        </button>
-
-        {/* Re-center on my location button */}
-        <button
-          onClick={() => {
-            if (mapInstance.current && userPosition.lat !== 0) {
-              mapInstance.current.setView([userPosition.lat, userPosition.lng], 15);
-            }
-          }}
-          className="w-12 h-12 bg-eris-primary rounded-full flex items-center justify-center text-eris-text [.theme-light_&]:text-white [.theme-contrasted_&]:border-2 [.theme-contrasted_&]:!border-black hover:bg-eris-primary transition-colors shadow-lg shadow-blue-900/30 active:scale-95"
-        >
-          <span className="material-symbols-outlined [.theme-contrasted_&]:!text-black text-xl">my_location</span>
-        </button>
-      </div>
-
-      {/* ─── HAZARD ALERT BANNER ─── */}
-      {showHazardAlert && (
-        <div className="absolute bottom-24 left-4 right-20 z-[1000] animate-fade-in">
-          <div className="bg-eris-danger/90 [.theme-contrasted_&]:bg-black backdrop-blur-md rounded-2xl p-4 flex items-start gap-3 shadow-[0_8px_30px_rgba(var(--eris-danger),0.3)] [.theme-contrasted_&]:shadow-none border border-white/30 [.theme-contrasted_&]:border-white">
-            <div className="w-8 h-8 rounded-full bg-white/30 [.theme-contrasted_&]:bg-transparent [.theme-contrasted_&]:border [.theme-contrasted_&]:border-white flex items-center justify-center shrink-0">
-              <span className="material-symbols-outlined text-white text-lg">warning</span>
-            </div>
-            <div className="flex-1">
-              <h4 className="text-white text-sm font-bold mb-0.5">Area Warning</h4>
-              <p className="text-red-100 [.theme-contrasted_&]:text-white text-xs leading-relaxed">
-                High avalanche risk reported in your current sector. Avoid steep terrains.
-              </p>
-            </div>
+        {/*Hide Layer button if drawing or picking destination */}
+        {!isDrawingMode && !isPickingDestination && (
+          <div className="relative">
             <button
-              onClick={() => setShowHazardAlert(false)}
-              className="text-red-200 hover:text-eris-text transition-colors"
+              onClick={() => setShowLayerMenu(!showLayerMenu)}
+              className={`w-12 h-12 border border-eris-border/50 rounded-full flex items-center justify-center transition-colors shadow-lg active:scale-95 ${
+                showLayerMenu
+                  ? 'bg-eris-surface-alt text-eris-text'
+                  : 'bg-eris-surface/90 text-eris-text-muted hover:bg-eris-surface-alt'
+              }`}
             >
-              <span className="material-symbols-outlined [.theme-contrasted_&]:text-white text-xl">close</span>
+              <span className="material-symbols-outlined text-xl">layers</span>
+            </button>
+
+            {showLayerMenu && (
+              <div className="absolute right-14 top-0 bg-eris-surface/95 backdrop-blur-md border border-eris-border rounded-2xl shadow-2xl overflow-hidden flex flex-col w-44 z-[1000] animate-in fade-in zoom-in duration-150">
+                <div className="px-3 py-2 bg-eris-surface-alt/50 border-b border-eris-border">
+                  <span className="text-[10px] font-bold text-eris-text-muted uppercase tracking-wider">
+                    {t('offlineViewer.mapType', 'Map Type')}
+                  </span>
+                </div>
+                {Object.entries(MAP_STYLES)
+                  .sort(([keyA], [keyB]) => {
+                    const currentDefault =
+                      visualTheme === 'light' ? 'light' : visualTheme === 'contrasted' ? 'contrasted' : 'dark';
+                    if (keyA === currentDefault) return -1;
+                    if (keyB === currentDefault) return 1;
+                    return 0;
+                  })
+                  .map(([key, style]) => (
+                    <button
+                      key={key}
+                      onClick={() => changeMapStyle(key)}
+                      className={`px-4 py-3 text-left text-xs font-bold flex items-center gap-3 border-b border-eris-border/50 last:border-0 transition-colors ${
+                        currentMapStyle === key
+                          ? 'text-eris-primary bg-eris-surface-alt/80'
+                          : 'text-eris-text-muted hover:bg-eris-surface-alt/40'
+                      }`}
+                    >
+                      <span className="material-symbols-outlined text-base">{style.icon}</span>
+                      {t(`mapStyles.${key}`, style.name)}
+                    </button>
+                  ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {!isPickingDestination && (
+          <button
+            onClick={() => setIsDrawingMode(!isDrawingMode)}
+            className={`w-12 h-12 ${isDrawingMode ? 'bg-gray-500' : 'bg-eris-alert'} [.theme-dark_&]:bg-orange-400 rounded-full flex items-center justify-center text-white [.theme-contrasted_&]:border-2 [.theme-contrasted_&]:!border-black hover:bg-orange-400 transition-colors shadow-lg shadow-eris-alert/30 active:scale-95`}
+            title={isDrawingMode ? t('map.cancelDraw', 'Cancel Draw') : t('map.reportHazardBtn', 'Report Hazard')}
+          >
+            <span className="material-symbols-outlined [.theme-contrasted_&]:!text-black text-xl">
+              {isDrawingMode ? 'close' : 'warning'}
+            </span>
+          </button>
+        )}
+
+        {/*TARGET BUTTON*/}
+        {!isDrawingMode && !selectedDestination && (
+          <button
+            onClick={() => setIsPickingDestination(!isPickingDestination)}
+            className={`w-12 h-12 rounded-full flex items-center justify-center text-white transition-colors shadow-lg active:scale-95 [.theme-contrasted_&]:border-2 [.theme-contrasted_&]:!border-black ${
+              isPickingDestination ? 'bg-gray-500' : 'bg-emerald-500 hover:bg-emerald-400'
+            }`}
+            title={isPickingDestination ? 'Cancel target' : 'Pick a destination'}
+          >
+            <span className="material-symbols-outlined text-xl [.theme-contrasted_&]:!text-black">
+              {isPickingDestination ? 'close' : 'near_me'}
+            </span>
+          </button>
+        )}
+
+        {/*GOOGLE MAPS*/}
+        {selectedDestination && !isDrawingMode && !isPickingDestination && (
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={() => {
+                if (userPosition.lat !== 0) {
+                  // Universal official Google Maps Intent URL
+                  const url = `https://www.google.com/maps/dir/?api=1&origin=${userPosition.lat},${userPosition.lng}&destination=${selectedDestination.lat},${selectedDestination.lng}&travelmode=driving`;
+                  window.open(url, '_system');
+                  setSelectedDestination(null);
+                } else {
+                  alert('Starting GPS position not available.');
+                }
+              }}
+              className="w-12 h-12 bg-green-600 text-white hover:bg-green-500 rounded-full flex items-center justify-center transition-colors shadow-lg active:scale-95 [.theme-contrasted_&]:border-2 [.theme-contrasted_&]:!border-black"
+              title="Go (Google Maps)"
+            >
+              <span className="material-symbols-outlined text-xl [.theme-contrasted_&]:!text-black">
+                directions_car
+              </span>
+            </button>
+
+            {/* Cancel destination button */}
+            <button
+              onClick={() => setSelectedDestination(null)}
+              className="w-12 h-12 bg-gray-500 text-white hover:bg-gray-400 rounded-full flex items-center justify-center transition-colors shadow-lg active:scale-95 [.theme-contrasted_&]:border-2 [.theme-contrasted_&]:!border-black"
+              title="Clear target"
+            >
+              <span className="material-symbols-outlined text-xl [.theme-contrasted_&]:!text-black">close</span>
             </button>
           </div>
-        </div>
-      )}
+        )}
+
+        {/* Hide My Location button if drawing or picking destination */}
+        {!isDrawingMode && !isPickingDestination && (
+          <button
+            onClick={() => {
+              if (mapInstance.current && userPosition.lat !== 0) {
+                mapInstance.current.setView([userPosition.lat, userPosition.lng], 15);
+              }
+            }}
+            className="w-12 h-12 bg-eris-primary rounded-full flex items-center justify-center text-eris-text [.theme-light_&]:text-white [.theme-contrasted_&]:border-2 [.theme-contrasted_&]:!border-black hover:bg-eris-primary transition-colors shadow-lg shadow-blue-900/30 active:scale-95"
+          >
+            <span className="material-symbols-outlined [.theme-contrasted_&]:!text-black text-xl">my_location</span>
+          </button>
+        )}
+      </div>
 
       {/* ─── SOS BUTTON ─── */}
       <div className="absolute bottom-6 right-4 z-[1000]">
@@ -839,7 +965,7 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
         <div className="absolute inset-0 z-[18000] bg-[#0f141e]/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="bg-gray-900 border border-gray-700/50 rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-in zoom-in-95 duration-200">
             <div className="flex justify-between items-center mb-2">
-              <h3 className="text-white text-lg font-bold">Report a Hazard</h3>
+              <h3 className="text-white text-lg font-bold">{t('hazard.reportTitle', 'Report a Hazard')}</h3>
               <button
                 onClick={() => setShowHazardReportModal(false)}
                 className="w-8 h-8 flex items-center justify-center bg-gray-800 rounded-full text-gray-400 hover:text-white active:scale-95"
@@ -848,37 +974,84 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
               </button>
             </div>
             <p className="text-gray-400 text-xs mb-5 leading-relaxed">
-              Warn other ERIS users about immediate dangers at your current location.
+              {t('hazard.reportDesc', 'Warn other ERIS users about immediate dangers at your current location.')}
             </p>
+            {/* ─── AREA SIZE SLIDER ─── */}
+            {pendingGeometry && pendingGeometry.shape_type !== 'point' && (
+              <div className="mb-5 bg-gray-800/40 p-4 rounded-2xl border border-gray-700/50">
+                <div className="flex justify-between items-center mb-2">
+                  <label className="text-gray-300 text-xs font-bold uppercase tracking-wider">Zone Size (Radius)</label>
+                  <span className="text-orange-400 font-bold text-sm">{Math.round(pendingGeometry.sliderSize)} m</span>
+                </div>
+                <input
+                  type="range"
+                  min="10"
+                  max="1500"
+                  step="10"
+                  value={pendingGeometry.sliderSize}
+                  onChange={(e) => {
+                    const newSize = parseInt(e.target.value);
+                    const center = L.latLng(pendingGeometry.lat, pendingGeometry.lng);
+
+                    let newShapeMetadata = {};
+                    if (pendingGeometry.shape_type === 'circle') {
+                      newShapeMetadata = { radius: newSize };
+                    } else if (pendingGeometry.shape_type === 'rectangle') {
+                      const newBounds = center.toBounds(newSize * 2);
+                      newShapeMetadata = {
+                        bounds: [
+                          [newBounds.getNorthEast().lat, newBounds.getNorthEast().lng],
+                          [newBounds.getSouthWest().lat, newBounds.getSouthWest().lng],
+                        ],
+                      };
+                    }
+
+                    setPendingGeometry({
+                      ...pendingGeometry,
+                      sliderSize: newSize,
+                      shape_metadata: newShapeMetadata,
+                    });
+                  }}
+                  className="w-full h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-orange-500"
+                />
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-3 mb-2">
               {[
                 {
                   type: 'fire',
                   icon: 'local_fire_department',
-                  label: 'Wildfire',
+                  label: t('alert.presetFire', 'Wildfire'),
                   color: 'text-red-400 [.theme-contrasted_&]:text-white',
                   bg: 'bg-red-400/20 [.theme-contrasted_&]:bg-transparent [.theme-contrasted_&]:border [.theme-contrasted_&]:border-white',
                 },
                 {
                   type: 'flood',
                   icon: 'water_drop',
-                  label: 'Flood',
+                  label: t('alert.presetFlood', 'Flood'),
                   color: 'text-blue-400 [.theme-contrasted_&]:text-white',
                   bg: 'bg-blue-400/20 [.theme-contrasted_&]:bg-transparent [.theme-contrasted_&]:border [.theme-contrasted_&]:border-white',
                 },
                 {
                   type: 'road_blocked',
                   icon: 'block',
-                  label: 'Road Blocked',
+                  label: t('alert.presetRoad', 'Road Blocked'),
                   color: 'text-orange-400 [.theme-contrasted_&]:text-white',
                   bg: 'bg-orange-400/20 [.theme-contrasted_&]:bg-transparent [.theme-contrasted_&]:border [.theme-contrasted_&]:border-white',
                 },
                 {
                   type: 'landslide',
                   icon: 'landslide',
-                  label: 'Landslide',
+                  label: t('alert.presetLandslide', 'Landslide'),
                   color: 'text-purple-400 [.theme-contrasted_&]:text-white',
                   bg: 'bg-purple-400/20 [.theme-contrasted_&]:bg-transparent [.theme-contrasted_&]:border [.theme-contrasted_&]:border-white',
+                },
+                {
+                  type: 'warning',
+                  icon: 'warning',
+                  label: 'Other',
+                  color: 'text-yellow-400 [.theme-contrasted_&]:text-white',
+                  bg: 'bg-yellow-400/20 [.theme-contrasted_&]:bg-transparent [.theme-contrasted_&]:border [.theme-contrasted_&]:border-white',
                 },
               ].map((hazard) => (
                 <button
@@ -935,10 +1108,8 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
       {/* ─── DIAGNOSTICS ─── */}
       {showDiagnostics && <DiagnosticsModal onClose={() => setShowDiagnostics(false)} gpsStatus={gpsStatus} />}
 
-      {/* ─── FALL DETECTION MODAL ─── */}
+      {/* RESTORED MISSING MODALS FROM MERGE ─── */}
       {showFallModal && <FallDetectionModal onCancel={() => setShowFallModal(false)} onConfirmSOS={handleSOSConfirm} />}
-
-      {/* ─── INACTIVITY MODAL ─── */}
       {showInactivityModal && <InactivityModal onCancel={handleInactivityCancel} onConfirmSOS={handleInactivitySOS} />}
     </div>
   );

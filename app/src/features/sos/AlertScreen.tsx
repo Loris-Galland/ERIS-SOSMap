@@ -1,3 +1,10 @@
+/*
+ * Primary SOS dispatch screen, the main entry point for manual emergency alerts.
+ * Exports the default AlertScreen component rendered on the ALERTS tab.
+ * Handles GPS watching, Supabase session resolution (or guest ID fallback), hold-to-send
+ * interaction, a 5-second cancellation grace period, offline queue via Dexie, and SMS fallback.
+ * Connects to sosService, localDb, SosHistoryScreen, and DistressSignalScreen.
+ */
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../../db/supabaseClient';
 import { dispatchSOS, flushRetryQueue, revokeSOS } from '../../services/sosService';
@@ -9,6 +16,8 @@ import { Device } from '@capacitor/device';
 import { useTranslation } from 'react-i18next';
 import DistressSignalScreen from '../../components/DistressSignalScreen';
 import { Capacitor } from '@capacitor/core';
+import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
+import { useAudioRecording } from '../audio/hooks/useAudioRecording';
 
 // Types
 interface Coords {
@@ -55,6 +64,14 @@ export default function AlertScreen() {
   const [isGracePeriod, setIsGracePeriod] = useState<boolean>(false);
   const [lastAlertIds, setLastAlertIds] = useState<{ supabase?: string; local?: number } | null>(null);
 
+  // States for Contextual Data
+  const [incidentType, setIncidentType] = useState<string | null>(null);
+  const [victimCount, setVictimCount] = useState<number>(1);
+  const [photoData, setPhotoData] = useState<string | null>(null);
+
+  const { startRecording, cancelRecording, linkAudioToAlert } = useAudioRecording(userId);
+  const [isManualAudioEnabled, setIsManualAudioEnabled] = useState<boolean>(false);
+
   const [coords, setCoords] = useState<Coords>({
     lat: '0.0000° N',
     lon: '0.0000° E',
@@ -66,6 +83,25 @@ export default function AlertScreen() {
   const startTimeRef = useRef<number | null>(null);
   const graceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const HOLD_DURATION = 3000;
+
+  useEffect(() => {
+    const checkAudioPrefs = () => {
+      const masterOn = localStorage.getItem('eris_audio_recording_enabled') === 'true';
+      let manualOn = true;
+      try {
+        const prefs = JSON.parse(localStorage.getItem('eris_audio_prefs') || '{}');
+        if (prefs.manual === false) manualOn = false;
+      } catch (e) {}
+      setIsManualAudioEnabled(masterOn && manualOn);
+    };
+
+    // Check on mount
+    checkAudioPrefs();
+
+    // Listen for changes from the settings screen
+    window.addEventListener('eris-audio-preference-changed', checkAudioPrefs);
+    return () => window.removeEventListener('eris-audio-preference-changed', checkAudioPrefs);
+  }, []);
 
   // Live count of queued offline alerts from Dexie
   const queuedCount = useLiveQuery(() => db.sosQueue.where('status').equals('queued').count(), [], 0);
@@ -146,8 +182,8 @@ export default function AlertScreen() {
   const handleCancelAlert = async () => {
     if (graceTimerRef.current) clearTimeout(graceTimerRef.current);
 
-    if (lastAlertIds) {
-      await revokeSOS(lastAlertIds.supabase, lastAlertIds.local);
+    if (lastAlertIds && userId) {
+      await revokeSOS(userId, lastAlertIds.supabase, lastAlertIds.local);
     }
 
     setIsGracePeriod(false);
@@ -228,9 +264,17 @@ export default function AlertScreen() {
     }
 
     // Pass currentBattery instead of hardcoded 100
-    const result = await dispatchSOS(activeUserId, rawPosition, currentBattery, notes);
+    const result = await dispatchSOS(activeUserId, rawPosition, currentBattery, notes, {
+      incidentType,
+      victimCount,
+      photoData,
+    });
 
     let isSuccess = result.success;
+
+    if (result && (result as any).supabaseId) {
+      linkAudioToAlert((result as any).supabaseId);
+    }
 
     if (!navigator.onLine) {
       isSuccess = false;
@@ -241,10 +285,13 @@ export default function AlertScreen() {
           user_id: activeUserId,
           lat: rawPosition.lat,
           lon: rawPosition.lng,
-          battery: currentBattery,
+          battery_level: currentBattery,
           notes: notes,
           status: 'queued',
           timestamp: Date.now(),
+          incidentType: incidentType || undefined,
+          victimCount: victimCount,
+          photoData: photoData || undefined,
         } as any);
       }
     }
@@ -299,6 +346,9 @@ export default function AlertScreen() {
   const startHold = useCallback(() => {
     // Prevent holding if already sent, sending, or currently in grace period
     if (sent || isSending || isGracePeriod) return;
+
+    startRecording('manual');
+
     setHolding(true);
     setProgress(0);
     startTimeRef.current = Date.now();
@@ -324,9 +374,38 @@ export default function AlertScreen() {
     if (sent || isSending) return;
     if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
     if (progressTimerRef.current) clearInterval(progressTimerRef.current);
+
+    cancelRecording();
+
     setHolding(false);
     setProgress(0);
-  }, [sent, isSending]);
+  }, [sent, isSending, cancelRecording]);
+
+  // Camera handler
+  const handleTakePhoto = async () => {
+    try {
+      let permissions = await Camera.checkPermissions();
+      if (permissions.camera !== 'granted' || permissions.photos !== 'granted') {
+        permissions = await Camera.requestPermissions();
+      }
+
+      if (permissions.camera !== 'granted') {
+        return;
+      }
+
+      const image = await Camera.getPhoto({
+        quality: 60, // Compress to save space during offline/mesh transmission
+        allowEditing: false,
+        resultType: CameraResultType.Base64,
+        source: CameraSource.Camera,
+      });
+      if (image.base64String) {
+        setPhotoData(image.base64String);
+      }
+    } catch (error) {
+      console.warn('[ERIS] User cancelled camera or error occurred', error);
+    }
+  };
 
   return (
     <div
@@ -378,7 +457,7 @@ export default function AlertScreen() {
         <button
           onClick={() => setShowBeacon(true)}
           className="absolute left-2 top-6 w-10 h-10 bg-eris-danger/10 border border-eris-danger/30 rounded-full flex items-center justify-center text-eris-danger hover:bg-eris-danger/20 active:scale-95 transition-all"
-          title="Distress Beacon"
+          title={t('beacon.title')}
         >
           <span className="material-symbols-outlined text-xl">flashlight_on</span>
         </button>
@@ -534,7 +613,83 @@ export default function AlertScreen() {
             }}
           />
         </div>
+
+        {/* --- AUDIO NOTICE --- */}
+        {isManualAudioEnabled && !sent && (
+          <p className="font-medium text-[11px] text-eris-text-muted flex items-center gap-1.5 mt-4 animate-in fade-in">
+            <span className="material-symbols-outlined text-[14px]">mic</span>
+            {t('alert.audioNotice', 'A 5-minute background audio recording will start automatically.')}
+          </p>
+        )}
       </section>
+
+      {/* EMERGENCY PRESETS & CONTEXT */}
+      <div className="bg-eris-surface-alt/40 border border-eris-border/50 rounded-3xl p-4 shadow-sm mb-4">
+        <label className="block font-bold text-xs uppercase tracking-wider mb-3 text-eris-text-muted px-1">
+          {t('alert.emergencyType', 'Emergency Type')}
+        </label>
+
+        {/* Preset Grid */}
+        <div className="grid grid-cols-3 gap-2 mb-4">
+          {[
+            { id: 'FIRE', icon: 'local_fire_department', label: t('alert.presetFire', 'Fire') },
+            { id: 'FLOOD', icon: 'flood', label: t('alert.presetFlood', 'Flood') },
+            { id: 'LANDSLIDE', icon: 'landslide', label: t('alert.presetLandslide', 'Landslide') },
+            { id: 'MEDICAL', icon: 'medical_services', label: t('alert.presetMedical', 'Medical') },
+            { id: 'CRASH', icon: 'car_crash', label: t('alert.presetCrash', 'Crash') },
+            { id: 'OTHER', icon: 'warning', label: t('alert.presetOther', 'Other') },
+          ].map((preset) => (
+            <button
+              key={preset.id}
+              onClick={() => setIncidentType(incidentType === preset.id ? null : preset.id)}
+              className={`p-3 rounded-2xl text-xs font-bold flex items-center gap-2 transition-all active:scale-95 border ${
+                incidentType === preset.id
+                  ? 'bg-eris-primary text-white border-eris-primary shadow-lg shadow-eris-primary/30'
+                  : 'bg-eris-surface/50 text-eris-text hover:bg-eris-surface border-eris-border/50'
+              }`}
+            >
+              <span className="material-symbols-outlined text-lg">{preset.icon}</span>
+              {preset.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Context Row: Victims & Photo */}
+        <div className="flex items-center justify-between gap-3">
+          {/* Victim Stepper */}
+          <div className="flex items-center gap-3 bg-eris-surface/50 p-1.5 rounded-2xl border border-eris-border/50">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-eris-text-muted ml-2">
+              {t('alert.victims', 'Victims')}
+            </span>
+            <button
+              onClick={() => setVictimCount(Math.max(1, victimCount - 1))}
+              className="w-8 h-8 flex items-center justify-center bg-eris-surface-alt rounded-full text-eris-text hover:bg-gray-600 transition-colors"
+            >
+              -
+            </button>
+            <span className="font-bold text-sm w-4 text-center">{victimCount}</span>
+            <button
+              onClick={() => setVictimCount(victimCount + 1)}
+              className="w-8 h-8 flex items-center justify-center bg-eris-surface-alt rounded-full text-eris-text hover:bg-gray-600 transition-colors"
+            >
+              +
+            </button>
+          </div>
+
+          {/* Camera Button */}
+          <button
+            onClick={handleTakePhoto}
+            className={`flex-1 p-2.5 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 transition-all active:scale-95 border ${
+              photoData
+                ? 'bg-eris-success/20 text-eris-success border-eris-success/30'
+                : 'bg-eris-surface/50 text-eris-text hover:bg-eris-surface border-eris-border/50'
+            }`}
+          >
+            <span className="material-symbols-outlined text-lg">{photoData ? 'check_circle' : 'add_a_photo'}</span>
+            {photoData ? t('alert.photoAttached', 'Photo Attached') : t('alert.addPhoto', 'Add Photo')}
+          </button>
+        </div>
+      </div>
 
       {/* Alert Details Form */}
       <section className="space-y-4 px-2">
@@ -548,6 +703,7 @@ export default function AlertScreen() {
           <textarea
             id="alert-notes"
             rows={3}
+            maxLength={500}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             disabled={isSending || isGracePeriod}

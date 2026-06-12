@@ -35,7 +35,22 @@
     "longitude": "经度",
     "altitude": "海拔",
     "networkActive": "已连接 — ERIS 网络运行中",
-    "networkOffline": "离线 — 硬件备用通道已就绪"
+    "networkOffline": "离线 — 硬件备用通道已就绪",
+    "emergencyType": "紧急类型",
+    "presetFire": "火灾",
+    "presetFlood": "洪水",
+    "presetRoad": "道路封闭",
+    "presetMedical": "医疗",
+    "presetLandslide": "山体滑坡",
+    "presetCrash": "车祸",
+    "presetOther": "其他",
+    "victims": "受害者人数",
+    "addPhoto": "添加照片",
+    "photoAttached": "已附加照片",
+    "autoFallNote": "自动检测到跌倒：检测到跌倒且用户无反应。",
+    "autoCrashNote": "自动检测到碰撞：设备传感器检测到严重车辆碰撞。",
+    "autoInactivityNote": "自动SOS：检测到长时间无活动。",
+    "audioNotice": "将自动开始5分钟的后台录音。"
   },
   "settings": {
     "title": "设置",
@@ -64,11 +79,21 @@
     "offlineCache": "离线地图缓存",
     "offlineCacheDesc": "当前使用 {{size}}",
     "clearCache": "清除缓存",
+    "calculatingCache": "计算中...",
+    "clearCacheConfirm": "您确定要清除离线地图缓存吗？",
+    "cacheClearedSuccess": "地图缓存已成功清除。",
+    "cacheClearError": "清除缓存时出错。",
+    "accessDeniedTitle": "访问被拒绝",
+    "cacheAccessError": "无法访问本地缓存。",
+    "unexpectedError": "发生意外错误。",
     "diagnosticsTitle": "系统诊断",
     "connected": "已连接",
     "searching": "正在搜索...",
     "runTest": "运行网络测试",
     "logoutBtn": "登出 ERIS 系统",
+    "powerMgmtTitle": "电源管理",
+    "autoSosBattery": "自动SOS（电量严重不足）",
+    "autoSosBatteryDesc": "电量为1%时自动发送最后位置",
     "sosTitle": "SOS",
     "shake_sos_title": "摇一摇发送 SOS",
     "shake_sos_desc": "搖晃設備時自動發送SOS求救訊號",
@@ -76,7 +101,22 @@
     "discrete_sos_desc": "触发静音 SOS，无警报声",
     "discrete_none": "已禁用",
     "discrete_tap": "快速点击 4 次",
-    "discrete_flip": "翻转手机 3 次"
+    "discrete_flip": "翻转手机 3 次",
+    "audioRecording": "紧急录音",
+    "audioConsentTitle": "启用录音前须知",
+    "audioRecordingDesc": "在选定的紧急情况下在后台录制长达5分钟的环境音频，以收集证据。",
+    "audioConsent1": "在您配置的紧急触发期间，最多自动在后台录制5分钟的音频。",
+    "audioConsent2": "录音将安全存储，并在30天后删除。",
+    "audioConsent3": "只有您和您的紧急联系人可以访问录音。",
+    "audioConsent4": "您可以随时在此页面关闭此功能。",
+    "audioConsent5": "此功能将处理健康数据（GDPR第9条）。",
+    "audioConsentAccept": "我已了解 — 启用",
+    "audioGranularTitle": "自动录音用于：",
+    "sosTypeCrash": "车辆碰撞检测",
+    "sosTypeFall": "跌倒检测",
+    "sosTypeDiscrete": "隐蔽求救 (潜行模式)",
+    "sosTypeShake": "摇晃求救",
+    "sosTypeManual": "手动按下按钮"
   },
   "discrete": {
     "banner_title": "已触发静音 SOS",
@@ -128,7 +168,9 @@
     "updateContactError": "更新联系人时出错",
     "confirmDelete": "您确定要删除此联系人吗？",
     "deleteAccountBtn": "刪除我的帳戶",
-    "deleting": "正在刪除…"
+    "deleting": "正在刪除…",
+    "offlineMode": "离线模式",
+    "contactSavedOffline": "联系人已保存在本地，待网络恢复后将自动同步。"
   },
   "offline": {
     "title": "离线地图",
@@ -138,6 +180,7 @@
     "updatedJustNow": "刚刚更新",
     "customSize": "自定义大小",
     "customZone": "自定义区域",
+    "savedZone": "已保存区域",
     "confirmDelete": "从存储中删除 ${name} 吗？",
     "updateSuccess": "${name} 更新成功。",
     "localStorage": "本地存储",
@@ -239,8 +282,9 @@
   "mapStyles": {
     "dark": "深色",
     "light": "淺色模式",
-    "contrast": "高對比",
+    "contrasted": "高對比",
     "terrain": "地形",
+    "terrain_dark": "地形 (深色)",
     "satellite": "卫星",
     "topo": "地形",
     "streets": "街道",
@@ -270,7 +314,9 @@
     "power": "電源",
     "charging": "（充電中）",
     "sosCloud": "您的 SOS 請求將全球同步至 ERIS 雲端平台",
-    "sosMesh": "無網路連線。您的 SOS 請求將依賴本地網狀網路和簡訊回退"
+    "sosMesh": "無網路連線。您的 SOS 請求將依賴本地網狀網路和簡訊回退",
+    "loraModule": "LoRa 模組",
+    "meshNetwork": "網狀網路"
   },
   "lowBattery": {
     "low": "電量低",
@@ -294,11 +340,17 @@
   },
   "hazard": {
     "deleteTitle": "删除警报",
-    "deleteConfirm": "您确定要永久删除此危险警报吗？"
+    "deleteConfirm": "您确定要永久删除此危险警报吗？",
+    "areaWarning": "区域警告",
+    "avalancheRisk": "您所在区域报告有高雪崩风险，请避开陡峭地形。"
   },
   "common": {
     "cancel": "取消",
-    "delete": "删除"
+    "delete": "删除",
+    "clear": "清除",
+    "ok": "确定",
+    "success": "成功",
+    "error": "错误"
   },
   "admin": {
     "panelTitle": "管理面板",
@@ -343,13 +395,35 @@
     "revokeBtn": "撤销管理员",
     "grantBtn": "授予管理员",
     "errorUsers": "加载用户时出错：",
-    "noUsers": "未找到用户"
+    "noUsers": "未找到用户",
+    "triggerManual": "手动",
+    "triggerLabel": "触发",
+    "audio": {
+      "title": "音频证据",
+      "adminDesc": "在紧急警报期间捕获的后台音频",
+      "stats": "{{count}} 个录音",
+      "triggerFall": "检测到跌倒",
+      "triggerCrash": "检测到车祸",
+      "triggerShake": "摇晃设备",
+      "triggerDiscrete": "静音/隐蔽 SOS",
+      "triggerManual": "手动按下按钮",
+      "userId": "用户：",
+      "expiresAt": "过期：",
+      "noUrl": "暂无URL",
+      "download": "下载",
+      "delete": "删除",
+      "confirmDelete": "永久删除此录音？",
+      "noRecordings": "暫無錄音",
+      "viewAlert": "打开关联的 SOS 警报"
+    }
   },
   "fall": {
     "detectedTitle": "检测到跌倒",
     "detectedMessage": "您的位置将在以下时间内自动发送SOS警报...",
     "imFine": "我没事 — 取消",
-    "sendNow": "立即发送SOS"
+    "sendNow": "立即发送SOS",
+    "sosFailed": "SOS发送失败，请手动重试。",
+    "noGps": "无法发送SOS：正在获取位置..."
   },
   "crash": {
     "detectedTitle": "检测到碰撞",
@@ -378,9 +452,33 @@
     "sendSOS": "发送 SOS",
     "autoSOS": "{{seconds}} 秒后自动 SOS"
   },
+  "audio": {
+    "recBadge": "REC"
+  },
   "shake": {
     "banner_title": "{{seconds}}秒内发送 SOS",
     "banner_badge": "硬件摇晃",
     "banner_cancel": "取消发送"
+  },
+  "beacon": {
+    "title": "求救信标",
+    "volumeHintBefore": "您也可以按下手机的",
+    "volumeHintBold": "物理音量键",
+    "volumeHintAfter": "来开关信标。",
+    "beaconOn": "信标\n已开启",
+    "tapToActivate": "点击\n以激活"
+  },
+  "refresh": "刷新地图",
+  "map": {
+    "expandLocation": "展开位置",
+    "minimize": "点击以最小化",
+    "expandWeather": "展开天气",
+    "cancelDraw": "取消绘制",
+    "reportHazardBtn": "报告危险"
+  },
+  "errorBoundary": {
+    "title": "发生意外错误",
+    "message": "请重启应用以继续。",
+    "retry": "重试"
   }
 }

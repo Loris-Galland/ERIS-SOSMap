@@ -1,3 +1,11 @@
+/*
+ * Web (browser) implementation of the CapacitorErisSosmapPlugin interface.
+ * Runs when the app is served as a PWA or during development; native mesh and
+ * hardware features are simulated with console stubs. The DeviceMotion API is
+ * used for real motion monitoring in mobile browsers, including the iOS 13+
+ * permission flow. Connected to src/definitions.ts (types) and consumed by
+ * Capacitor's plugin registry in src/index.ts.
+ */
 import { WebPlugin } from '@capacitor/core';
 import type { CapacitorErisSosmapPlugin } from './definitions';
 
@@ -17,14 +25,14 @@ export class CapacitorErisSosmapWeb extends WebPlugin implements CapacitorErisSo
     longitude: number;
     userId: string;
   }): Promise<{ success: boolean; transmissionMethod: string }> {
-    
+
     console.log('[ERIS-WEB] Emergency triggered:', options);
- 
+
     if (navigator.onLine) {
       console.log('[ERIS-WEB] Network detected -> INTERNET transmission');
       return { success: true, transmissionMethod: 'INTERNET' };
     }
- 
+
     // Simulate the 4-second hardware fallback from the native plugins
     console.log('[ERIS-WEB] No network → simulating Wi-Fi hardware fallback (4s)...');
     await new Promise<void>((resolve) => setTimeout(resolve, 4000));

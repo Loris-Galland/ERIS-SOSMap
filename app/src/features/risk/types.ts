@@ -1,7 +1,8 @@
 /*
  * Shared TypeScript types for the AI risk detection pipeline.
- * Used by the detection engine, the React hook, the UI banner, and the Dexie persistence layer.
- * The FallEventInput interface is the contract between this feature and the Auto Fall Detection feature.
+ * Exports RiskPattern, RiskLevel, RiskEvent, PositionSample, MotionSample, FallEventInput,
+ * and RiskEventRecord — consumed by riskDetectionEngine, useRiskDetection, RiskAlertBanner,
+ * and the Dexie local database schema.
  */
 
 export type RiskPattern =
@@ -59,4 +60,27 @@ export interface RiskEventRecord {
   lng: number;
   dismissed: boolean;
   sosSent: boolean;
+}
+
+
+export type ShapeType = 'point' | 'circle' | 'rectangle';
+
+export interface HazardMetadata {
+  radius?: number; // Expressed in meters for Leaflet (used if shape_type === 'circle')
+  bounds?: [[number, number], [number, number]]; // [North-East, South-West] coordinates (used if shape_type === 'rectangle')
+}
+
+// Represents a hazard reported on the map by a user or rescue teams
+export interface HazardAlert {
+  id: string;
+  user_id?: string;
+  type: string;        // e.g., 'FIRE', 'FLOOD', 'ACCIDENT', 'OTHER'
+  description?: string;
+  latitude: number;    // Center of the zone (or single point coordinates)
+  longitude: number;
+  created_at?: string;
+  
+  // New properties for spatial drawing
+  shape_type: ShapeType;
+  shape_metadata?: HazardMetadata; 
 }

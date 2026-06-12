@@ -1,3 +1,10 @@
+/*
+ * Hook that monitors device inactivity using the @capacitor/motion accelerometer.
+ * Tracks micro-movements via delta comparison against the previous accelerometer vector;
+ * calls onInactivityDetected() if no movement is recorded for INACTIVITY_TIME_LIMIT (30 minutes).
+ * Exports useInactivityMonitoring with a resetTimer() utility to restart the timer from the app shell.
+ * Connects to the SOS feature to trigger a safety check when the user stops moving for too long.
+ */
 import { useEffect, useRef } from 'react';
 import { Motion } from '@capacitor/motion';
 
@@ -13,8 +20,18 @@ export function useInactivityMonitoring(onInactivityDetected: () => void, isActi
     let accelListener: any;
     let checkInterval: any;
 
+    const handleScreenInteraction = () => {
+      if (!isActive) return;
+      lastMovementTime.current = Date.now();
+    };
+
     const startMonitoring = async () => {
       if (!isActive) return;
+
+      window.addEventListener('touchstart', handleScreenInteraction, { passive: true });
+      window.addEventListener('click', handleScreenInteraction, { passive: true });
+      window.addEventListener('scroll', handleScreenInteraction, { passive: true });
+      window.addEventListener('keydown', handleScreenInteraction, { passive: true });
 
       try {
         // Listen to micro-movements of the phone
@@ -56,6 +73,11 @@ export function useInactivityMonitoring(onInactivityDetected: () => void, isActi
     return () => {
       if (accelListener) accelListener.remove();
       if (checkInterval) clearInterval(checkInterval);
+
+      window.removeEventListener('touchstart', handleScreenInteraction);
+      window.removeEventListener('click', handleScreenInteraction);
+      window.removeEventListener('scroll', handleScreenInteraction);
+      window.removeEventListener('keydown', handleScreenInteraction);
     };
   }, [isActive, onInactivityDetected]);
 

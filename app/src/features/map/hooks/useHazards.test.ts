@@ -1,3 +1,11 @@
+/*
+ * useHazards.test.ts — Vitest unit tests for the useHazards hook.
+ * Mocks hazardService, supabaseClient, and leaflet to keep tests isolated.
+ * Covers initial state values, handleReportHazard (valid/invalid coordinates,
+ * all hazard types, modal dismissal), handleDeleteHazard (guard against null,
+ * correct UUID forwarded, state reset), and individual state setters.
+ */
+
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 
@@ -47,6 +55,7 @@ const DEFAULT_PROPS = {
   isActive: false,
   isAdmin: false,
   isMapReady: false,
+  userId: 'user-1',
 };
 
 beforeEach(() => {
@@ -152,7 +161,7 @@ describe('useHazards — handleDeleteHazard', () => {
       await result.current.handleDeleteHazard();
     });
 
-    expect(mockRemoveHazard).toHaveBeenCalledWith('target-uuid');
+    expect(mockRemoveHazard).toHaveBeenCalledWith('target-uuid', DEFAULT_PROPS.userId, DEFAULT_PROPS.isAdmin);
   });
 
   it('resets hazardToDelete to null after deletion', async () => {

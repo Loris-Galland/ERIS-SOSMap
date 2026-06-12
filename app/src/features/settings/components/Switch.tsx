@@ -1,6 +1,7 @@
-/**
- * Switch.tsx
- * Reusable UI toggle switch matching the ERIS design system.
+/*
+ * Reusable animated toggle switch component styled to the ERIS design system.
+ * Exports the default Switch component; consumed by every section inside features/settings/sections/
+ * that needs a boolean on/off control. Supports the high-contrast theme variant via Tailwind modifiers.
  */
 import React from 'react';
 

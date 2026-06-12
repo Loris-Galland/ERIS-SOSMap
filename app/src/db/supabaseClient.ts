@@ -1,3 +1,10 @@
+/*
+ * Supabase client singleton for the ERIS Safety app.
+ * Initialises and exports a single SupabaseClient instance using the Vite
+ * environment variables VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY. Throws
+ * at startup if either variable is missing. Imported by App.tsx (auth), feature
+ * hooks, and services that need real-time database access or remote storage.
+ */
 import { createClient } from '@supabase/supabase-js';
 
 // Retrieve environment variables

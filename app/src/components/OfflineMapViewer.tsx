@@ -1,3 +1,11 @@
+/*
+ * Full-screen offline map viewer component for the ERIS app.
+ * Exports OfflineMapViewer (default), which renders a Leaflet map from locally
+ * cached tiles using leaflet.offline. Receives a name, a LatLngBounds, and the
+ * list of downloaded styles; lets the user switch between available tile layers.
+ * Used by the offline feature to preview a saved map region without internet access.
+ */
+
 import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import { createOfflineLayer, MAP_STYLES } from '../utils/MapUtils';
@@ -61,7 +69,7 @@ export default function OfflineMapViewer({ name, bounds, onClose, availableStyle
   const changeMapStyle = (styleKey: string) => {
     setCurrentMapStyle(styleKey);
     if (baseLayerRef.current) {
-      // Switch the URL of the existing offline layer
+      // Switch the URL
       baseLayerRef.current.setUrl(MAP_STYLES[styleKey as keyof typeof MAP_STYLES].url);
     }
     setShowLayerMenu(false);
@@ -92,7 +100,9 @@ export default function OfflineMapViewer({ name, bounds, onClose, availableStyle
 
       {/* Map container */}
       <div className="relative flex-1 w-full h-full">
-        <div ref={mapContainerRef} className="absolute inset-0 z-0" />
+        <div className={`absolute inset-0 z-0 ${currentMapStyle === 'terrain_dark' ? 'dark-terrain-active' : ''}`}>
+          <div ref={mapContainerRef} className="w-full h-full" />
+        </div>
 
         {/* ─── MAP CONTROLS (LAYERS) ─── */}
         <div className="absolute top-4 right-4 z-[1000] flex flex-col gap-3">

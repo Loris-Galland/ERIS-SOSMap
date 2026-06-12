@@ -1,3 +1,11 @@
+/*
+ * Vitest unit tests for sosService.ts.
+ * Covers dispatchSOS (INTERNET, hardware fallback, total failure paths),
+ * flushRetryQueue (empty queue, successful flush, Supabase error),
+ * and revokeSOS. Supabase, Dexie, and the Capacitor plugin are fully mocked.
+ * Run with: npm run test (from app/).
+ */
+
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('../db/supabaseClient', () => ({
@@ -43,7 +51,6 @@ const mockTriggerEmergency = vi.mocked(CapacitorErisSosmap.triggerEmergency);
 const mockSosQueueAdd = vi.mocked(db.sosQueue.add);
 const mockSosQueueWhere = vi.mocked(db.sosQueue.where);
 const mockSosQueueUpdate = vi.mocked(db.sosQueue.update);
-const mockSosQueueDelete = vi.mocked(db.sosQueue.delete);
 const mockUserProfileGet = vi.mocked(db.userProfile.get);
 
 const USER_ID = 'user-123';
@@ -190,36 +197,55 @@ describe('dispatchSOS', () => {
 // ─── revokeSOS ───
 
 describe('revokeSOS', () => {
-  it('deletes from Supabase when supabaseId is provided', async () => {
-    const result = await revokeSOS('sup-abc', undefined);
+  function mockUpdateChain(response: { data: any[] | null; error: any }) {
+    const selectMock = vi.fn().mockResolvedValue(response);
+    const eqUser = vi.fn().mockReturnValue({ select: selectMock });
+    const eqId = vi.fn().mockReturnValue({ eq: eqUser });
+    mockFrom.mockReturnValue({ update: vi.fn().mockReturnValue({ eq: eqId }) } as any);
+    return { eqId, eqUser, selectMock };
+  }
+
+  it('revokes in Supabase (scoped to the owner) and Dexie when both IDs are provided', async () => {
+    const { eqId, eqUser } = mockUpdateChain({ data: [{ id: 'sup-abc' }], error: null });
+
+    const result = await revokeSOS('user-1', 'sup-abc', 42);
 
     expect(result).toBe(true);
     expect(mockFrom).toHaveBeenCalledWith('sos_alerts');
+    expect(eqId).toHaveBeenCalledWith('id', 'sup-abc');
+    expect(eqUser).toHaveBeenCalledWith('user_id', 'user-1');
+    expect(mockSosQueueUpdate).toHaveBeenCalledWith(42, { status: 'revoked' });
   });
 
-  it('deletes from Dexie when localId is provided', async () => {
-    const result = await revokeSOS(undefined, 42);
+  it('updates only Dexie when no supabaseId is provided', async () => {
+    const result = await revokeSOS('user-1', undefined, 42);
 
     expect(result).toBe(true);
-    expect(mockSosQueueDelete).toHaveBeenCalledWith(42);
+    expect(mockFrom).not.toHaveBeenCalled();
+    expect(mockSosQueueUpdate).toHaveBeenCalledWith(42, { status: 'revoked' });
   });
 
-  it('deletes from both sources when both IDs are provided', async () => {
-    const result = await revokeSOS('sup-abc', 42);
+  it('returns false when no row matches (already revoked or wrong owner)', async () => {
+    mockUpdateChain({ data: [], error: null });
 
-    expect(result).toBe(true);
-    expect(mockFrom).toHaveBeenCalledWith('sos_alerts');
-    expect(mockSosQueueDelete).toHaveBeenCalledWith(42);
+    const result = await revokeSOS('user-1', 'sup-abc', 42);
+
+    expect(result).toBe(false);
+    expect(mockSosQueueUpdate).not.toHaveBeenCalled();
   });
 
   it('returns false when an error is thrown', async () => {
     mockFrom.mockReturnValue({
-      delete: vi.fn().mockReturnValue({
-        eq: vi.fn().mockRejectedValue(new Error('DB error')),
+      update: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            select: vi.fn().mockRejectedValue(new Error('DB error')),
+          }),
+        }),
       }),
     } as any);
 
-    const result = await revokeSOS('bad-id', undefined);
+    const result = await revokeSOS('user-1', 'sup-abc');
 
     expect(result).toBe(false);
   });

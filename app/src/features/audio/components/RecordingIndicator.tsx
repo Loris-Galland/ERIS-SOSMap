@@ -1,7 +1,10 @@
 /*
- * Floating badge shown whenever an emergency audio recording is in progress.
- * Mounted in App.tsx so it stays visible across all tabs.
- * pointer-events-none ensures it never intercepts user taps.
+ * RecordingIndicator — floating overlay badge rendered in App.tsx.
+ * Accepts a single boolean prop (isRecording) and renders nothing when false.
+ * Displays a pulsing red "REC" pill so users know audio capture is active.
+ * Stays on top of all tabs via a high z-index; pointer-events-none prevents
+ * it from blocking touch interactions on the map or other screens.
+ * Label text is internationalised via react-i18next (key: audio.recBadge).
  */
 
 import { useTranslation } from 'react-i18next';

@@ -1,3 +1,13 @@
+/*
+ * useMapLayers — hook responsible for initialising the Leaflet map instance
+ * and managing its base tile layer (online or offline via createOfflineLayer).
+ * Reads the current visual theme from localStorage to pick the correct style
+ * on first render, then reacts to visualTheme prop changes automatically.
+ * Exposes mapInstance (ref), baseLayerRef, showLayerMenu toggle, currentMapStyle,
+ * and changeMapStyle for the layer-switcher UI in MapScreen.
+ * MAP_STYLES and createOfflineLayer are imported from utils/MapUtils.
+ */
+
 import { useState, useRef, useEffect } from 'react';
 import L from 'leaflet';
 import { MAP_STYLES, createOfflineLayer } from '../../../utils/MapUtils';

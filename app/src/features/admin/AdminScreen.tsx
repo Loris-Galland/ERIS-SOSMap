@@ -1,4 +1,9 @@
-// Admin panel entry point — routes to the different admin feature screens
+/*
+ * Admin panel entry point component for the ERIS app.
+ * Renders a home menu with navigation cards that route to each admin sub-screen:
+ * SOSAlertDashboard, UserManagementScreen, and AudioRecordingsDashboard.
+ * Gated behind admin-only access controlled by the useAdmin hook upstream.
+ */
 
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -12,9 +17,19 @@ export default function AdminScreen() {
   const { t } = useTranslation();
   const [view, setView] = useState<AdminView>('home');
 
+  const [targetAlertId, setTargetAlertId] = useState<string | null>(null);
+
   // Route to the SOS dashboard sub-screen
   if (view === 'sos_dashboard') {
-    return <SOSAlertDashboard onBack={() => setView('home')} />;
+    return (
+      <SOSAlertDashboard
+        onBack={() => {
+          setView('home');
+          setTargetAlertId(null);
+        }}
+        targetAlertId={targetAlertId}
+      />
+    );
   }
   // Route to the User Management sub-screen
   if (view === 'user_management') {
@@ -22,7 +37,16 @@ export default function AdminScreen() {
   }
   // Route to the Audio Recordings sub-screen
   if (view === 'audio_recordings') {
-    return <AudioRecordingsDashboard onBack={() => setView('home')} />;
+    return (
+      <AudioRecordingsDashboard
+        onBack={() => setView('home')}
+        onViewAlert={(alertId) => {
+          // When the button is clicked, save the ID and switch pages!
+          setTargetAlertId(alertId);
+          setView('sos_dashboard');
+        }}
+      />
+    );
   }
 
   return (
@@ -76,7 +100,9 @@ export default function AdminScreen() {
             <span className="material-symbols-outlined text-eris-danger text-2xl">mic</span>
             <div>
               <p className="font-semibold text-sm">{t('admin.audio.title', 'Audio Recordings')}</p>
-              <p className="text-eris-text-muted text-xs">{t('admin.audio.adminDesc', 'Emergency audio captured on fall / crash')}</p>
+              <p className="text-eris-text-muted text-xs">
+                {t('admin.audio.adminDesc', 'Background audio captured during emergency alerts')}
+              </p>
             </div>
             <span className="material-symbols-outlined text-eris-text-subtle text-xl ml-auto">chevron_right</span>
           </button>

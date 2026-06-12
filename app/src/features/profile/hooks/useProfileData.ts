@@ -1,8 +1,10 @@
-/**
+/*
  * useProfileData.ts
- * * Custom hook that encapsulates all data fetching, hardware status (GPS/Battery),
- * local offline DB syncing (Dexie), and Supabase mutations for the Profile.
- * Now includes secure account deletion.
+ * Central data hook for the profile feature. Fetches the user's profile and
+ * emergency contacts from Supabase (with Dexie fallback when offline), reads
+ * GPS and battery levels via Capacitor, and exposes saveMedicalInfo, addContact,
+ * updateContact, deleteContact, and deleteAccount mutations consumed by
+ * ProfileScreen and its sub-components.
  */
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../db/supabaseClient';
@@ -165,7 +167,7 @@ export function useProfileData() {
       } else {
         if (db.emergencyContacts) await db.emergencyContacts.put({ ...contactToSave, sync_status: 'pending' });
         setContacts([...contacts, contactToSave]);
-        showAlert('Offline Mode', 'Contact saved locally. It will be synced when the network is restored.', 'info');
+        showAlert(t('profile.offlineMode', 'Offline Mode'), t('profile.contactSavedOffline', 'Contact saved locally. It will be synced when the network is restored.'), 'info');
       }
       return true;
     } catch (err) {
@@ -179,7 +181,7 @@ export function useProfileData() {
   const updateContact = async (contactId: string, editForm: any) => {
     setIsSaving(true);
     try {
-      const { error } = await supabase.from('emergency_contacts').update(editForm).eq('id', contactId);
+      const { error } = await supabase.from('emergency_contacts').update(editForm).eq('id', contactId).eq('user_id', userId);
       if (error) throw error;
       setContacts(contacts.map((c) => (c.id === contactId ? { ...c, ...editForm } : c)));
       return true;
@@ -197,7 +199,7 @@ export function useProfileData() {
 
     setIsSaving(true);
     try {
-      const { error } = await supabase.from('emergency_contacts').delete().eq('id', contactId);
+      const { error } = await supabase.from('emergency_contacts').delete().eq('id', contactId).eq('user_id', userId);
       if (error) throw error;
       setContacts(contacts.filter((c) => c.id !== contactId));
       return true;

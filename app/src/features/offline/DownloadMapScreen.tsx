@@ -1,3 +1,10 @@
+/*
+ * DownloadMapScreen.tsx
+ * Main screen for downloading offline map tiles. Lets users pick one or more
+ * tile styles, search or draw a custom bounding box, and trigger a tile download
+ * via leaflet.offline. Composes LayerStylePicker, ManualZoneSelector, RegionList,
+ * and OfflineMapViewer, and delegates all download logic to useDownloadManager.
+ */
 import { useState } from 'react';
 import L from 'leaflet';
 import { useTranslation } from 'react-i18next';

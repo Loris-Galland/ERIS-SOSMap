@@ -35,7 +35,22 @@
     "longitude": "LONGITUDE",
     "altitude": "ALTITUDE",
     "networkActive": "Connecté — Réseau ERIS Actif",
-    "networkOffline": "Hors-ligne — Relais Matériel Prêt"
+    "networkOffline": "Hors-ligne — Relais Matériel Prêt",
+    "emergencyType": "Type d'Urgence",
+    "presetFire": "Incendie",
+    "presetFlood": "Inondation",
+    "presetRoad": "Route bloquée",
+    "presetMedical": "Médical",
+    "presetLandslide": "Éboulement",
+    "presetCrash": "Accident",
+    "presetOther": "Autre",
+    "victims": "Victimes",
+    "addPhoto": "Ajouter Photo",
+    "photoAttached": "Photo Jointe",
+    "autoFallNote": "CHUTE AUTOMATIQUE DÉTECTÉE : Chute détectée et utilisateur ne répondant pas.",
+    "autoCrashNote": "ACCIDENT AUTOMATIQUE DÉTECTÉ : Choc violent détecté par les capteurs de l'appareil.",
+    "autoInactivityNote": "SOS AUTOMATIQUE : Inactivité prolongée détectée.",
+    "audioNotice": "Un enregistrement audio en arrière-plan de 5 minutes démarrera automatiquement."
   },
   "settings": {
     "title": "Paramètres",
@@ -64,11 +79,21 @@
     "offlineCache": "Cache des cartes hors-ligne",
     "offlineCacheDesc": "Utilisation actuelle : {{size}}",
     "clearCache": "Effacer le cache",
+    "calculatingCache": "Calcul en cours...",
+    "clearCacheConfirm": "Voulez-vous vraiment vider le cache hors-ligne des cartes ?",
+    "cacheClearedSuccess": "Le cache des cartes a été vidé avec succès.",
+    "cacheClearError": "Erreur lors du vidage du cache.",
+    "accessDeniedTitle": "Accès refusé",
+    "cacheAccessError": "Impossible d'accéder au cache local.",
+    "unexpectedError": "Une erreur inattendue s'est produite.",
     "diagnosticsTitle": "Diagnostics Système",
     "connected": "Connecté",
     "searching": "Recherche...",
     "runTest": "Lancer le test réseau",
     "logoutBtn": "Se déconnecter du système ERIS",
+    "powerMgmtTitle": "Gestion de l'énergie",
+    "autoSosBattery": "SOS automatique (batterie critique)",
+    "autoSosBatteryDesc": "Envoyer automatiquement la dernière position à 1 % de batterie",
     "sosTitle": "SOS",
     "shake_sos_title": "Secouer pour SOS",
     "shake_sos_desc": "Envoie automatiquement un SOS si l'appareil est secoué",
@@ -78,14 +103,20 @@
     "discrete_tap": "4 Tapes Rapides",
     "discrete_flip": "3 Retournements du Téléphone",
     "audioRecording": "Enregistrement audio d'urgence",
-    "audioRecordingDesc": "Enregistre l'ambiance sonore lors d'une chute ou d'un accident détecté",
     "audioConsentTitle": "Avant d'activer l'enregistrement audio",
-    "audioConsent1": "L'audio est enregistré uniquement lors d'une chute ou d'un accident confirmé.",
+    "audioRecordingDesc": "Enregistrez jusqu'à 5 minutes d'audio en arrière-plan lors de situations d'urgence afin de recueillir des preuves.",
+    "audioConsent1": "Jusqu'à 5 minutes d'audio sont enregistrées automatiquement en arrière-plan lors du déclenchement de vos alertes d'urgence configurées.",
     "audioConsent2": "Les enregistrements sont stockés de manière sécurisée et supprimés au bout de 30 jours.",
     "audioConsent3": "Seuls vous et vos contacts d'urgence y ont accès.",
     "audioConsent4": "Vous pouvez désactiver cette option à tout moment depuis cet écran.",
     "audioConsent5": "Cette fonctionnalité traite des données de santé (RGPD Art. 9).",
-    "audioConsentAccept": "Je comprends — Activer"
+    "audioConsentAccept": "Je comprends — Activer",
+    "audioGranularTitle": "Enregistrer automatiquement pour :",
+    "sosTypeCrash": "Détection d'accident de voiture",
+    "sosTypeFall": "Détection de chute",
+    "sosTypeDiscrete": "SOS Discret (Furtif)",
+    "sosTypeShake": "Secouer pour SOS",
+    "sosTypeManual": "Pression manuelle du bouton"
   },
   "discrete": {
     "banner_title": "SOS Silencieux Déclenché",
@@ -137,7 +168,9 @@
     "updateContactError": "Erreur lors de la mise à jour",
     "confirmDelete": "Voulez-vous vraiment supprimer ce contact ?",
     "deleteAccountBtn": "Supprimer mon compte",
-    "deleting": "Suppression en cours..."
+    "deleting": "Suppression en cours...",
+    "offlineMode": "Mode hors-ligne",
+    "contactSavedOffline": "Contact enregistré localement. Il sera synchronisé au retour du réseau."
   },
   "offline": {
     "title": "Cartes Hors-ligne",
@@ -147,6 +180,7 @@
     "updatedJustNow": "Mis à jour à l'instant",
     "customSize": "Taille personnalisée",
     "customZone": "Zone personnalisée",
+    "savedZone": "Zone enregistrée",
     "confirmDelete": "Supprimer ${name} du stockage ?",
     "updateSuccess": "${name} mis à jour avec succès.",
     "localStorage": "Stockage Local",
@@ -250,6 +284,7 @@
     "light": "Clair",
     "contrasted": "Contrasté",
     "terrain": "Terrain",
+    "terrain_dark": "Terrain (Sombre)",
     "satellite": "Satellite",
     "topo": "Topographique",
     "streets": "Rues",
@@ -279,7 +314,9 @@
     "power": "Batterie",
     "charging": "(En charge)",
     "sosCloud": "Votre SOS sera diffusé globalement via le cloud ERIS.",
-    "sosMesh": "Pas de connexion internet. Votre SOS utilisera le réseau maillé local et une solution de repli par SMS."
+    "sosMesh": "Pas de connexion internet. Votre SOS utilisera le réseau maillé local et une solution de repli par SMS.",
+    "loraModule": "Module LoRa",
+    "meshNetwork": "Réseau Maillé"
   },
   "lowBattery": {
     "low": "Batterie faible",
@@ -303,11 +340,17 @@
   },
   "hazard": {
     "deleteTitle": "Supprimer l'alerte",
-    "deleteConfirm": "Êtes-vous sûr de vouloir supprimer définitivement cette alerte de danger ?"
+    "deleteConfirm": "Êtes-vous sûr de vouloir supprimer définitivement cette alerte de danger ?",
+    "areaWarning": "Alerte de zone",
+    "avalancheRisk": "Risque élevé d'avalanche signalé dans votre secteur actuel. Évitez les terrains escarpés."
   },
   "common": {
     "cancel": "Annuler",
-    "delete": "Supprimer"
+    "delete": "Supprimer",
+    "clear": "Vider",
+    "ok": "OK",
+    "success": "Succès",
+    "error": "Erreur"
   },
   "admin": {
     "panelTitle": "Panneau d'administration",
@@ -353,26 +396,34 @@
     "grantBtn": "Nommer Admin",
     "errorUsers": "Erreur lors du chargement des utilisateurs :",
     "noUsers": "Aucun utilisateur trouvé",
+    "triggerManual": "MANUEL",
+    "triggerLabel": "DÉCLENCHEMENT",
     "audio": {
       "title": "Enregistrements audio",
       "adminDesc": "Audio d'urgence capturé lors d'une chute ou d'un accident",
       "stats": "{{count}} enregistrement(s)",
       "triggerFall": "Chute détectée",
       "triggerCrash": "Accident détecté",
+      "triggerShake": "Secouement",
+      "triggerDiscrete": "SOS Discret/Silencieux",
+      "triggerManual": "Pression manuelle du bouton",
       "userId": "Utilisateur :",
       "expiresAt": "Expire le :",
       "noUrl": "URL signée indisponible",
       "download": "Télécharger",
       "delete": "Supprimer",
       "confirmDelete": "Supprimer définitivement cet enregistrement ?",
-      "noRecordings": "Aucun enregistrement pour l'instant"
+      "noRecordings": "Aucun enregistrement pour l'instant",
+      "viewAlert": "Voir l'alerte SOS associée"
     }
   },
   "fall": {
     "detectedTitle": "CHUTE DÉTECTÉE",
     "detectedMessage": "Une alerte SOS automatique sera envoyée avec votre position dans...",
     "imFine": "JE VAIS BIEN — ANNULER",
-    "sendNow": "ENVOYER SOS MAINTENANT"
+    "sendNow": "ENVOYER SOS MAINTENANT",
+    "sosFailed": "Échec de l'envoi du SOS. Veuillez réessayer manuellement.",
+    "noGps": "Impossible d'envoyer le SOS : Acquisition de la position..."
   },
   "crash": {
     "detectedTitle": "ACCIDENT DÉTECTÉ",
@@ -408,5 +459,26 @@
     "banner_title": "Envoi du SOS dans {{seconds}}s",
     "banner_badge": "Secouement",
     "banner_cancel": "ANNULER L'ENVOI"
+  },
+  "beacon": {
+    "title": "Balise de détresse",
+    "volumeHintBefore": "Vous pouvez aussi appuyer sur les",
+    "volumeHintBold": "boutons de volume physiques",
+    "volumeHintAfter": "de votre téléphone pour activer ou désactiver la balise.",
+    "beaconOn": "BALISE\nACTIVÉE",
+    "tapToActivate": "APPUYER POUR\nACTIVER"
+  },
+  "refresh": "Actualiser la carte",
+  "map": {
+    "expandLocation": "Agrandir la position",
+    "minimize": "Cliquer pour réduire",
+    "expandWeather": "Agrandir la météo",
+    "cancelDraw": "Annuler le tracé",
+    "reportHazardBtn": "Signaler un danger"
+  },
+  "errorBoundary": {
+    "title": "Une erreur inattendue s'est produite",
+    "message": "Redémarre l'application pour continuer.",
+    "retry": "Réessayer"
   }
 }

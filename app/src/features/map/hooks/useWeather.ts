@@ -1,3 +1,12 @@
+/*
+ * useWeather — hook that fetches current weather conditions from the Open-Meteo
+ * API for a given latitude/longitude and maps WMO weather codes to icon, color,
+ * condition key, and background class used by the weather widget in MapScreen.
+ * Skips all network calls when offlineMode is true or navigator.onLine is false.
+ * Exposes currentWeather state, its setter (for manual user reports), a
+ * showWeatherReport toggle, and the fetchWeather callback.
+ */
+
 import { useState, useCallback } from 'react';
 
 const getWeatherDetails = (code: number) => {

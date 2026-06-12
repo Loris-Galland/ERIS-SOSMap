@@ -1,7 +1,9 @@
-/**
+/*
  * MedicalInfoCard.tsx
- *
- * Displays and allows editing of critical medical information.
+ * Profile sub-component that shows and allows inline editing of a user's critical
+ * medical data: blood type, allergies, conditions, and medications. Form state is
+ * kept locally and synced from profileData on mount. Mutations are delegated to
+ * ProfileScreen via the onSave callback, which calls useProfileData.saveMedicalInfo.
  */
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';

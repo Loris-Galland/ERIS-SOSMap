@@ -1,3 +1,11 @@
+/*
+ * Vitest unit tests for MapUtils.ts.
+ * Validates the structure and content of MAP_STYLES, PRESET_REGIONS, and the
+ * behaviour of createOfflineLayer (default URL, custom URL, zoom options, return value).
+ * Leaflet and leaflet.offline are mocked to avoid DOM and network dependencies.
+ * Run with: npm run test (from app/).
+ */
+
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('leaflet', () => ({

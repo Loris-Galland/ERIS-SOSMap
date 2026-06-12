@@ -35,7 +35,22 @@
     "longitude": "LONGITUDE",
     "altitude": "HAAVO",
     "networkActive": "Mandeha — Mandeha ny tambajotra ERIS",
-    "networkOffline": "Tsy misy internet — Vonona ny fitaovana backup"
+    "networkOffline": "Tsy misy internet — Vonona ny fitaovana backup",
+    "emergencyType": "Karazana vonjy taitra",
+    "presetFire": "Afo",
+    "presetFlood": "Tondra-drano",
+    "presetRoad": "Lalana voasakana",
+    "presetMedical": "Ara-pitsaboana",
+    "presetLandslide": "Fihotsahan'ny tany",
+    "presetCrash": "Lozam-pifamoivoizana",
+    "presetOther": "Hafa",
+    "victims": "Ireo niharam-boina",
+    "addPhoto": "Hampiditra sary",
+    "photoAttached": "Sary tafiditra",
+    "autoFallNote": "FAHALAVOANA HITA HO AZY: Fahalavoana hita ary tsy mamaly ny mpampiasa.",
+    "autoCrashNote": "LOZA FIARA HITA HO AZY: Fifandonana mahery vaika hitan'ny fahatsiarovan'ny fitaovana.",
+    "autoInactivityNote": "SOS HO AZY: Tsy fihetsehana naharitra hita.",
+    "audioNotice": "Hisy fandraisam-peo mandritra ny 5 minitra handeha avy hatrany ao ambadika."
   },
   "settings": {
     "title": "Fikirana",
@@ -64,11 +79,21 @@
     "offlineCache": "Tahiry sarintany",
     "offlineCacheDesc": "Mampiasa {{size}} amin'izao fotoana izao",
     "clearCache": "Hamafa ny tahiry",
+    "calculatingCache": "Mikajy...",
+    "clearCacheConfirm": "Tena hamafa ny tahiry sarintany tsy misy internet ve ianao?",
+    "cacheClearedSuccess": "Voafafa soa aman-tsara ny tahiry sarintany.",
+    "cacheClearError": "Nisy olana teo am-pamafana ny tahiry.",
+    "accessDeniedTitle": "Nolavina ny fidirana",
+    "cacheAccessError": "Tsy afaka miditra amin'ny tahiry eo an-toerana.",
+    "unexpectedError": "Nisy olana tsy nampoizina.",
     "diagnosticsTitle": "Fandinihana ny rafitra",
     "connected": "Mifandray",
     "searching": "Mitady...",
     "runTest": "Hizaha ny tambajotra",
     "logoutBtn": "Hivoaka ny rafitra ERIS",
+    "powerMgmtTitle": "Fitantanana Angovo",
+    "autoSosBattery": "SOS Ho azy (Bateria Mahantra)",
+    "autoSosBatteryDesc": "Alefaso ho azy ny toerana farany rehefa 1% ny bateria",
     "sosTitle": "SOS",
     "shake_sos_title": "Hozongozonina raha handefa SOS",
     "shake_sos_desc": "Mandefa ho azy ny SOS rehefa mihetsika ny fitaovana",
@@ -76,7 +101,22 @@
     "discrete_sos_desc": "Alefaso mangingina ny SOS tsy misy fanairana na anjomara",
     "discrete_none": "Tsy mandeha",
     "discrete_tap": "Tsindry haingana 4",
-    "discrete_flip": "Ahodino in-3 ny finday"
+    "discrete_flip": "Ahodino in-3 ny finday",
+    "audioRecording": "Fandraisana Feo Vonjy Maika",
+    "audioConsentTitle": "Alohan'ny mamela ny fandraisam-peo",
+    "audioRecordingDesc": "Mandrakitra feo manodidina hatramin'ny 5 minitra ao ambadika mandritra ny hamehana mba hanangonana porofo.",
+    "audioConsent1": "Feo hatramin'ny 5 minitra no horaisina avy hatrany ao ambadika mandritra ny hamehana nokirainao.",
+    "audioConsent2": "Voatahiry am-pomba azo antoka ny firaketana ary fafana aorian'ny 30 andro.",
+    "audioConsent3": "Ianao sy ireo olona azo antoka antsoinao irery no afaka mahazo azy.",
+    "audioConsent4": "Azonao atsahatra amin'ny fotoana rehetra avy amin'ity efijery ity izany.",
+    "audioConsent5": "Mandray angon-drakitra mikasika ny fahasalamana ity endri-javatra ity (RGPD andininy faha-9).",
+    "audioConsentAccept": "Azoko — Alefaso",
+    "audioGranularTitle": "Mandrakitra avy hatrany ho an'ny:",
+    "sosTypeCrash": "Fahitana fifandonan'ny fiara",
+    "sosTypeFall": "Fahitana fahalavoana",
+    "sosTypeDiscrete": "SOS mangina (Stealth)",
+    "sosTypeShake": "Ahozongozona ho SOS",
+    "sosTypeManual": "Fanakantsarihana bokotra amin'ny tanana"
   },
   "discrete": {
     "banner_title": "SOS mangina nalefa",
@@ -128,7 +168,9 @@
     "updateContactError": "Misy olana ny fanavaozana",
     "confirmDelete": "Tena te hamafa an'ity ve ianao?",
     "deleteAccountBtn": "Fafao ny kaontiko",
-    "deleting": "Mamafa..."
+    "deleting": "Mamafa...",
+    "offlineMode": "Mode Tsy Misy Aterineto",
+    "contactSavedOffline": "Voatahiry eto an-toerana ny mpifandray. Hifanaraka rehefa miverina ny tambazotra."
   },
   "offline": {
     "title": "Sarintany offline",
@@ -138,6 +180,7 @@
     "updatedJustNow": "Vao avy nohavaozina",
     "customSize": "Habe manokana",
     "customZone": "Faritra manokana",
+    "savedZone": "Faritra voatahiry",
     "confirmDelete": "Hofafana ny ${name} ?",
     "updateSuccess": "Tafaverina soa aman-tsara ny ${name}.",
     "localStorage": "Tahiry ato anatiny",
@@ -239,8 +282,9 @@
   "mapStyles": {
     "dark": "Maizina",
     "light": "Fomba Fahazavana",
-    "contrast": "Fifanintonana Avo",
-    "terrain": "Terrain",
+    "contrasted": "Fifanintonana Avo",
+    "terrain": "Lalana",
+    "terrain_dark": "Lalana (Maizina)",
     "satellite": "Zanabolana",
     "topo": "Tany",
     "streets": "Làlana",
@@ -270,7 +314,9 @@
     "power": "Power",
     "charging": "(Mamandrika)",
     "sosCloud": "Halefa maneran-tany any amin'ny ERIS Cloud ny SOS-nao.",
-    "sosMesh": "Tsy misy aterineto. Hiantehitra amin'ny Local Mesh sy SMS Fallback ny SOS-nao."
+    "sosMesh": "Tsy misy aterineto. Hiantehitra amin'ny Local Mesh sy SMS Fallback ny SOS-nao.",
+    "loraModule": "Singa LoRa",
+    "meshNetwork": "Tambajotra Mesh"
   },
   "lowBattery": {
     "low": "Batterie Ambany",
@@ -294,11 +340,17 @@
   },
   "hazard": {
     "deleteTitle": "Fafao ny fampitandremana",
-    "deleteConfirm": "Tena te hamafa tanteraka ity fampitandremana loza ity ve ianao?"
+    "deleteConfirm": "Tena te hamafa tanteraka ity fampitandremana loza ity ve ianao?",
+    "areaWarning": "Fampitandremana Faritra",
+    "avalancheRisk": "Loza amin'ny fianjeran'ny oram-panala be dia be voalaza ao amin'ny faritrao ankehitriny. Halaviro ny tany mideza."
   },
   "common": {
     "cancel": "Ajanony",
-    "delete": "Fafao"
+    "delete": "Fafao",
+    "clear": "Fafao",
+    "ok": "Eka",
+    "success": "Tafita soa",
+    "error": "Olana"
   },
   "admin": {
     "panelTitle": "Tontonan'ny Mpandrindra",
@@ -343,13 +395,35 @@
     "revokeBtn": "Esory ny maha Mpandrindra",
     "grantBtn": "Atao Mpandrindra",
     "errorUsers": "Nisy olana teo am-pikarohana mpampiasa:",
-    "noUsers": "Tsy misy mpampiasa hita"
+    "noUsers": "Tsy misy mpampiasa hita",
+    "triggerManual": "TANANA",
+    "triggerLabel": "FANAIRANA",
+    "audio": {
+      "title": "Porofo Feo",
+      "adminDesc": "Feo noraisina tao ambadika mandritra ny fanairana hamehana",
+      "stats": "Firaketana {{count}}",
+      "triggerFall": "Fahalavoana hita",
+      "triggerCrash": "Fifandonana hita",
+      "triggerShake": "Nohonzongozonina",
+      "triggerDiscrete": "SOS Mangina/Miafina",
+      "triggerManual": "Tsindry bokotra tanana",
+      "userId": "Mpampiasa:",
+      "expiresAt": "Lany daty:",
+      "noUrl": "Tsy misy URL",
+      "download": "Ampidino",
+      "delete": "Fafao",
+      "confirmDelete": "Fafao tanteraka ity firaketana ity?",
+      "noRecordings": "Mbola tsy misy fandraisam-peo",
+      "viewAlert": "Sokafy ny fanairana SOS mifandray"
+    }
   },
   "fall": {
     "detectedTitle": "HITA FAHABOSESANA",
     "detectedMessage": "Alerte SOS automatique ho alefa miaraka amin'ny toeranareo ao anatin'ny...",
     "imFine": "TSARA AHO — FOANA",
-    "sendNow": "HANDEFA SOS IZAO"
+    "sendNow": "HANDEFA SOS IZAO",
+    "sosFailed": "Tsy nahomby ny fandefasana SOS. Andramo manokana indray.",
+    "noGps": "Tsy afaka mandefa SOS: Mizaha toerana..."
   },
   "crash": {
     "detectedTitle": "HITA LOZA FIARA",
@@ -378,9 +452,33 @@
     "sendSOS": "Handefa SOS",
     "autoSOS": "SOS ho lasa amin'ny {{seconds}}s"
   },
+  "audio": {
+    "recBadge": "REC"
+  },
   "shake": {
     "banner_title": "Mandefa SOS afaka {{seconds}}s",
     "banner_badge": "Hozongozonina",
     "banner_cancel": "HAJANONA"
+  },
+  "beacon": {
+    "title": "Fanairana SOS",
+    "volumeHintBefore": "Azonao atao ihany koa ny manindry ny",
+    "volumeHintBold": "tsindry feo eo amin'ny fitaovanao",
+    "volumeHintAfter": "mba hampandeha na hampijanona ity fanairana ity.",
+    "beaconOn": "FANAIRANA\nMIASA",
+    "tapToActivate": "TSINDRIO MBA\nHAMPANDEHA"
+  },
+  "refresh": "Havaozy ny sarintany",
+  "map": {
+    "expandLocation": "Hanitatra ny toerana",
+    "minimize": "Tsindrio mba hanakelezana",
+    "expandWeather": "Hanitatra ny toetr'andro",
+    "cancelDraw": "Aoka ny fanaovan-tsary",
+    "reportHazardBtn": "Tatitra loza"
+  },
+  "errorBoundary": {
+    "title": "Nisy olana tsy nampoizina",
+    "message": "Avereno alefa ny rindrankajy mba hanohizana.",
+    "retry": "Andramo indray"
   }
 }

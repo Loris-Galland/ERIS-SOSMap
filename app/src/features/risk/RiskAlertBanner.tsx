@@ -1,8 +1,9 @@
 /*
- * Floating overlay banner displayed when the AI risk engine detects a dangerous pattern.
- * Appears at the bottom of the screen (z-[9999]) over any active tab.
- * HIGH-severity events show a countdown: when it expires the app navigates to the ALERTS tab.
- * The user can dismiss the alert ("I'm OK") or manually trigger SOS navigation at any time.
+ * Floating overlay banner rendered at the bottom of the screen whenever the AI risk engine
+ * emits a RiskEvent. Exports the default RiskAlertBanner component consumed by the main App shell.
+ * HIGH-severity events start a countdown (autoSOSDelay) that auto-navigates to the ALERTS tab
+ * when it expires; the user can dismiss or manually send SOS at any time.
+ * Connects to types.ts for RiskEvent and to i18n keys in the risk.* namespace.
  */
 
 import { useEffect, useRef, useState } from 'react';

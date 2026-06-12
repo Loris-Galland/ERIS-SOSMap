@@ -45,6 +45,7 @@ The repository contains two deliverables:
 - Discrete (silent) SOS via tap or flip gestures
 - Emergency audio recording on fall/crash detection (GDPR opt-in)
 - User-reported hazard overlay (fire, flood, road blockage, landslide)
+- Turn-by-turn directions to a selected destination via Google Maps
 - Points of Interest from OpenStreetMap (hospitals, pharmacies, shelters, AEDs, etc.)
 - Real-time weather data and community weather reports
 - Distress beacon via device flashlight (SOS strobe pattern)
@@ -125,8 +126,9 @@ capacitor-eris-sosmap/
 │       └── locales/              # Translation files
 │
 ├── supabase/
-│   └── functions/
-│       └── notify-contacts/      # Edge Function — SMS on SOS dispatch
+│   ├── functions/
+│   │   └── notify-contacts/      # Edge Function — SMS on SOS dispatch
+│   └── migrations/                # SQL migrations (RLS policies, admin RPCs)
 │
 └── docker-compose.yml
 ```
@@ -143,6 +145,13 @@ Each feature under `app/src/features/` is self-contained and owns its components
 | `hazards` | Locally reported hazards pending upload |
 | `riskEvents` | Audit log of on-device detected risk events |
 | `pendingAudioUploads` | Audio recordings queued for Supabase Storage |
+
+### Supabase Migrations (`supabase/migrations/`)
+
+Row Level Security policies and admin-only RPCs for `sos_alerts`, `hazards`, and `user_profiles` are versioned as SQL migrations and must be applied to any Supabase project backing this app (`supabase db push` or via the Supabase SQL editor). Notably:
+
+- `update_sos_alert_status(alert_id, new_status)` — `SECURITY DEFINER` RPC used by the admin dashboard to update an alert's status after a server-side admin check.
+- RLS policies restrict `sos_alerts` reads/updates to the alert owner and admins (anonymous inserts remain allowed for guest SOS).
 
 ### SOS Dispatch Chain
 

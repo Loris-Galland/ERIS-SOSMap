@@ -1,3 +1,12 @@
+/*
+ * useGPS.test.ts — Vitest unit tests for the useGPS hook.
+ * Mocks @capacitor/geolocation, @capacitor/core, and leaflet so no native
+ * platform or DOM is required.
+ * Covers initial position (default, cached, invalid cache), GPS status
+ * transitions, localStorage cache writes, and tracking lifecycle
+ * (start on isActive, stop and clearWatch on unmount).
+ */
+
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 

@@ -1,3 +1,11 @@
+/*
+ * Full-screen inactivity warning modal for the ERIS app.
+ * Exports InactivityModal (default). Shown when the app detects no user movement
+ * for an extended period. Plays a siren and counts down 30 seconds before
+ * auto-calling onConfirmSOS. Uses react-i18next for localized strings.
+ * Triggered by the inactivity detection hook in the SOS feature.
+ */
+
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -16,6 +24,11 @@ export default function InactivityModal({ onCancel, onConfirmSOS }: InactivityMo
     audio.loop = true;
     audio.play().catch(() => console.log('Audio autoplay blocked'));
 
+    // Vibrate heavily to get the user's attention
+    if (navigator.vibrate) {
+      navigator.vibrate([500, 200, 500, 200, 1000]);
+    }
+
     const timer = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
@@ -33,6 +46,8 @@ export default function InactivityModal({ onCancel, onConfirmSOS }: InactivityMo
       audio.pause();
     };
   }, [onConfirmSOS]);
+
+  const progress = ((60 - countdown) / 60) * 100;
 
   return (
     <div className="fixed inset-0 z-[99999] bg-orange-900/90 backdrop-blur-xl flex flex-col items-center justify-center p-6 animate-in fade-in zoom-in duration-300">

@@ -1,3 +1,11 @@
+/*
+ * Reusable modal dialog component for the ERIS app.
+ * Exports AlertModal (default) and the AlertType union type.
+ * Supports three modes: simple alert (info/danger/success), confirmation dialog,
+ * and prompt (text input). Keyboard shortcuts (Escape, Enter) are handled internally.
+ * Used throughout the app wherever user feedback or destructive-action confirmation is needed.
+ */
+
 import { useEffect, useState } from 'react';
 
 export type AlertType = 'info' | 'danger' | 'success';

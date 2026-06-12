@@ -11,7 +11,7 @@ import AlertModal, { type AlertType } from '../../../components/AlertModalProps'
 export default function DataStorageSection() {
   const { t } = useTranslation();
   const [autoRetrySos, setAutoRetrySos] = useState(true);
-  const [cacheSize, setCacheSize] = useState('Calculating...');
+  const [cacheSize, setCacheSize] = useState(t('settings.calculatingCache', 'Calculating...'));
 
   // Alert Dialog State
   const defaultDialogState = {
@@ -32,7 +32,7 @@ export default function DataStorageSection() {
     setDialog({ ...defaultDialogState, ...options, isOpen: true });
   };
   const showAlert = (title: string, message: string, type: AlertType = 'info') => {
-    openDialog({ title, message, type, confirmText: 'OK', onConfirm: closeDialog, onCancel: closeDialog });
+    openDialog({ title, message, type, confirmText: t('common.ok', 'OK'), onConfirm: closeDialog, onCancel: closeDialog });
   };
 
   // ─── INDEXED DB LOGIC ───
@@ -93,11 +93,11 @@ export default function DataStorageSection() {
 
   const clearMapCache = () => {
     openDialog({
-      title: 'Clear Cache',
-      message: 'Are you sure you want to clear the offline map cache?',
+      title: t('settings.clearCache', 'Clear Cache'),
+      message: t('settings.clearCacheConfirm', 'Are you sure you want to clear the offline map cache?'),
       type: 'danger',
       isConfirm: true,
-      confirmText: 'Clear',
+      confirmText: t('common.clear', 'Clear'),
       onCancel: closeDialog,
       onConfirm: () => {
         closeDialog();
@@ -121,22 +121,22 @@ export default function DataStorageSection() {
             transaction.oncomplete = () => {
               db.close();
               setCacheSize('0.00 MB');
-              showAlert('Success', 'The map cache has been successfully cleared.', 'success');
+              showAlert(t('common.success', 'Success'), t('settings.cacheClearedSuccess', 'The map cache has been successfully cleared.'), 'success');
             };
 
             transaction.onerror = () => {
               console.error('Error during cleanup transaction');
-              showAlert('Error', 'Error clearing cache.', 'danger');
+              showAlert(t('common.error', 'Error'), t('settings.cacheClearError', 'Error clearing cache.'), 'danger');
             };
           };
 
           request.onerror = (event) => {
             console.error('Error opening IndexedDB', event);
-            showAlert('Access Denied', 'Unable to access local cache.', 'danger');
+            showAlert(t('settings.accessDeniedTitle', 'Access Denied'), t('settings.cacheAccessError', 'Unable to access local cache.'), 'danger');
           };
         } catch (error) {
           console.error('Unexpected error :', error);
-          showAlert('Error', 'An unexpected error has occurred.', 'danger');
+          showAlert(t('common.error', 'Error'), t('settings.unexpectedError', 'An unexpected error has occurred.'), 'danger');
         }
       },
     });
@@ -173,9 +173,9 @@ export default function DataStorageSection() {
             </div>
             <button
               onClick={clearMapCache}
-              disabled={cacheSize === '0.00 MB' || cacheSize === 'Calcul en cours...'}
+              disabled={cacheSize === '0.00 MB' || cacheSize === t('settings.calculatingCache', 'Calculating...')}
               className={`text-xs font-bold px-4 py-2 rounded-full transition-all ${
-                cacheSize === '0.00 MB' || cacheSize === 'Calcul en cours...'
+                cacheSize === '0.00 MB' || cacheSize === t('settings.calculatingCache', 'Calculating...')
                   ? 'text-eris-text-subtle bg-gray-700/30 cursor-not-allowed'
                   : 'text-eris-primary bg-eris-primary/10 hover:bg-eris-primary/20 active:scale-95'
               }`}
