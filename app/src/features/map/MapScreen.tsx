@@ -456,6 +456,88 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
     setSearchResults([]);
   };
 
+  useEffect(() => {
+    if (!mapInstance.current || !isDrawingMode) return;
+
+    const map = mapInstance.current;
+
+    const drawnItems = new L.FeatureGroup();
+    map.addLayer(drawnItems);
+
+    const drawControl = new L.Control.Draw({
+      position: 'topright',
+      draw: {
+        polyline: false,
+        polygon: false,
+        circlemarker: false,
+        marker: {},
+        circle: {},
+        rectangle: {},
+      },
+      edit: {
+        featureGroup: drawnItems,
+        edit: false,
+        remove: false,
+      },
+    });
+    map.addControl(drawControl);
+
+    const onDrawCreated = (e: any) => {
+      const { layerType, layer } = e;
+
+      let newGeo: any = { shape_metadata: {} };
+
+      if (layerType === 'marker') {
+        const { lat, lng } = layer.getLatLng();
+        newGeo = { lat, lng, shape_type: 'point' };
+      } else if (layerType === 'circle') {
+        const { lat, lng } = layer.getLatLng();
+        const r = layer.getRadius() > 5 ? layer.getRadius() : 50;
+        newGeo = { lat, lng, shape_type: 'circle', shape_metadata: { radius: r }, sliderSize: r };
+      } else if (layerType === 'rectangle') {
+        const bounds = layer.getBounds();
+        const center = bounds.getCenter();
+
+        const isTap = bounds.getNorthEast().distanceTo(bounds.getSouthWest()) < 10;
+
+        let finalBounds = bounds;
+        let size = 50;
+
+        if (isTap) {
+          finalBounds = center.toBounds(100);
+          size = 50;
+        } else {
+          size = center.distanceTo(bounds.getNorthEast()) * 0.7;
+        }
+
+        newGeo = {
+          lat: center.lat,
+          lng: center.lng,
+          shape_type: 'rectangle',
+          sliderSize: size,
+          shape_metadata: {
+            bounds: [
+              [finalBounds.getNorthEast().lat, finalBounds.getNorthEast().lng],
+              [finalBounds.getSouthWest().lat, finalBounds.getSouthWest().lng],
+            ],
+          },
+        };
+      }
+
+      setPendingGeometry(newGeo);
+      setIsDrawingMode(false);
+      setShowHazardReportModal(true);
+    };
+
+    map.on(L.Draw.Event.CREATED, onDrawCreated);
+
+    return () => {
+      map.off(L.Draw.Event.CREATED, onDrawCreated);
+      map.removeControl(drawControl);
+      map.removeLayer(drawnItems);
+    };
+  }, [isDrawingMode, mapInstance, setPendingGeometry, setShowHazardReportModal]);
+
   return (
     <div className="relative w-full h-full">
       {/* ─── LEAFLET MAP ─── */}
