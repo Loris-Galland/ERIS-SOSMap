@@ -202,7 +202,9 @@ export default function AlertScreen() {
   const sendFallbackSMS = () => {
     const googleMapsLink = `https://maps.google.com/?q=${rawPosition.lat},${rawPosition.lng}`;
     const message = encodeURIComponent(
-      `${t('alert.urgentHelp')} \n${t('alert.position')}: ${googleMapsLink}\n${t('alert.notes')}: ${notes || t('alert.none')}`,
+      `${t('alert.urgentHelp')} \n${t('alert.position')}: ${googleMapsLink}\n${t('alert.notes')}: ${
+        notes || t('alert.none')
+      }`,
     );
 
     // Detect iOS/Android because the SMS link separator differs based on the OS
@@ -276,7 +278,7 @@ export default function AlertScreen() {
       linkAudioToAlert((result as any).supabaseId);
     }
 
-    if (!navigator.onLine) {
+    /*if (!navigator.onLine) {
       isSuccess = false;
       if (result.localId) {
         await db.sosQueue.update(result.localId, { status: 'queued' });
@@ -297,9 +299,9 @@ export default function AlertScreen() {
     }
     if (Capacitor.getPlatform() === 'web' && !navigator.onLine) {
       isSuccess = false;
-    }
+    }*/
 
-    if (result.success) {
+    if (isSuccess) {
       // Store IDs and launch the grace period popup
       setLastAlertIds({ supabase: (result as any).supabaseId, local: result.localId as number });
       setIsGracePeriod(true);
@@ -409,7 +411,9 @@ export default function AlertScreen() {
 
   return (
     <div
-      className={`flex flex-col h-full bg-eris-bg w-full font-sans relative pb-24 pt-4 px-4 ${showHistory || showBeacon ? 'overflow-hidden' : 'overflow-y-auto'}`}
+      className={`flex flex-col h-full bg-eris-bg w-full font-sans relative pb-24 pt-4 px-4 ${
+        showHistory || showBeacon ? 'overflow-hidden' : 'overflow-y-auto'
+      }`}
     >
       {/* History screen overlay */}
       {showHistory && <SOSHistoryScreen onClose={() => setShowHistory(false)} />}
@@ -543,10 +547,10 @@ export default function AlertScreen() {
               {isSending
                 ? t('alert.sending')
                 : sent
-                  ? t('alert.sentCheck')
-                  : holding
-                    ? t('alert.holding')
-                    : t('alert.holdBtn')}
+                ? t('alert.sentCheck')
+                : holding
+                ? t('alert.holding')
+                : t('alert.holdBtn')}
             </span>
           </button>
         </div>
@@ -558,10 +562,10 @@ export default function AlertScreen() {
               statusType === 'success'
                 ? 'bg-eris-success/10 border border-eris-success/30'
                 : statusType === 'warning'
-                  ? 'bg-eris-alert/10 border border-eris-alert/30'
-                  : statusType === 'error'
-                    ? 'bg-eris-danger/10 border border-eris-danger/30'
-                    : 'bg-eris-surface-alt/60 border border-eris-border/50'
+                ? 'bg-eris-alert/10 border border-eris-alert/30'
+                : statusType === 'error'
+                ? 'bg-eris-danger/10 border border-eris-danger/30'
+                : 'bg-eris-surface-alt/60 border border-eris-border/50'
             }`}
           >
             <span
@@ -569,19 +573,19 @@ export default function AlertScreen() {
                 statusType === 'success'
                   ? 'text-eris-success'
                   : statusType === 'warning'
-                    ? 'text-eris-alert'
-                    : statusType === 'error'
-                      ? 'text-eris-danger'
-                      : 'text-eris-primary'
+                  ? 'text-eris-alert'
+                  : statusType === 'error'
+                  ? 'text-eris-danger'
+                  : 'text-eris-primary'
               }`}
             >
               {statusType === 'success'
                 ? 'check_circle'
                 : statusType === 'warning'
-                  ? 'schedule_send'
-                  : statusType === 'error'
-                    ? 'error'
-                    : 'sync'}
+                ? 'schedule_send'
+                : statusType === 'error'
+                ? 'error'
+                : 'sync'}
             </span>
             <p className="text-eris-text text-xs font-medium leading-snug">{statusMessage}</p>
             {/* ─── OFFLINE SMS FALLBACK BUTTON ─── */}

@@ -21,12 +21,6 @@ import DiagnosticsModal from '../../features/settings/DiagnosticsModal';
 import { PRESET_REGIONS, MAP_STYLES } from '../../utils/MapUtils';
 import { useSOSMarkersAdmin } from '../../features/admin/hooks/useSOSMarkersAdmin';
 import { usePOIs, type POICategory } from './hooks/usePOIs';
-import { useFallDetection } from '../sos/hooks/useFallDetection';
-import FallDetectionModal from '../../components/FallDetectionModal';
-import { dispatchSOS } from '../../services/sosService';
-import { useCrashDetection } from '../sos/hooks/useCrashDetection';
-import { useInactivityMonitoring } from '../sos/hooks/useInactivityMonitoring';
-import InactivityModal from '../../components/InactivityModal';
 
 interface MapScreenProps {
   isActive: boolean;
@@ -73,12 +67,6 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
   const [isSearching, setIsSearching] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [localSearchableRegions, setLocalSearchableRegions] = useState<any[]>([]);
-
-  // Fall detection state
-  const [showFallModal, setShowFallModal] = useState(false);
-
-  // Inactivity monitoring state
-  const [showInactivityModal, setShowInactivityModal] = useState(false);
 
   // ─── HOOKS ───
   const { mapInstance, showLayerMenu, setShowLayerMenu, currentMapStyle, changeMapStyle } = useMapLayers({
@@ -183,99 +171,6 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
     isActive,
     isAdmin,
   });
-
-  // Logic for fall detection
-  const handleFallDetected = useCallback(() => {
-    console.log('FALL DETECTED BY ACCELEROMETER!');
-    setShowFallModal(true);
-  }, []);
-
-  // Activate continuous fall detection
-  useFallDetection(handleFallDetected, true);
-
-  // Logic for motorcycle crash detection
-  const handleCrashDetected = useCallback(() => {
-    console.log('MOTORCYCLE CRASH DETECTED!');
-    setShowFallModal(true); // Reuses the red countdown modal with the siren
-  }, []);
-
-  // Compute speed safely or default to 0 if useGPS doesn't provide it yet
-  const currentSpeed = (userPosition as any).speed || 0;
-
-  // Activate continuous crash detection based on GPS speed and impact forces
-  useCrashDetection({
-    currentSpeedKmh: currentSpeed,
-    onCrashDetected: handleCrashDetected,
-    isActive: isActive,
-  });
-
-  const handleSOSConfirm = async () => {
-    setShowFallModal(false);
-
-    if (userPosition.lat !== 0 && userPosition.lng !== 0) {
-      try {
-        let battery = 100;
-        try {
-          const info = await Device.getBatteryInfo();
-          battery = Math.round((info.batteryLevel ?? 1) * 100);
-        } catch {}
-        await dispatchSOS(
-          currentUserId,
-          { lat: userPosition.lat, lng: userPosition.lng, alt: userPosition.alt },
-          battery,
-          'AUTOMATIC FALL/CRASH DETECTED',
-        );
-        console.log('SOS SENT AUTOMATICALLY!');
-        onNavigateToAlerts();
-      } catch (error) {
-        console.error('Failed to send SOS:', error);
-        alert(t('fall.sosFailed', 'Failed to send SOS. Please try again manually.'));
-      }
-    } else {
-      console.warn('Cannot send SOS: No GPS location available.');
-      alert(t('fall.noGps', 'Cannot send SOS: Acquiring position...'));
-      onNavigateToAlerts();
-    }
-  };
-
-  // --- Logic for Inactivity Monitoring ---
-  const handleInactivityDetected = useCallback(() => {
-    console.log('PROLONGED INACTIVITY DETECTED!');
-    setShowInactivityModal(true);
-  }, []);
-
-  const { resetTimer: resetInactivityTimer } = useInactivityMonitoring(handleInactivityDetected, true);
-
-  const handleInactivityCancel = () => {
-    setShowInactivityModal(false);
-    resetInactivityTimer(); // Restart the clock because the user is fine
-  };
-
-  const handleInactivitySOS = async () => {
-    setShowInactivityModal(false);
-
-    if (userPosition.lat !== 0 && userPosition.lng !== 0) {
-      try {
-        let battery = 100;
-        try {
-          const info = await Device.getBatteryInfo();
-          battery = Math.round((info.batteryLevel ?? 1) * 100);
-        } catch {}
-        await dispatchSOS(
-          currentUserId,
-          { lat: userPosition.lat, lng: userPosition.lng, alt: userPosition.alt },
-          battery,
-          'AUTOMATIC SOS: PROLONGED INACTIVITY DETECTED',
-        );
-        onNavigateToAlerts();
-      } catch (error) {
-        console.error('Failed to send SOS:', error);
-      }
-    } else {
-      console.warn('Cannot send SOS: No GPS location available.');
-      onNavigateToAlerts();
-    }
-  };
 
   // Fetch weather when GPS position changes
   useEffect(() => {
@@ -700,8 +595,8 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
               gpsStatus === 'Connected'
                 ? 'bg-eris-success/20 [.theme-contrasted_&]:bg-eris-surface'
                 : gpsStatus === 'Locating...'
-                  ? 'bg-yellow-500/20 [.theme-contrasted_&]:bg-gray-500'
-                  : 'bg-eris-danger/20 [.theme-contrasted_&]:bg-gray-500'
+                ? 'bg-yellow-500/20 [.theme-contrasted_&]:bg-gray-500'
+                : 'bg-eris-danger/20 [.theme-contrasted_&]:bg-gray-500'
             }`}
             title={t('map.expandLocation', 'Expand Location')}
           >
@@ -713,15 +608,15 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
                     gpsStatus === 'Connected'
                       ? 'text-eris-success'
                       : gpsStatus === 'Locating...'
-                        ? 'text-eris-alert animate-spin'
-                        : 'text-eris-danger'
+                      ? 'text-eris-alert animate-spin'
+                      : 'text-eris-danger'
                   }`}
                 >
                   {gpsStatus === 'Connected'
                     ? 'satellite_alt'
                     : gpsStatus === 'Locating...'
-                      ? 'sync'
-                      : 'location_disabled'}
+                    ? 'sync'
+                    : 'location_disabled'}
                 </span>
               </span>
             </div>
@@ -783,7 +678,9 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
                 className={`w-8 h-8 rounded-full flex items-center justify-center ${currentWeather.bg} ${currentWeather.color}`}
               >
                 <span
-                  className={`material-symbols-outlined text-lg ${currentWeather.icon === 'sync' ? 'animate-spin' : ''}`}
+                  className={`material-symbols-outlined text-lg ${
+                    currentWeather.icon === 'sync' ? 'animate-spin' : ''
+                  }`}
                 >
                   {currentWeather.icon}
                 </span>
@@ -865,7 +762,9 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
         {!isPickingDestination && (
           <button
             onClick={() => setIsDrawingMode(!isDrawingMode)}
-            className={`w-12 h-12 ${isDrawingMode ? 'bg-gray-500' : 'bg-eris-alert'} [.theme-dark_&]:bg-orange-400 rounded-full flex items-center justify-center text-white [.theme-contrasted_&]:border-2 [.theme-contrasted_&]:!border-black hover:bg-orange-400 transition-colors shadow-lg shadow-eris-alert/30 active:scale-95`}
+            className={`w-12 h-12 ${
+              isDrawingMode ? 'bg-gray-500' : 'bg-eris-alert'
+            } [.theme-dark_&]:bg-orange-400 rounded-full flex items-center justify-center text-white [.theme-contrasted_&]:border-2 [.theme-contrasted_&]:!border-black hover:bg-orange-400 transition-colors shadow-lg shadow-eris-alert/30 active:scale-95`}
             title={isDrawingMode ? t('map.cancelDraw', 'Cancel Draw') : t('map.reportHazardBtn', 'Report Hazard')}
           >
             <span className="material-symbols-outlined [.theme-contrasted_&]:!text-black text-xl">
@@ -1189,10 +1088,6 @@ export default function MapScreen({ isActive, visualTheme, session, isAdmin, onN
 
       {/* ─── DIAGNOSTICS ─── */}
       {showDiagnostics && <DiagnosticsModal onClose={() => setShowDiagnostics(false)} gpsStatus={gpsStatus} />}
-
-      {/* RESTORED MISSING MODALS FROM MERGE ─── */}
-      {showFallModal && <FallDetectionModal onCancel={() => setShowFallModal(false)} onConfirmSOS={handleSOSConfirm} />}
-      {showInactivityModal && <InactivityModal onCancel={handleInactivityCancel} onConfirmSOS={handleInactivitySOS} />}
     </div>
   );
 }

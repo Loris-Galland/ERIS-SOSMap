@@ -10,7 +10,11 @@ import { Motion } from '@capacitor/motion';
 
 const INACTIVITY_TIME_LIMIT = 1800000; 
 const MOVEMENT_THRESHOLD = 0.5; 
-
+/*
+// --- TEST VALUES ---
+const INACTIVITY_TIME_LIMIT = 10000; // 10 seconds
+const MOVEMENT_THRESHOLD = 0.5;
+*/
 export function useInactivityMonitoring(onInactivityDetected: () => void, isActive: boolean = true) {
   const lastMovementTime = useRef<number>(Date.now());
   const lastVector = useRef<{x: number, y: number, z: number} | null>(null);
@@ -19,6 +23,7 @@ export function useInactivityMonitoring(onInactivityDetected: () => void, isActi
   useEffect(() => {
     let accelListener: any;
     let checkInterval: any;
+    let isCancelled = false;
 
     const handleScreenInteraction = () => {
       if (!isActive) return;
@@ -35,7 +40,7 @@ export function useInactivityMonitoring(onInactivityDetected: () => void, isActi
 
       try {
         // Listen to micro-movements of the phone
-        accelListener = await Motion.addListener('accel', (event) => {
+        const listener = await Motion.addListener('accel', (event) => {
           const { x, y, z } = event.accelerationIncludingGravity;
 
           if (lastVector.current) {
@@ -51,6 +56,12 @@ export function useInactivityMonitoring(onInactivityDetected: () => void, isActi
 
           lastVector.current = { x, y, z };
         });
+
+        if (isCancelled) {
+          listener.remove;
+        } else {
+          accelListener = listener;
+        }
 
         // Regularly check if the inactivity time limit has been exceeded
         checkInterval = setInterval(() => {
@@ -71,6 +82,7 @@ export function useInactivityMonitoring(onInactivityDetected: () => void, isActi
     startMonitoring();
 
     return () => {
+      isCancelled = true;
       if (accelListener) accelListener.remove();
       if (checkInterval) clearInterval(checkInterval);
 
