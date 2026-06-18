@@ -65,7 +65,7 @@ export function useFallDetection(onFallDetected: () => void, isActive: boolean =
             if (timeSinceImpact > IMMOBILITY_TIME) {
               // Phase 3 — person hasn't moved since impact: confirmed fall
               const pos = getLastKnownPosition();
-              //riskEventBus.emitFallDetected(pos.lat, pos.lng);
+              riskEventBus.emitFallDetected(pos.lat, pos.lng);
               onFallDetected();
               fallState.current = 'normal';
 

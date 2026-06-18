@@ -85,14 +85,25 @@ export default function App() {
     localStorage.getItem('eris_shake_sos_enabled') === 'true',
   );
 
-  // ─── FALL DETECTION (accelerometer) — active on all tabs ───
-  const [showFallModal, setShowFallModal] = useState(false);
-  const onFallDetected = useCallback(() => {
-    setShowFallModal(true);
-    startRecording('fall');
-    cancelShakeSOS();
-  }, [startRecording]);
-  useFallDetection(onFallDetected, true);
+  // ─── HARDWARE SENSOR ───
+  useFallDetection(() => {}, true);
+
+  useCrashDetection({
+    currentSpeedKmh: currentSpeedMs * 3.6,
+    onCrashDetected: () => {},
+    isActive: true,
+  });
+
+  // ─── REACT TO RISK EVENTS ───
+  useEffect(() => {
+    if (riskEvent?.pattern === 'FALL_CONFIRMED') {
+      startRecording('fall');
+      cancelShakeSOS();
+    } else if (riskEvent?.pattern === 'CRASH_CONFIRMED') {
+      startRecording('crash');
+      cancelShakeSOS();
+    }
+  }, [riskEvent?.pattern, startRecording, cancelShakeSOS]);
 
   // ─── DISCRETE SOS (Silent Trigger) ───
   const {
@@ -172,8 +183,8 @@ export default function App() {
   // Dispatch SOS automatically when fall countdown expires or user confirms
   const handleFallSOS = useCallback(
     async (isTimeout: boolean = true) => {
-      setShowFallModal(false);
       acknowledgeAsSOS();
+
       // Recording continues — the emergency is confirmed, we want the full ambient audio
       stopRecording();
       if (userPosition.lat !== 0 && userPosition.lng !== 0) {
@@ -213,28 +224,15 @@ export default function App() {
       }
       setActiveTab('ALERTS');
     },
-    [userId, userPosition, stopRecording],
+    [userId, userPosition, stopRecording, acknowledgeAsSOS],
   );
-
-  // ─── CRASH DETECTION (accelerometer + speed arming) — active on all tabs ───
-  const [showCrashModal, setShowCrashModal] = useState(false);
-  const onCrashDetected = useCallback(() => {
-    setShowCrashModal(true);
-    startRecording('crash');
-    cancelShakeSOS();
-  }, [startRecording]);
-  useCrashDetection({
-    currentSpeedKmh: currentSpeedMs * 3.6,
-    onCrashDetected,
-    isActive: true,
-  });
 
   // Dispatch SOS automatically when crash countdown expires or user confirms
   const handleCrashSOS = useCallback(
     async (isTimeout: boolean = true) => {
-      setShowCrashModal(false);
       acknowledgeAsSOS();
       stopRecording();
+
       if (userPosition.lat !== 0 && userPosition.lng !== 0) {
         try {
           let currentBattery = 100;
@@ -272,7 +270,7 @@ export default function App() {
       }
       setActiveTab('ALERTS');
     },
-    [userId, userPosition, stopRecording],
+    [userId, userPosition, stopRecording, acknowledgeAsSOS],
   );
 
   // ─── NAVIGATION ───
@@ -484,11 +482,10 @@ export default function App() {
       </main>
 
       {/* ─── FALL DETECTION MODAL (highest priority) ─── */}
-      {showFallModal && (
+      {riskEvent?.pattern === 'FALL_CONFIRMED' && (
         <FallDetectionModal
           type="fall"
           onCancel={() => {
-            setShowFallModal(false);
             cancelRecording();
             dismissRisk();
           }}
@@ -497,11 +494,10 @@ export default function App() {
       )}
 
       {/* ─── CRASH DETECTION MODAL (vehicle crash, highest priority) ─── */}
-      {!showFallModal && showCrashModal && (
+      {riskEvent?.pattern === 'CRASH_CONFIRMED' && (
         <FallDetectionModal
           type="crash"
           onCancel={() => {
-            setShowCrashModal(false);
             cancelRecording();
             dismissRisk();
           }}
@@ -510,7 +506,7 @@ export default function App() {
       )}
 
       {/* ─── AI RISK DETECTION BANNER (GPS behavioral patterns) ─── */}
-      {!showFallModal && !showCrashModal && (
+      {riskEvent && riskEvent.pattern !== 'FALL_CONFIRMED' && riskEvent.pattern !== 'CRASH_CONFIRMED' && (
         <RiskAlertBanner
           event={riskEvent}
           onDismiss={dismissRisk}
@@ -522,7 +518,7 @@ export default function App() {
       )}
 
       {/* ─── INACTIVITY DETECTION MODAL (60 second warning) ─── */}
-      {!showFallModal && !showCrashModal && showInactivityModal && (
+      {!riskEvent && showInactivityModal && (
         <InactivityModal onCancel={handleInactivityCancel} onConfirmSOS={handleInactivitySOS} />
       )}
 

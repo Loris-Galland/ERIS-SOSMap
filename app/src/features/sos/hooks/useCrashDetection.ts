@@ -65,7 +65,7 @@ export function useCrashDetection({ currentSpeedKmh, onCrashDetected, isActive =
             // Crash confirmed — disarm immediately to prevent duplicate triggers
             isArmed.current = false;
             const pos = getLastKnownPosition();
-            //riskEventBus.emitCrashDetected(pos.lat, pos.lng);
+            riskEventBus.emitCrashDetected(pos.lat, pos.lng);
             onCrashDetected();
           }
         });

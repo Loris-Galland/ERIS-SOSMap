@@ -60,7 +60,6 @@ export function useRiskDetection(userId: string | null) {
     return () => { if (watchId) Geolocation.clearWatch({ id: watchId }); };
   }, []);
 
-  /*
   // Register bus handlers so fall and crash detectors can feed events into the AI engine
   useEffect(() => {
     riskEventBus.onFallDetected((lat, lng) => {
@@ -73,7 +72,6 @@ export function useRiskDetection(userId: string | null) {
     });
     return () => riskEventBus.clearHandlers();
   }, []);
-*/
 
   // Dismiss the alert and persist the dismissal to Dexie for audit history
   const dismissRisk = useCallback(async () => {
