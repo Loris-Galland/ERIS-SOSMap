@@ -101,8 +101,12 @@ export function useDiscreteSOS({ userId, userPosition, isActive }: useDiscreteSO
     if (!isActive || triggerMethod === 'none' || isCounting) return;
 
     // ─── METHOD 1: QUADRUPLE TAP ───
-    const handleGlobalClick = () => {
+    const handleGlobalClick = (e: TouchEvent) => {
       if (triggerMethod !== 'quad_tap') return;
+
+      const target = e.target as HTMLElement;
+      if (['INPUT', 'TEXTAREA', 'BUTTON'].includes(target.tagName)) return;
+
       tapCount.current += 1;
       if (tapTimer.current) clearTimeout(tapTimer.current);
 
@@ -158,6 +162,12 @@ export function useDiscreteSOS({ userId, userPosition, isActive }: useDiscreteSO
       if (flipTimer) clearTimeout(flipTimer);
     };
   }, [isActive, triggerMethod, isCounting, startCountdown]);
+
+  useEffect(() => {
+    return () => {
+      if (countdownInterval.current) clearInterval(countdownInterval.current);
+    };
+  }, []);
 
   return { isCounting, countdown, cancelSOS };
 }
