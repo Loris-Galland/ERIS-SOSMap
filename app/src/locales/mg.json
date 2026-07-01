@@ -258,7 +258,8 @@
     "confirmMultiple": "Handray tapany ${count} isaky ny karazany ho an'ny ${name} (${selectedStyles.length})?",
     "successMultiple": "Vita : Azo ampiasaina offline ny faritra ${name}.",
     "confirmDelete": "Tena hofafana tokoa ve ny ${name}?",
-    "successDelete": "Voafafa ny ${name}."
+    "successDelete": "Voafafa ny ${name}.",
+    "createCustomZone": "Mamorona faritra manokana"
   },
   "setupProfile": {
     "title": "Mombamomba ny fahasalamana",
@@ -480,5 +481,12 @@
     "title": "Nisy olana tsy nampoizina",
     "message": "Avereno alefa ny rindrankajy mba hanohizana.",
     "retry": "Andramo indray"
+  },
+  "regions": {
+    "paris": { "name": "Paris", "country": "Frantsa" },
+    "new_york": { "name": "New York", "country": "Etazonia" },
+    "antananarivo": { "name": "Antananarivo", "country": "Madagasikara" },
+    "hanoi": { "name": "Hanoi", "country": "Vietnam" },
+    "beijing": { "name": "Beijing", "country": "Sina" }
   }
 }

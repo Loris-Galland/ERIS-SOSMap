@@ -13,12 +13,21 @@ import { useTranslation } from 'react-i18next';
 
 interface OfflineMapViewerProps {
   name: string;
+  detail?: string;
+  isCustom?: boolean;
   bounds: L.LatLngBounds;
   onClose: () => void;
   availableStyles?: string[];
 }
 
-export default function OfflineMapViewer({ name, bounds, onClose, availableStyles }: OfflineMapViewerProps) {
+export default function OfflineMapViewer({
+  name,
+  detail,
+  isCustom,
+  bounds,
+  onClose,
+  availableStyles,
+}: OfflineMapViewerProps) {
   const { t } = useTranslation();
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -90,7 +99,10 @@ export default function OfflineMapViewer({ name, bounds, onClose, availableStyle
             <span className="material-symbols-outlined">arrow_back</span>
           </button>
           <div>
-            <h2 className="text-eris-text font-bold">{name}</h2>
+            <h2 className="text-eris-text font-bold">
+              {t(name)}
+              {!isCustom && detail && <span className="text-eris-text-muted font-normal ml-1"> - {t(detail)}</span>}
+            </h2>
             <p className="text-eris-primary text-[10px] font-bold uppercase tracking-tighter">
               {t('offlineViewer.offlineMode')}
             </p>
@@ -145,8 +157,8 @@ export default function OfflineMapViewer({ name, bounds, onClose, availableStyle
                           !isAvailable
                             ? 'opacity-40 cursor-not-allowed text-eris-text-subtle' // if unavailable -> grey out
                             : currentMapStyle === key
-                              ? 'text-eris-primary bg-eris-surface-alt/80'
-                              : 'text-eris-text-muted hover:bg-eris-surface-alt/40'
+                            ? 'text-eris-primary bg-eris-surface-alt/80'
+                            : 'text-eris-text-muted hover:bg-eris-surface-alt/40'
                         }`}
                       >
                         <span className="material-symbols-outlined text-base">

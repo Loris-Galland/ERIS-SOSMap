@@ -258,7 +258,8 @@
     "confirmMultiple": "Tải ${count} mảnh mỗi lớp cho ${name} (${selectedStyles.length} lớp)?",
     "successMultiple": "Thành công: Khu vực ${name} đã có thể xem ngoại tuyến.",
     "confirmDelete": "Bạn có chắc chắn muốn xóa dữ liệu của ${name}?",
-    "successDelete": "Đã xóa ${name} khỏi bản đồ ngoại tuyến."
+    "successDelete": "Đã xóa ${name} khỏi bản đồ ngoại tuyến.",
+    "createCustomZone": "Tạo khu vực tùy chỉnh"
   },
   "setupProfile": {
     "title": "Hồ sơ y tế",
@@ -480,5 +481,12 @@
     "title": "Đã xảy ra lỗi không mong muốn",
     "message": "Khởi động lại ứng dụng để tiếp tục.",
     "retry": "Thử lại"
+  },
+  "regions": {
+    "paris": { "name": "Paris", "country": "Pháp" },
+    "new_york": { "name": "Thành phố New York", "country": "Hoa Kỳ" },
+    "antananarivo": { "name": "Antananarivo", "country": "Madagascar" },
+    "hanoi": { "name": "Hà Nội", "country": "Việt Nam" },
+    "beijing": { "name": "Bắc Kinh", "country": "Trung Quốc" }
   }
 }

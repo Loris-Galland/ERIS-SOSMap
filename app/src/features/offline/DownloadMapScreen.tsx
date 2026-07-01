@@ -24,6 +24,7 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
   const { t } = useTranslation();
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeFilter, setActiveFilter] = useState<string>('all');
   const [isManualSelecting, setIsManualSelecting] = useState(false);
   const [viewingRegion, setViewingRegion] = useState<number | string | null>(null);
   const [selectedStyles, setSelectedStyles] = useState<string[]>(() => {
@@ -118,10 +119,41 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
     });
   };
 
+  const normalizeText = (text: string) => {
+    return text
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[\s-]/g, '')
+      .toLowerCase();
+  };
+
   const displayRegions = [...customRegions, ...PRESET_REGIONS];
-  const filteredRegions = displayRegions.filter((region) =>
-    region.name.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
+
+  const filteredRegions = displayRegions.filter((region) => {
+    const searchLower = normalizeText(searchQuery);
+    const isCustom = String(region.id).startsWith('custom_');
+
+    const translatedName = normalizeText(t(region.name));
+    const translatedDetail = region.detail ? normalizeText(t(region.detail)) : '';
+
+    const customKeywords = [
+      'custom', // English
+      'personnalis', // French (catches personnalisée, personnalisé)
+      'manokan', // Malagasy (catches manokana)
+      'tùy chỉnh', // Vietnamese
+      'tuy chinh', // Vietnamese (without accents)
+      '自定义', // Chinese
+    ];
+    const isCustomSearch =
+      searchLower.length >= 3 && customKeywords.some((k) => normalizeText(k).includes(searchLower));
+
+    return (
+      searchLower === '' ||
+      translatedName.includes(searchLower) ||
+      translatedDetail.includes(searchLower) ||
+      (isCustom && isCustomSearch)
+    );
+  });
 
   return (
     <div className="flex flex-col h-full bg-eris-bg w-full overflow-y-auto font-sans relative">
@@ -146,9 +178,12 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
 
           if (!bounds || !regionObj) return null;
 
+          const isCustom = String(regionObj.id).startsWith('custom_');
           return (
             <OfflineMapViewer
               name={regionObj.name}
+              detail={regionObj.detail}
+              isCustom={isCustom}
               bounds={bounds}
               onClose={() => setViewingRegion(null)}
               availableStyles={metadata[viewingRegion]?.styles}
@@ -216,6 +251,14 @@ export default function DownloadMapScreen({ onBack }: DownloadMapScreenProps) {
               onDelete={handleDelete}
               onView={setViewingRegion}
             />
+            {/* Other Custom Area Map Button */}
+            <button
+              onClick={() => setIsManualSelecting(true)}
+              className="w-full bg-eris-surface-alt/40 border-2 border-dashed border-eris-primary/50 text-eris-primary rounded-3xl p-4 flex items-center justify-center gap-3 font-bold shadow-sm hover:bg-eris-surface-alt/80 transition-colors mb-6 active:scale-[0.98]"
+            >
+              <span className="material-symbols-outlined text-xl">dashboard_customize</span>
+              {t('download.createCustomZone', 'Create a Custom Zone')}
+            </button>
           </div>
         </div>
       )}
