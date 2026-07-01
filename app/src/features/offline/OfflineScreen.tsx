@@ -118,9 +118,13 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
           const regionInfo = getRegionInfo(viewingRegion);
           if (!bounds || !regionInfo) return null;
 
+          const isCustom = typeof viewingRegion === 'string' && viewingRegion.startsWith('custom_');
+
           return (
             <OfflineMapViewer
               name={regionInfo.name}
+              detail={regionInfo.detail}
+              isCustom={isCustom}
               bounds={bounds}
               onClose={() => setViewingRegion(null)}
               availableStyles={metadata[viewingRegion]?.styles}
@@ -189,6 +193,8 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
                 const lastUpdate = metadata[id]?.lastUpdate;
                 const isUpdating = updatingId === id;
 
+                const isCustom = typeof id === 'string' && id.startsWith('custom_');
+
                 return (
                   <div
                     key={id}
@@ -202,13 +208,16 @@ export default function OfflineScreen({ onBack, onNavigateDownload }: OfflineScr
                         <span className="material-symbols-outlined text-xl">{isUpdating ? 'sync' : 'offline_pin'}</span>
                       </div>
                       <div>
-                        <h4 className="text-eris-text text-sm font-bold mb-0.5">{info.name}</h4>
+                        <h4 className="text-eris-text text-sm font-bold mb-0.5">
+                          {t(info.name)}{' '}
+                          {!isCustom && <span className="text-eris-text-muted font-normal">- {t(info.detail)}</span>}
+                        </h4>
                         <p className="text-eris-text-subtle text-[11px] font-medium">
                           {isUpdating
                             ? `${t('download.downloading', 'Updating...')} ${progress}%`
                             : lastUpdate
-                              ? getRelativeTimeString(lastUpdate, t)
-                              : t('offline.unknownDate', 'Unknown Date')}
+                            ? getRelativeTimeString(lastUpdate, t)
+                            : t('offline.unknownDate', 'Unknown Date')}
                           {info.size ? ` • ${info.size}` : ''}
                         </p>
                       </div>

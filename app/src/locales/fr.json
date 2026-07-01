@@ -258,7 +258,8 @@
     "confirmMultiple": "Télécharger ${count} tuiles/calque pour ${name} (${selectedStyles.length} calques) ?",
     "successMultiple": "Succès : La zone ${name} est disponible hors-ligne.",
     "confirmDelete": "Supprimer les données de ${name} ?",
-    "successDelete": "${name} a été supprimé."
+    "successDelete": "${name} a été supprimé.",
+    "createCustomZone": "Créer une zone personnalisée"
   },
   "setupProfile": {
     "title": "Informations Médicales",
@@ -480,5 +481,12 @@
     "title": "Une erreur inattendue s'est produite",
     "message": "Redémarre l'application pour continuer.",
     "retry": "Réessayer"
+  },
+  "regions": {
+    "paris": { "name": "Paris", "country": "France" },
+    "new_york": { "name": "New York", "country": "États-Unis" },
+    "antananarivo": { "name": "Antananarivo", "country": "Madagascar" },
+    "hanoi": { "name": "Hanoï", "country": "Vietnam" },
+    "beijing": { "name": "Pékin", "country": "Chine" }
   }
 }
