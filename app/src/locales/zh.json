@@ -258,7 +258,8 @@
     "confirmMultiple": "每层为 ${name} 下载 ${count} 个瓦片（已选 ${selectedStyles.length} 层）？",
     "successMultiple": "成功：区域 ${name} 现可离线使用。",
     "confirmDelete": "您确定要删除 ${name} 的离线数据吗？",
-    "successDelete": "${name} 已从离线地图中移除。"
+    "successDelete": "${name} 已从离线地图中移除。",
+    "createCustomZone": "创建自定义区域"
   },
   "setupProfile": {
     "title": "医疗资料",
@@ -480,5 +481,12 @@
     "title": "发生意外错误",
     "message": "请重启应用以继续。",
     "retry": "重试"
+  },
+  "regions": {
+    "paris": { "name": "巴黎", "country": "法国" },
+    "new_york": { "name": "纽约市", "country": "美国" },
+    "antananarivo": { "name": "塔那那利佛", "country": "马达加斯加" },
+    "hanoi": { "name": "河内", "country": "越南" },
+    "beijing": { "name": "北京", "country": "中国" }
   }
 }

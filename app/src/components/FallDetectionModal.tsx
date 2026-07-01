@@ -6,8 +6,12 @@
  * Triggered by the fall/crash detection logic in the SOS feature.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+
+// 1. GLOBAL VARIABLE: This guarantees only one siren can EVER exist,
+// even if React Strict Mode double-renders the component.
+let activeSiren: HTMLAudioElement | null = null;
 
 interface FallDetectionModalProps {
   onConfirmSOS: (isTimeout: boolean) => void;
@@ -26,17 +30,41 @@ export default function FallDetectionModal({ onCancel, onConfirmSOS, type = 'fal
     ? t('crash.detectedMessage', 'A vehicle crash was detected. An automatic SOS alert will be sent in...')
     : t('fall.detectedMessage', 'An automatic SOS alert will be sent with your location in...');
 
+  // Keep a fresh reference to onConfirmSOS
+  const onConfirmRef = useRef(onConfirmSOS);
   useEffect(() => {
+    onConfirmRef.current = onConfirmSOS;
+  }, [onConfirmSOS]);
+
+  useEffect(() => {
+    // 2. Kill any ghost audio tracks before starting a new one
+    if (activeSiren) {
+      activeSiren.pause();
+      activeSiren.removeAttribute('src');
+    }
+
+    // 3. Create the new audio and assign it to the global variable
     const audio = new Audio('/siren.mp3');
     audio.loop = true;
-    audio.play().catch(() => console.warn('[ERIS] Audio autoplay blocked by browser'));
+    activeSiren = audio;
+
+    const playPromise = audio.play();
+    if (playPromise !== undefined) {
+      playPromise.catch(() => console.warn('[ERIS] Audio autoplay blocked by browser'));
+    }
 
     const timer = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
-          audio.pause();
-          onConfirmSOS(true);
+
+          if (activeSiren) {
+            activeSiren.pause();
+            activeSiren.removeAttribute('src');
+            activeSiren = null;
+          }
+
+          onConfirmRef.current(true);
           return 0;
         }
         return prev - 1;
@@ -45,9 +73,16 @@ export default function FallDetectionModal({ onCancel, onConfirmSOS, type = 'fal
 
     return () => {
       clearInterval(timer);
-      audio.pause();
+
+      // 4. Safely destroy the global audio track when the modal closes
+      if (activeSiren) {
+        activeSiren.pause();
+        activeSiren.removeAttribute('src');
+        activeSiren.load();
+        activeSiren = null;
+      }
     };
-  }, [onConfirmSOS]);
+  }, []);
 
   return (
     <div className="fixed inset-0 z-[99999] bg-red-900/90 backdrop-blur-xl flex flex-col items-center justify-center p-6 animate-in fade-in zoom-in duration-300">
@@ -69,7 +104,7 @@ export default function FallDetectionModal({ onCancel, onConfirmSOS, type = 'fal
         </button>
 
         <button
-          onClick={() => onConfirmSOS(false)}
+          onClick={() => onConfirmRef.current(false)}
           className="w-full py-4 bg-transparent border-2 border-red-500 text-red-300 font-bold rounded-2xl hover:bg-red-500/20 active:scale-95 transition-all"
         >
           {t('fall.sendNow', 'SEND SOS NOW')}

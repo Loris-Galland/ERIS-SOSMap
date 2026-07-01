@@ -258,7 +258,8 @@
     "confirmMultiple": "Download ${count} tiles per layer for ${name} (${selectedStyles.length} layers selected)?",
     "successMultiple": "Success : The zone ${name} is available offline (${selectedStyles.length} layers).",
     "confirmDelete": "Are you sure you want to delete ${name} offline data?",
-    "successDelete": "${name} removed from your offline maps."
+    "successDelete": "${name} removed from your offline maps.",
+    "createCustomZone": "Create a Custom Zone"
   },
   "setupProfile": {
     "title": "Medical Profile",
@@ -480,5 +481,12 @@
     "title": "An unexpected error has occurred",
     "message": "Restart the app to continue.",
     "retry": "Retry"
+  },
+  "regions": {
+    "paris": { "name": "Paris", "country": "France" },
+    "new_york": { "name": "New York City", "country": "USA" },
+    "antananarivo": { "name": "Antananarivo", "country": "Madagascar" },
+    "hanoi": { "name": "Hanoi", "country": "Vietnam" },
+    "beijing": { "name": "Beijing", "country": "China" }
   }
 }

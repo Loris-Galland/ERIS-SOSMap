@@ -13,6 +13,12 @@ import { riskEventBus } from '../../risk/riskEventBus';
 const CRASH_SPEED_THRESHOLD_KMH = 30;  // minimum speed in km/h to arm crash detection
 const CRASH_IMPACT_THRESHOLD    = 40.0; // severe impact magnitude in m/s²
 
+/*
+// --- TEST VALUES ---
+const CRASH_SPEED_THRESHOLD_KMH = 0;    
+const CRASH_IMPACT_THRESHOLD    = 15.0;
+ */
+
 // Retrieve the last cached GPS position so the AI engine has a coordinate for the event
 function getLastKnownPosition(): { lat: number; lng: number } {
   try {
@@ -45,10 +51,11 @@ export function useCrashDetection({ currentSpeedKmh, onCrashDetected, isActive =
     if (!isActive) return;
 
     let accelListener: { remove: () => void } | undefined;
+    let isCancelled = false;
 
     const startMonitoring = async () => {
       try {
-        accelListener = await Motion.addListener('accel', (event) => {
+        const listener = await Motion.addListener('accel', (event) => {
           const { x, y, z } = event.accelerationIncludingGravity;
           const magnitude = Math.sqrt(x * x + y * y + z * z);
 
@@ -62,6 +69,12 @@ export function useCrashDetection({ currentSpeedKmh, onCrashDetected, isActive =
             onCrashDetected();
           }
         });
+
+        if (isCancelled) {
+          listener.remove;
+        } else {
+          accelListener = listener;
+        }
       } catch (error) {
         console.warn('[ERIS] Accelerometer unavailable for crash detection', error);
       }
@@ -69,6 +82,9 @@ export function useCrashDetection({ currentSpeedKmh, onCrashDetected, isActive =
 
     startMonitoring();
 
-    return () => { accelListener?.remove(); };
+    return () => { 
+      isCancelled = true;
+      accelListener?.remove(); 
+    };
   }, [isActive, onCrashDetected]);
 }

@@ -10,6 +10,7 @@ import React from 'react';
 export interface Region {
   id: number | string;
   name: string;
+  detail: string;
   size?: string;
   bounds?: any;
 }
@@ -74,13 +75,16 @@ export default function RegionList({
 
                   {/* Region informations */}
                   <div>
-                    <h4 className="text-eris-text text-sm font-bold mb-0.5">{region.name}</h4>
+                    <h4 className="text-eris-text text-sm font-bold mb-0.5">
+                      {t(region.name)}
+                      {!isCustom && <span className="text-eris-text-muted font-normal"> - {t(region.detail)}</span>}
+                    </h4>
                     <p className="text-eris-text-subtle text-[11px] font-medium">
                       {isDownloadingThis
                         ? `${t('download.downloading', 'Downloading...')} ${progress}%`
                         : isDownloaded
-                          ? t('download.available', 'Available Offline')
-                          : `${displaySize}   ${t('download.mapData', 'Map & Navigation Data')}`}
+                        ? t('download.available', 'Available Offline')
+                        : `${displaySize}   ${t('download.mapData', 'Map & Navigation Data')}`}
                     </p>
                   </div>
                 </div>

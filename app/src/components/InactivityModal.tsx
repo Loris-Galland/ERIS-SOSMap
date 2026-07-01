@@ -22,7 +22,8 @@ export default function InactivityModal({ onCancel, onConfirmSOS }: InactivityMo
     // Play a siren to wake up the user
     const audio = new Audio('/siren.mp3');
     audio.loop = true;
-    audio.play().catch(() => console.log('Audio autoplay blocked'));
+    const playPromise = audio.play();
+    playPromise.catch(() => console.log('Audio autoplay blocked'));
 
     // Vibrate heavily to get the user's attention
     if (navigator.vibrate) {
@@ -43,7 +44,16 @@ export default function InactivityModal({ onCancel, onConfirmSOS }: InactivityMo
 
     return () => {
       clearInterval(timer);
-      audio.pause();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            audio.pause();
+            audio.currentTime = 0;
+          })
+          .catch(() => {});
+      } else {
+        audio.pause;
+      }
     };
   }, [onConfirmSOS]);
 

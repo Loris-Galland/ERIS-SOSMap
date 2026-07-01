@@ -207,6 +207,10 @@ export const useShakeSOS = (
   useEffect(() => {
     return () => { 
       if (timerRef.current) clearTimeout(timerRef.current); 
+      if (motionListenerRef.current) {
+        motionListenerRef.current.remove().catch(() => {});
+        motionListenerRef.current = null;
+      }
     };
   }, []);
 

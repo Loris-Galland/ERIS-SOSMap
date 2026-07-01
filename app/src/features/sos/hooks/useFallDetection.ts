@@ -15,6 +15,13 @@ const FALL_THRESHOLD_LOW  = 4.0;   // below this = free-fall phase
 const FALL_THRESHOLD_HIGH = 25.0;  // above this after free-fall = impact
 const IMMOBILITY_TIME     = 2000;  // ms of immobility required to confirm fall
 
+/*
+// Test variable
+const FALL_THRESHOLD_LOW  = 8.0;   // Easier to trigger free-fall (closer to standard gravity 9.8)
+const FALL_THRESHOLD_HIGH = 15.0;  // Light toss onto a soft bed/sofa
+const IMMOBILITY_TIME     = 2000;
+*/
+
 // Retrieve the last cached GPS position so the AI engine has a coordinate for the event
 function getLastKnownPosition(): { lat: number; lng: number } {
   try {
@@ -32,10 +39,11 @@ export function useFallDetection(onFallDetected: () => void, isActive: boolean =
     if (!isActive) return;
 
     let accelListener: { remove: () => void } | undefined;
+    let isCancelled = false;
 
     const startMonitoring = async () => {
       try {
-        accelListener = await Motion.addListener('accel', (event) => {
+        const listener = await Motion.addListener('accel', (event) => {
           const { x, y, z } = event.accelerationIncludingGravity;
           const magnitude = Math.sqrt(x * x + y * y + z * z);
 
@@ -67,6 +75,12 @@ export function useFallDetection(onFallDetected: () => void, isActive: boolean =
             }
           }
         });
+
+        if (isCancelled){
+          listener.remove();
+        } else {
+          accelListener = listener;
+        }
       } catch (e) {
         console.warn('[ERIS] Accelerometer unavailable for fall detection', e);
       }
@@ -75,6 +89,7 @@ export function useFallDetection(onFallDetected: () => void, isActive: boolean =
     startMonitoring();
 
     return () => {
+      isCancelled = true;
       accelListener?.remove();
     };
   }, [isActive, onFallDetected]);
