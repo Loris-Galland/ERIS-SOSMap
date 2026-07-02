@@ -78,7 +78,7 @@ export default function DistressSignalScreen({ onClose }: DistressSignalScreenPr
             strobeIntervalRef.current = setInterval(async () => {
               flashStateRef.current = !flashStateRef.current;
               if (flashStateRef.current) {
-                await CapacitorFlash.switchOn({ intensity: 100 });
+                await CapacitorFlash.switchOn({ intensity: 1.0 });
               } else {
                 await CapacitorFlash.switchOff();
               }

@@ -47,5 +47,13 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>ERIS needs your location to show your position on the map and send it with SOS alerts.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>ERIS needs your location even in the background to keep tracking your position during emergencies.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>ERIS needs camera access to use the flashlight for distress signals.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>ERIS needs microphone access to record audio evidence during emergencies.</string>
 </dict>
 </plist>

@@ -523,7 +523,10 @@ export default function App() {
       )}
 
       {/* ─── BOTTOM NAV ─── */}
-      <nav className="flex items-center justify-around min-h-[4.5rem] pt-2 pb-safe px-8 bg-eris-bg/95 backdrop-blur-md border-t border-eris-border/50 z-[1000] w-full">
+      <nav
+        className="flex items-center justify-around min-h-[4.5rem] pt-2 px-8 bg-eris-bg/95 backdrop-blur-md border-t border-eris-border/50 z-[1000] w-full"
+        style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 34px), 16px)' }}
+      >
         {(
           [
             {
