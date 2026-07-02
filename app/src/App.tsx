@@ -523,7 +523,7 @@ export default function App() {
       )}
 
       {/* ─── BOTTOM NAV ─── */}
-      <nav className="flex items-center justify-around h-20 bg-eris-bg/95 backdrop-blur-md border-t border-eris-border/50 pb-safe z-[1000]">
+      <nav className="flex items-center justify-around min-h-[4.5rem] pt-2 pb-safe px-8 bg-eris-bg/95 backdrop-blur-md border-t border-eris-border/50 z-[1000] w-full">
         {(
           [
             {
@@ -554,7 +554,7 @@ export default function App() {
             <button
               key={id}
               onClick={() => setActiveTab(id)}
-              className={`flex flex-col items-center justify-center w-16 gap-1 transition-all ${
+              className={`flex flex-col items-center justify-center w-14 gap-1 transition-all ${
                 isActive ? 'text-eris-primary' : 'text-eris-text-subtle hover:text-eris-text-muted'
               }`}
             >

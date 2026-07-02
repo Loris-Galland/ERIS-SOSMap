@@ -286,7 +286,10 @@ Application ID: `com.dniit.erissosmap`
 * [`startMeshNetwork()`](#startmeshnetwork)
 * [`stopMeshNetwork()`](#stopmeshnetwork)
 * [`broadcastMeshMessage(...)`](#broadcastmeshmessage)
+* [`startMotionMonitoring()`](#startmotionmonitoring)
+* [`stopMotionMonitoring()`](#stopmotionmonitoring)
 * [`addListener('onMeshMessageReceived', ...)`](#addlisteneronmeshmessagereceived-)
+* [`addListener('onMotionData', ...)`](#addlisteneronmotiondata-)
 * [Interfaces](#interfaces)
 
 </docgen-index>
@@ -355,6 +358,24 @@ broadcastMeshMessage(options: { message: string; }) => Promise<void>
 --------------------
 
 
+### startMotionMonitoring()
+
+```typescript
+startMotionMonitoring() => Promise<void>
+```
+
+--------------------
+
+
+### stopMotionMonitoring()
+
+```typescript
+stopMotionMonitoring() => Promise<void>
+```
+
+--------------------
+
+
 ### addListener('onMeshMessageReceived', ...)
 
 ```typescript
@@ -371,6 +392,22 @@ addListener(eventName: 'onMeshMessageReceived', listenerFunc: (data: { message: 
 --------------------
 
 
+### addListener('onMotionData', ...)
+
+```typescript
+addListener(eventName: 'onMotionData', listenerFunc: (data: MotionData) => void) => Promise<PluginListenerHandle>
+```
+
+| Param              | Type                                                                 |
+| ------------------ | -------------------------------------------------------------------- |
+| **`eventName`**    | <code>'onMotionData'</code>                                          |
+| **`listenerFunc`** | <code>(data: <a href="#motiondata">MotionData</a>) =&gt; void</code> |
+
+**Returns:** <code>Promise&lt;<a href="#pluginlistenerhandle">PluginListenerHandle</a>&gt;</code>
+
+--------------------
+
+
 ### Interfaces
 
 
@@ -379,5 +416,19 @@ addListener(eventName: 'onMeshMessageReceived', listenerFunc: (data: { message: 
 | Prop         | Type                                      |
 | ------------ | ----------------------------------------- |
 | **`remove`** | <code>() =&gt; Promise&lt;void&gt;</code> |
+
+
+#### MotionData
+
+| Prop            | Type                |
+| --------------- | ------------------- |
+| **`ax`**        | <code>number</code> |
+| **`ay`**        | <code>number</code> |
+| **`az`**        | <code>number</code> |
+| **`gx`**        | <code>number</code> |
+| **`gy`**        | <code>number</code> |
+| **`gz`**        | <code>number</code> |
+| **`magnitude`** | <code>number</code> |
+| **`timestamp`** | <code>number</code> |
 
 </docgen-api>

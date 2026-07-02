@@ -6,6 +6,28 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  body {
+    padding-top: env(safe-area-inset-top, 0px) !important;
+    box-sizing: border-box !important;
+  }
+}
+
+@layer utilities {
+  .pt-safe {
+    padding-top: max(env(safe-area-inset-top), 12px) !important;
+  }
+  .pb-safe {
+    padding-bottom: max(env(safe-area-inset-bottom), 12px) !important;
+  }
+  .mt-safe {
+    margin-top: max(env(safe-area-inset-top), 12px) !important;
+  }
+  .mb-safe {
+    margin-bottom: max(env(safe-area-inset-bottom), 12px) !important;
+  }
+}
+
 /* Default value (dark theme) */
 :root,
 .theme-dark {
